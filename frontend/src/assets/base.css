@@ -1,0 +1,24 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  position: relative;
+  /* font-weight: normal; */
+}
+
+@font-face {
+  font-family: "TheSansOffice";
+  src: local("TheSansOffice"),
+    url('../assets/fonts/TheSansOffice5.ttf') format("truetype");
+}
+
+body {
+  transition: color 0.5s, background-color 0.5s;
+  line-height: 1.6;
+  font-family: "TheSansOffice", Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

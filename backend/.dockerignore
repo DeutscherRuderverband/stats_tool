@@ -1,0 +1,6 @@
+.dockerignore
+Dockerfile
+Dockerfile*
+*.Dockerfile
+./*.json
+README.md

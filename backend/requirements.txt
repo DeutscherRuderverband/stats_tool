@@ -1,0 +1,2 @@
+# This file is intentionally empty
+# This is just here so that Railway/Nixpacks recognizes this folder as Python project

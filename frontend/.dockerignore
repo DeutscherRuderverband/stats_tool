@@ -1,0 +1,12 @@
+# https://github.com/johnpapa/vue-typescript/blob/master/.dockerignore
+.dockerignore
+Dockerfile*
+*.Dockerfile
+node_modules
+npm-debug.log
+docker-compose*
+.git
+.gitignore
+README.md
+LICENSE
+.vscode

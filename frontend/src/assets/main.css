@@ -1,0 +1,32 @@
+@import './base.css';
+
+#app {
+  margin: 0 auto;
+}
+
+a {
+  text-decoration: none;
+  color: rgb(37, 50, 225);
+  transition: 0.4s;
+}
+
+@media (hover: hover) {
+  a:hover {
+    color: #1369b0;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  nav, header, footer {
+    display: none;
+  }
+
+  body {
+    padding-top: 0em !important;
+  }
+}

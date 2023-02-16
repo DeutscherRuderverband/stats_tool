@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "npm run prod_server"
+healthcheckPath = "/"
+healthcheckTimeout = 300
