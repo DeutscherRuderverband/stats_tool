@@ -1,0 +1,124 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Py: Dev Playground (Rapha)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "program": "raphael_temp.py",
+            "justMyCode": true
+        },
+        {
+            "name": "Py: Scrape competition to JSON",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "program": "dev-playground.py",
+            "args": [
+                "grabc",
+                "--out",
+                "tmp.dump.json"
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "Py: dbutils insert from JSON",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "module": "model.dbutils",
+            "args": [
+                "--create",
+                "--insert",
+                "tmp.dump.json"
+            ],
+            "env": {
+                "DB_VERBOSITY": "1"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Py: dbutils drop/create tables",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "module": "model.dbutils",
+            "args": [
+                "--drop",
+                "--create"
+            ],
+            "env": {
+                "DB_VERBOSITY": "1"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Py: scraper (dev)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "program": "scraper.py",
+            "env": {
+                "SCRAPER_SINGLEPASS": "1",
+                "DRV_SCRAPER_DEV_MODE": "1",
+                "DB_VERBOSITY": "0",
+                "SCRAPER_YEAR_MIN": "2019"
+            },
+            "args": [],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Py: scraper (only postprocessing)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "program": "scraper.py",
+            "env": {
+                "SCRAPER_SINGLEPASS": "1",
+                "DRV_SCRAPER_DEV_MODE": "1",
+                "DB_VERBOSITY": "0",
+                "SCRAPER_YEAR_MIN": "2022"
+            },
+            "args": [
+                "--procedure",
+                "postprocess"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Py: flask",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "module": "flask",
+            "env": {
+                "FLASK_ENV": "development",
+                "JWT_SECRET_KEY": "dev-secret-str"
+            },
+            "args": [
+                "--app",
+                "api_server:app",
+                "--debug",
+                "run",
+                "--no-debugger",
+                "--no-reload",
+                "--port=5000"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Py: Dev Playground (Nick)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/backend",
+            "program": "dev-playground.py",
+            "justMyCode": true
+        }
+    ]
+}
