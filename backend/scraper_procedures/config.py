@@ -1,0 +1,14 @@
+import os
+
+SCRAPER_SINGLEPASS = os.environ.get('SCRAPER_SINGLEPASS','').strip() == '1'
+SCRAPER_DEV_MODE = os.environ.get('DRV_SCRAPER_DEV_MODE','').strip() == '1'
+SCRAPER_MAINTENANCE_PERIOD_DAYS = int(os.environ.get('SCRAPER_MAINTENANCE_PERIOD_DAYS', '7').strip())
+SCRAPER_RESCRAPE_LIMIT_DAYS = int(os.environ.get('SCRAPER_RESCRAPE_LIMIT_DAYS', '31').strip())
+
+DAY_IN_SECONDS = 60 * 60 * 24
+SCRAPER_SLEEP_TIME_SECONDS = 1 * DAY_IN_SECONDS
+
+SCRAPER_YEAR_MIN = int(os.environ.get('SCRAPER_YEAR_MIN', '1900').strip())
+
+SCRAPER_YEAR_MAX = os.environ.get('SCRAPER_YEAR_MAX', None)
+SCRAPER_YEAR_MAX = int(SCRAPER_YEAR_MAX) if SCRAPER_YEAR_MAX else None

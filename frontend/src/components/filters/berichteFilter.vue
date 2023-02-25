@@ -111,14 +111,14 @@ export default {
       // competition type
       compTypes: [], // list of dicts with objects containing displayName, id and key
       optionsCompTypes: [],
-      selectedCompTypes: ["WCH"],
+      selectedCompTypes: ["WCH", "OG", "WCp 1", "WCp 2", "WCp 3", "JWCH", "U23WCH"],
       // year
       startYear: 0,
       endYear: 0,
       optionsStartYear: [],
       optionsEndYear: [],
-      yearShortCutOptions: ["Ganzer Zeitraum", "Aktuelles Jahr", "Aktueller OZ", "letzter OZ"],
-      selectedYearShortCutOptions: [0],
+      yearShortCutOptions: [],
+      selectedYearShortCutOptions: [],
       // boat classes
       boatClasses: {},
       genderTypeOptions: [],
@@ -159,6 +159,8 @@ export default {
     initializeFilter(data) {
       this.startYear = Object.values(data.years[0])[0];
       this.endYear = Object.values(data.years[1])[0];
+      this.yearShortCutOptions = [`Zeitraum von ${this.startYear} bis ${this.endYear}`, "Aktuelles Jahr", "Aktueller OZ", "Letzter OZ"]
+      this.selectedYearShortCutOptions = [0]
 
       this.optionsStartYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.startYear + i)
       this.optionsEndYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.endYear - i)
@@ -173,8 +175,8 @@ export default {
       // boatclasses
       this.boatClasses = {}
       this.genderTypeOptions = Object.keys(data.boat_classes)
-      let ageGroupOptions = Object.keys(data.boat_classes.men)
-      ageGroupOptions.push(...Object.keys(data.boat_classes.women))
+      let ageGroupOptions = Object.keys(data.boat_classes.m)
+      ageGroupOptions.push(...Object.keys(data.boat_classes.w))
       this.ageGroupOptions = ageGroupOptions.filter((v, i, a) => a.indexOf(v) === i); // exclude non-unique values
 
       let boatClassOptions = []
@@ -199,13 +201,18 @@ export default {
 
       if (this.startYear && this.endYear) {
         const store = useBerichteState()
-        store.postFormDataMatrix({
-        "interval": [this.startYear, this.endYear],
-        "competition_category": this.compTypes.filter(item =>
-            this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
-        "boat_class": this.boatClasses[this.selectedBoatClasses],
-        "race_phase_type": this.selectedRuns.map(item => this.optionsRuns[item]),
-      })
+        const data = {
+          "interval": [this.startYear, this.endYear],
+          "competition_type": this.compTypes.filter(item =>
+              this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
+          "boat_class": this.boatClasses[this.selectedBoatClasses],
+          "race_phase_type": this.selectedRuns.map(item => this.optionsRuns[item]),
+        }
+        store.postFormDataMatrix(data)
+        data["competition_type"] = this.selectedCompTypes.join(", ")
+        data["race_phase_type"] = this.selectedRuns.map(item => this.optionsRuns[item]).join(", ")
+        data["race_phase_subtype"] = this.selectedRunsFineSelection.join(", ")
+        store.setLastFilterConfig(data)
       }
     },
     async onSubmit() {
@@ -236,7 +243,7 @@ export default {
 
       const formData = {
         "interval": [this.startYear, this.endYear],
-        "competition_category": this.compTypes.filter(item =>
+        "competition_type": this.compTypes.filter(item =>
             this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
         "boat_class": this.boatClasses[this.selectedBoatClasses],
         "race_phase_type": this.selectedRuns.map(item => this.optionsRuns[item]),
@@ -249,7 +256,6 @@ export default {
       }
 
       const store = useBerichteState()
-      store.setLastFilterConfig(formData)
       store.setSelectedBoatClass(this.selectedBoatClasses[0])
 
       if (formData.boat_class === undefined) {
@@ -269,6 +275,11 @@ export default {
               console.error(error)
             })
       }
+
+      formData["competition_type"] = this.selectedCompTypes.join(", ")
+      formData["race_phase_type"] = this.selectedRuns.map(item => this.optionsRuns[item]).join(", ")
+      formData["race_phase_subtype"] = this.selectedRunsFineSelection.join(", ")
+      store.setLastFilterConfig(formData)
     },
     clearFormInputs() {
       this.selectedGenders = 3
@@ -282,29 +293,43 @@ export default {
     },
     checkScreen() {
       this.windowWidth = window.innerWidth
-      this.mobile = this.windowWidth <= 750
+      this.mobile = this.windowWidth < 890
     }
   },
   watch: {
-    selectedYearShortCutOptions: function (newVal,) {
-      if (newVal !== 'undefined') {
-        if (newVal === 0) {
-          this.startYear = this.filterData.years[0].start_year
-          this.endYear = this.filterData.years[1].end_year
+    selectedYearShortCutOptions: function (newVal) {
+      const currentYear = new Date().getFullYear();
+      if (newVal === 0) {
+        this.startYear = this.filterData.years[0].start_year;
+        this.endYear = this.filterData.years[1].end_year;
+      } else if (newVal === 1) {
+        this.startYear = currentYear;
+        this.endYear = currentYear;
+      } else if (newVal === 2 || newVal === 3) {
+        const olympicYear = currentYear - (currentYear % 4) + 4;
+        if (newVal === 2) {
+          if (currentYear >= 2022 && currentYear <= 2024) {
+            this.startYear = 2022;
+            this.endYear = 2024;
+          } else if (currentYear >= 2025 && currentYear <= 2028) {
+            this.startYear = 2025;
+            this.endYear = 2028;
+          } else {
+            this.startYear = olympicYear - 3;
+            this.endYear = olympicYear - 1;
+          }
         }
-        if (newVal === 1) {
-          this.startYear = new Date().getFullYear()
-          this.endYear = new Date().getFullYear()
-        } else if (newVal === 2) {
-          const currentYear = new Date().getFullYear()
-          const olympicYear = currentYear - (currentYear % 4) + 4
-          this.startYear = olympicYear - 4
-          this.endYear = olympicYear
-        } else if (newVal === 3) {
-          const currentYear = new Date().getFullYear()
-          const olympicYear = currentYear - (currentYear % 4) + 4
-          this.startYear = olympicYear - 8
-          this.endYear = olympicYear - 4
+        else {
+          if (currentYear >= 2022 && currentYear <= 2024) {
+            this.startYear = 2017;
+            this.endYear = 2021;
+          } else if (currentYear >= 2025 && currentYear <= 2028) {
+            this.startYear = 2022;
+            this.endYear = 2024
+          } else {
+            this.startYear = olympicYear - 7;
+            this.endYear = olympicYear - 3;
+          }
         }
       }
     },
@@ -313,11 +338,11 @@ export default {
         this.selectedBoatClasses = null
         let optionsList = []
         if (newVal === 0) { // men
-          optionsList.push(...Object.keys(this.filterData.boat_classes.men))
+          optionsList.push(...Object.keys(this.filterData.boat_classes.m))
           this.optionsDisciplines = ["Skull", "Riemen"]
         }
         if (newVal === 1) { // women
-          optionsList.push(...Object.keys(this.filterData.boat_classes.women))
+          optionsList.push(...Object.keys(this.filterData.boat_classes.w))
           this.optionsDisciplines = ["Skull", "Riemen"]
         }
         if (newVal === 2) { // mixed
@@ -421,14 +446,6 @@ export default {
     },
     filterData: function (newVal,) {
       this.initializeFilter(newVal)
-    },
-    startYear: function (newVal,) {
-      const store = useBerichteState()
-      store.setFilterConfig([newVal, this.endYear])
-    },
-    endYear: function (newVal,) {
-      const store = useBerichteState()
-      store.setFilterConfig([this.startYear, newVal])
     }
   }
 }

@@ -16,51 +16,57 @@
       <v-navigation-drawer
           v-model="filterOpen"
           temporary
-          v-bind:style='{"margin-top" : (mobile? "71.25px" : "160px" )}'
+          v-bind:style='{"margin-top": (mobile ? "71.25px" : (headerReduced ? "81px" : "159px"))}'
           style="background-color: white; border: none"
           width="600">
         <medaillenspiegel-filter/>
       </v-navigation-drawer>
-      <v-container :class="mobile ? 'pa-5 main-container' : 'px-10 pt-0 main-container'">
+      <v-container :class="mobile ? 'px-5 py-2 main-container' : 'px-10 pt-0 main-container'">
 
         <v-col :cols="mobile ? 12 : 6" class="d-flex flex-row px-0" style="align-items: center">
           <h1>Medaillenspiegel</h1>
-          <v-icon id="tooltip-analyis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
+          <v-icon id="tooltip-analysis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
           </v-icon>
           <v-tooltip
-              activator="#tooltip-analyis-icon"
+              activator="#tooltip-analysis-icon"
               location="end"
               open-on-hover
           >Im Rahmen des Medaillenspiegels können die Erfolge von Nationen betrachtet werden.<br>
-            Wähle hierzu aus den Filteroptionen im Filter (links) einen Zeitraum und eine Nation aus.
+            Zur Präzisierung der Ansicht kann aus den vorhandenen Einstellmöglichkeiten des Filters (links) gewählt werden.
           </v-tooltip>
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
           <v-icon @click="exportTableData()" color="grey" class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
         </v-col>
         <v-divider></v-divider>
-        <v-container class="pa-0">
+
+        <v-container v-if="loading" class="d-flex flex-column align-center">
+          <v-progress-circular indeterminate color="blue" size="40" class="mt-15"></v-progress-circular>
+          <div class="text-center" style="color: #1369b0">Lade Ergebnisse...</div>
+        </v-container>
+
+        <v-container class="pa-0" v-else>
           <v-row class="ma-0">
             <v-col cols="12" class="pa-0">
-              <h2><b> {{ `${filterSelection.start_date} bis ${filterSelection.end_date}` }}</b></h2>
-              <v-col :cols="mobile ? 12 : 6" class="pa-0">
-              <v-alert type="success" variant="tonal" class="my-2" v-if="filterSelection.results">
-                <v-row>
-                  <v-col>
-                    <p>{{ filterSelection.results }} Datensätze
-                      <!--bis {{ filterSelection.end_date }}<br>-->
-                    </p>
-                  </v-col>
-                </v-row>
-              </v-alert>
-              <v-alert type="error" variant="tonal" class="my-2" v-else>
-                <v-row>
-                  <v-col cols="12">
-                    <p>Leider keine Ergebnisse gefunden.</p>
-                  </v-col>
-                </v-row>
-              </v-alert>
+              <v-col :cols="mobile ? 12 : 8" class="pa-0">
+                <v-alert type="success" variant="tonal" class="my-2" v-if="filterSelection.results">
+                  <v-row>
+                    <v-col>
+                      <p><b>{{
+                          `${filterSelection.results} Datensätze | Von ${filterSelection.start_date} bis ${filterSelection.end_date}`
+                        }}</b></p>
+                      <p><b>Events:</b> {{ filterSelection.comp_types }}</p>
+                    </v-col>
+                  </v-row>
+                </v-alert>
+                <v-alert type="error" variant="tonal" class="my-2" v-else>
+                  <v-row>
+                    <v-col cols="12">
+                      <p>Leider keine Ergebnisse gefunden.</p>
+                    </v-col>
+                  </v-row>
+                </v-alert>
               </v-col>
-              <v-table class="tableStyles mb-4" density="compact">
+              <v-table class="tableStyles mb-4" density="compact" v-if="filterSelection.results">
                 <tbody class="nth-grey">
                 <template v-for="(el, idx) in tableData">
                   <tr>
@@ -74,11 +80,11 @@
               </v-table>
             </v-col>
           </v-row>
-          <v-col :cols="mobile ? 12 : 8" class="pa-0">
-              <v-container class="chart-bg pa-0">
-                <BarChart :data="medalChartData" :chartOptions="medalChartOptions"></BarChart>
-              </v-container>
-            </v-col>
+          <v-col cols="12" class="pa-0" v-if="filterSelection.results">
+            <v-container class="chart-bg pa-0">
+              <BarChart :data="medalChartData" :chartOptions="medalChartOptions"></BarChart>
+            </v-container>
+          </v-col>
         </v-container>
       </v-container>
     </v-layout>
@@ -93,9 +99,13 @@ import BarChart from "@/components/charts/BarChart.vue";
 <script>
 import {mapState} from "pinia";
 import {useMedaillenspiegelState} from "@/stores/medaillenspiegelStore";
+import {useGlobalState} from "@/stores/globalStore";
 
 export default {
   computed: {
+    ...mapState(useGlobalState, {
+      headerReduced: "getHeaderReducedState"
+    }),
     ...mapState(useMedaillenspiegelState, {
       filterState: "getFilterState"
     }),
@@ -110,7 +120,10 @@ export default {
     }),
     ...mapState(useMedaillenspiegelState, {
       tableData: "getTableData"
-    })
+    }),
+    ...mapState(useMedaillenspiegelState, {
+      loading: "getLoadingState"
+    }),
   },
   methods: {
     openPrintDialog() {
@@ -127,8 +140,8 @@ export default {
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth <= 750
-      let navbarHeight = window.innerWidth < 750 ? '71.25px' : '160px';
+      this.mobile = this.windowWidth < 890
+      let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
     }
   },
@@ -139,6 +152,20 @@ export default {
       medalChartOptions: {
         responsive: true,
         maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Medaillenverteilung'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Anzahl Medaillen'
+            }
+          }
+        },
         plugins: {
           legend: {
             display: true
@@ -212,7 +239,7 @@ export default {
 }
 
 .main-container {
-  min-height: calc(100vh - (var(--navbar-height)) - 95px);
+  min-height: calc(100vh - (var(--navbar-height)) - 94px);
 }
 
 @media print {

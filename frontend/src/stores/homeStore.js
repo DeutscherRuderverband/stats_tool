@@ -13,19 +13,19 @@ export const useHomeStore = defineStore({
         getCalenderData(state) {
             let calenderEntries = state.data.calender_data;
             const color_scheme = {
-                "Paralympics": "#ff7f00",
-                "World Rowing Cup": "#b3de69",
-                "World Rowing Championships": "#a65628",
-                "World Rowing U23 Championships": "#f781bf",
-                "Olympics": "#377eb8",
-                "Masters": "#ffff33",
-                "World Rowing Under 19 Championships": "#e41a1c",
-                "Indoor Championships": "#a6cee3",
-                "Continental Championships": "#4daf4a",
-                "International Regattas": "#fdbf6f",
-                "Coastal Championships": "#bebada",
-                "Other World Rowing Competitions": "#8dd3c7",
-                "World Rowing Combined Championships": "#984ea3"
+                "Paralympics": "#1f77b4",
+                "World Rowing Cup": "#aec7e8",
+                "World Rowing Championships": "#2ca02c",
+                "World Rowing U23 Championships": "#98df8a",
+                "Olympics": "#1c5b7d",
+                "Masters": "#bcbd22",
+                "World Rowing Under 19 Championships": "#17becf",
+                "Indoor Championships": "#9edae5",
+                "Continental Championships": "#3182bd",
+                "International Regattas": "#6baed6",
+                "Coastal Championships": "#2171b5",
+                "Other World Rowing Competitions": "#c6dbef",
+                "World Rowing Combined Championships": "#6baed6"
             }
             return calenderEntries.map((entry, index) => {
                 const hexCode = color_scheme[entry.comp_type]

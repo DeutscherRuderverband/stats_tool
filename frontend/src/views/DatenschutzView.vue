@@ -1,5 +1,5 @@
 <template>
-  <v-container class="px-10 py-0 main-container">
+  <v-container :class="mobile ? 'px-5 py-2 main-container' : 'px-10 pt-0 main-container'">
     <v-col cols="12" class="d-flex flex-row px-0" style="align-items: center">
       <h1>Datenschutzerklärung</h1>
     </v-col>
@@ -236,7 +236,22 @@ p {
 <script>
 export default {
   created(){
+    window.addEventListener('resize', this.checkScreen);
+    this.checkScreen();
     window.scrollTo(0, 0)
+  },
+  methods: {
+    checkScreen() {
+      this.windowWidth = window.innerWidth;
+      this.mobile = this.windowWidth < 890
+      let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
+      document.documentElement.style.setProperty('--navbar-height', navbarHeight);
+    }
+  },
+  data() {
+    return {
+      mobile: false,
+    }
   }
 }
 </script>

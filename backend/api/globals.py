@@ -1,21 +1,37 @@
 ALLOWED_COMPETITION_TYPES_MAPPING = {
-    'ID_NF': 'ID', 
-    'CONT NF': 'CONT', 
-    'WCp 1': 'WCh 1', 
-    'WCp 2': 'WCh 2', 
-    'WCp 3': 'WCh 3', 
-    'WCH': 'WCh', 
-    'JWCH': 'JWCh', 
-    'MASTER_NF': 'MASTER', 
-    'YOG': 'YOG', 
-    'OG': 'OG', 
-    'PG': 'PG', 
-    'ERCC': 'ERCC', 
-    'WCH IE': 'WCh IE', 
+    'ID_NF': 'ID',
+    'CONT NF': 'CONT',
+    'WCp 1': 'WCh 1',
+    'WCp 2': 'WCh 2',
+    'WCp 3': 'WCh 3',
+    'WCH': 'WCh',
+    'JWCH': 'JWCh',
+    'MASTER_NF': 'MASTER',
+    'YOG': 'YOG',
+    'OG': 'OG',
+    'PG': 'PG',
+    'ERCC': 'ERCC',
+    'ECH': 'ECh',
+    'EJCH': 'EJCh',
+    'WCH IE': 'WCh IE',
 }
 
+RELEVANT_CMP_TYPE_ABBREVATIONS = [
+    "EJCH", 
+    "ECH", 
+    "WCp 1", 
+    "WCp 2", 
+    "WCp 3", 
+    "WCH", 
+    "U23WCH", 
+    "OG", 
+    "YOG", 
+    "WCH IE", 
+    "WCH IE JWCH", 
+]
+
 BOATCLASSES_BY_GENDER_AGE_WEIGHT = {
-    'men': {
+    'm': {
         'u19': {
             'single': ("JM1x", "Junior Men's Single Sculls", "079e71bb-98cd-47f4-8ca4-e3fd0cdbc538"),
             'double': ("JM2x", "Junior Men's Double Sculls", "78f004f6-cadd-4d0f-804b-21cf26458355"),
@@ -56,7 +72,7 @@ BOATCLASSES_BY_GENDER_AGE_WEIGHT = {
             '3': ("PR3 M2-", "PR3 Men's Pair", "15e1ef74-79c6-4227-96f1-86d793efbf5b"),
         }
     },
-    'women': {
+    'w': {
         'u19': {
             'single': ("JW1x", "Junior Women's Single Sculls", "683b227a-51fd-4c09-a6a0-460ca3711b08"),
             'double': ("JW2x", "Junior Women's Double Sculls", "26af8860-5146-422d-bb10-3eef8b28d883"),
@@ -123,4 +139,37 @@ RACE_PHASE_SUBTYPE_BY_RACE_PHASE = {
     },
     "repechage": None,
     "preliminary": None,
+}
+
+RACE_PHASE_MAPPING = {
+    "final1": "FA",
+    "final2": "FB",
+    "final3": "FC",
+    "final4": "FD",
+    "final5": "FE",
+    "semifinalA/B1": "S A/B 1",
+    "semifinalA/B2": "S A/B 2",
+    "semifinalC/D1": "S C/D 1",
+    "semifinalC/D2": "S C/D 2",
+    "quarterfinal1": "Q1",
+    "quarterfinal2": "Q2",
+    "quarterfinal3": "Q3",
+    "quarterfinal4": "Q4",
+    "repechage1": "R1",
+    "repechage2": "R2",
+    "repechage3": "R3",
+    "repechage4": "R4",
+    "repechage5": "R5",
+    "repechage6": "R6",
+    "heat1": "H1",
+    "heat2": "H2",
+    "heat3": "H3",
+    "heat4": "H4",
+    "heat5": "H5",
+    "heat6": "H6",
+    "heat7": "H7",
+    "heat8": "H8",
+    "preliminary1": "P1",
+    "preliminary2": "P2",
+    "exhibition": "X"  # TODO: Check if this is relevant
 }

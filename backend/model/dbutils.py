@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 from contextlib import suppress
 import datetime as dt
 
-from common.helpers import Timedelta_Parser, parse_wr_intermediate_distance_key, get_
+from common.helpers import Timedelta_Parser, parse_wr_intermediate_distance_key, get_, select_first
 from common import rowing
 
 # from ..scraping_wr import utils_wr
@@ -125,18 +125,39 @@ def wr_insert_invalid_mark_result_code(session, data):
     return entity
 
 
-def wr_map_race_boat(session, entity, data):
+def wr_map_race_boat_wbt(session, entity, data):
+    entity.invalid_mark_result_code = None
+    entity.result_time_ms = data.get('result_time_ms')
+
+
+def assoc_has_athlete_uuid(uuid: str):
+    def check_func(association_object: model.Association_Race_Boat_Athlete):
+        athlete = association_object.athlete
+        if athlete:
+            return athlete.additional_id_ == uuid
+        return False
+    return check_func
+
+
+def wr_map_race_boat(session, entity: model.Race_Boat, data):
     entity.country = wr_insert(session, model.Country, wr_map_country, get_(data, 'country'))
     
     # Current Strategy: Delete all associations and create new ones according to given data.
-    entity.athletes.clear()
     for raceBoatAthlete in get_(data, 'raceBoatAthletes', []):
         athlete_data = get_(raceBoatAthlete, 'person', {})
         if athlete_data:
-            association = model.Association_Race_Boat_Athlete(boat_position=get_(raceBoatAthlete,'boatPosition'))
-            association.athlete = wr_insert(session, model.Athlete, wr_map_athlete, athlete_data)
-            session.add(association)
+            athlete_uuid = get_(athlete_data, 'id', None)
+            association = select_first(entity.athletes, assoc_has_athlete_uuid(athlete_uuid))
+            if not association:
+                association = model.Association_Race_Boat_Athlete()
             
+            association.boat_position=get_(raceBoatAthlete,'boatPosition')
+            if association.athlete:
+                wr_map_athlete(session=session, entity=association.athlete, data=athlete_data)
+            else:
+                association.athlete = wr_insert(session, model.Athlete, wr_map_athlete, athlete_data)
+            
+            session.add(association)
             entity.athletes.append(association)
 
     entity.name = get_(data, 'DisplayName') # e.g. "GER2" for the second German boat
@@ -155,19 +176,15 @@ def wr_map_race_boat(session, entity, data):
 
     # Intermediate times
     # (Beware: Contains duplicates for same distance raceID:931fd903-1d44-4ace-8665-bf1230dc0227 -> boat:2d5a3f94-37ba-480d-9d72-eada6a4c30f9 (DEN))
-    entity.intermediates.clear()
-    seen_set = set()
     # Reversed iteration based on the assumption that newer (corrected) data for the same distance mark has higher index
     for interm_data in reversed(get_(data, 'raceBoatIntermediates', [])):
-        intermediate = model.Intermediate_Time()
+        try:
+            distance_key = get_(get_(interm_data, 'distance'), 'DisplayName', '')
+            distance_meter = parse_wr_intermediate_distance_key(distance_key)
+            intermediate = select_first(entity.intermediates, lambda i: i.distance_meter==distance_meter)
+            if not intermediate:
+                intermediate = model.Intermediate_Time(distance_meter=distance_meter)
 
-        # filter out duplicates // Future TODO/NOTE: Check if current strategy is appropriate
-        distance_key = get_(get_(interm_data, 'distance'), 'DisplayName', '')
-        if distance_key in seen_set:
-            pass
-            continue
-
-        with suppress(TypeError, ValueError):
             intermediate.distance_meter = parse_wr_intermediate_distance_key(distance_key)
             intermediate.data_source = model.Enum_Data_Source.world_rowing_api.value
             intermediate.rank = get_(interm_data, 'Rank')
@@ -181,7 +198,10 @@ def wr_map_race_boat(session, entity, data):
             session.add(intermediate)
             entity.intermediates.append(intermediate)
 
-            seen_set.add(distance_key)
+        except (TypeError, ValueError) as e:
+            logger.error(f'Intermediate_Time could not be parsed/converted/written')
+            logger.error(str(e))
+
     return entity
 
 
@@ -239,9 +259,20 @@ def wr_map_event(session, entity, data):
     return entity
 
 
-def wr_map_competition_type(session, entity, data):
+def wr_map_competition_type(session, entity: model.Competition_Type, data):
     entity.name = get_(data, 'DisplayName')
     entity.abbreviation = get_(data, 'Abbreviation')
+
+    # Competition_Type
+    competition_category = wr_insert(
+        session,
+        model.Competition_Category,
+        wr_map_competition_category,
+        get_(data, 'competitionCategory')
+    )
+
+    entity.competition_category = competition_category
+
     return entity
 
 
@@ -276,29 +307,18 @@ def wr_map_competition_prescrape(session, entity, data):
 
 
 def __wr_map_competition(session, entity: model.Competition, data):
-    # Competition_Category
-    competition_category = wr_insert(
+    # Competition_Type
+    competition_type = wr_insert(
         session,
-        model.Competition_Category,
-        wr_map_competition_category,
-        get_(get_(data, 'competitionType'), 'competitionCategory')
+        model.Competition_Type,
+        wr_map_competition_type,
+        get_(data, 'competitionType')
     )
-    
-    if competition_category:
-        # Competition_Type
-        competition_type = wr_insert(
-            session,
-            model.Competition_Type,
-            wr_map_competition_type,
-            get_(data, 'competitionType')
-        )
-
-        competition_category.competition_type = competition_type
 
     # Venue
     venue = wr_insert(session, model.Venue, wr_map_venue, get_(data, 'venue'))
 
-    entity.competition_category = competition_category
+    entity.competition_type = competition_type
     entity.venue = venue
     entity.name = get_(data, 'DisplayName')
     with suppress(TypeError, ValueError):

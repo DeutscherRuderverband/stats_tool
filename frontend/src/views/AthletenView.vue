@@ -12,14 +12,16 @@
   </v-btn>
   <v-card style="box-shadow: none; z-index: 1">
     <v-layout>
-      <v-navigation-drawer v-model="filterOpen" temporary
-                           v-bind:style='{ "margin-top": (mobile ? "71.25px" : "160px") }'
-                           style="background-color: white; border: none"
-                           width="600">
+      <v-navigation-drawer
+          v-model="filterOpen"
+          temporary
+          v-bind:style='{"margin-top": (mobile ? "71.25px" : (headerReduced ? "81px" : "159px"))}'
+          style="background-color: white; border: none"
+          width="600">
         <athleten-filter/>
       </v-navigation-drawer>
 
-      <v-container :class="mobile ? 'px-5 py-0 pb-8 main-container' : 'px-10 py-0 pb-8 main-container'">
+      <v-container :class="mobile ? 'px-5 py-2 pb-8 main-container' : 'px-10 py-0 pb-8 main-container'">
         <v-col cols="12" class="d-flex flex-row px-0" style="align-items: center">
           <h1>Athleten</h1>
           <v-icon id="tooltip-athlete-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline</v-icon>
@@ -27,8 +29,7 @@
               activator="#tooltip-athlete-icon"
               location="end"
               open-on-hover
-          >Auf der Athleten-Seite findest du die Stammdaten des Athletens und kannst
-            eine Übersicht zu seinen Ergebnissen (inkl. Medaillenspiegel) betrachten.
+          >Hier können die Stammdaten sowie alle Wettkampfergebnisse eines Athleten eingesehen werden.
           </v-tooltip>
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
           <v-icon @click="exportTableData()" color="grey" class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
@@ -36,16 +37,17 @@
         <v-divider></v-divider>
 
         <v-col class="pa-0" :cols="mobile ? 12 : 6" v-if="!data.name">
-        <v-alert type="info" variant="tonal" class="my-2">
-                <v-row>
-                  <v-col>
-                    <p>Bitte suchen Sie nach Athletinnen/Athleten im Filter auf der linken Seite.</p>
-                  </v-col>
-                </v-row>
-        </v-alert>
-          </v-col>
+        <v-container class="pa-0 mt-3">
+                <v-col cols="12" class="pa-0">
 
-        <v-container class="pa-0 mt-5" v-else>
+                    <v-alert type="info" variant="tonal" >
+                    <p>Bitte wähle einen Athleten im Filter auf der linken Seite.</p>
+                      </v-alert>
+          </v-col>
+        </v-container>
+        </v-col>
+
+        <v-container class="pa-0 mt-3" v-else>
           <v-row>
             <v-col :cols="mobile ? 12 : 4">
               <h2>{{ data.name }}</h2>
@@ -61,7 +63,7 @@
                 </tr>
                 <tr>
                   <th>Geschlecht</th>
-                  <td>{{data.gender ? `${data.gender}` : '–'}}</td>
+                  <td>{{data.gender ? (data.gender == "Men" ? "Männlich" : "Weiblich") : '–'}}</td>
                 </tr>
                 <tr>
                   <th>Gewicht</th>
@@ -77,7 +79,18 @@
                 </tr>
                 <tr>
                   <th>Disziplin(en)</th>
-                  <td><p v-for="item in data.disciplines">{{ item }}</p></td>
+                  <td>
+                    <p>
+                      <template v-for="(item, idx) in data.disciplines">
+                        <template v-if="idx < data.disciplines.length - 1">
+                          {{ item }},
+                        </template>
+                        <template v-else>
+                          {{ item }}
+                        </template>
+                      </template>
+                    </p>
+                  </td>
                 </tr>
                 <tr>
                   <th>Rennanzahl</th>
@@ -105,15 +118,7 @@
                 </tr>
                 <tr>
                   <th>Finale B</th>
-                  <td>{{ data.final_a }}</td>
-                </tr>
-                <tr>
-                  <th>Bestzeit Bootsklasse</th>
-                  <td>{{ data.best_time_boat_class ? `${formatMilliseconds(data.best_time_boat_class)}` : "–"}}</td>
-                </tr>
-                <tr>
-                  <th>Bestzeit Bootsklasse OZ/Jahr</th>
-                  <td>{{data.best_time_current_oz ? `${formatMilliseconds(data.best_time_current_oz)}` : "–"}}</td>
+                  <td>{{ data.final_b }}</td>
                 </tr>
                 </tbody>
               </v-table>
@@ -127,7 +132,8 @@
                   <th class="px-1">Startzeit</th>
                   <th class="px-1">Platz</th>
                   <th class="px-1">Ort</th>
-                  <th class="px-1">Bootsklasse</th>
+                  <th class="px-1">Lauf</th>
+                  <th class="px-1">Disziplin</th>
                 </tr>
                 </thead>
                 <tbody class="nth-grey">
@@ -136,6 +142,7 @@
                   <td>{{ race.start_time }}</td>
                   <td>{{ race.rank }}</td>
                   <td>{{ race.venue }}</td>
+                  <td>{{ race.race_phase }}</td>
                   <td>{{ race.boat_class }}</td>
                 </tr>
                 </tbody>
@@ -178,11 +185,13 @@ import AthletenFilter from "@/components/filters/athletenFilter.vue";
 <script>
 import {mapState} from "pinia";
 import {useAthletenState} from "@/stores/athletenStore";
-import router from "@/router";
-import {useRennstrukturAnalyseState} from "@/stores/baseStore";
+import {useGlobalState} from "@/stores/globalStore";
 
 export default {
   computed: {
+    ...mapState(useGlobalState, {
+      headerReduced: "getHeaderReducedState"
+    }),
     ...mapState(useAthletenState, {
       filterState: "getFilterState"
     }),
@@ -205,8 +214,8 @@ export default {
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth <= 750
-      let navbarHeight = window.innerWidth < 750 ? '71.25px' : '160px';
+      this.mobile = this.windowWidth < 890
+      let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
     },
     formatMilliseconds(ms) {
@@ -221,15 +230,12 @@ export default {
     window.addEventListener('resize', this.checkScreen);
     this.checkScreen();
 
-    // possible solution for permanent url --> in the real scenario there must be a fetch to the backend
     window.onload = () => {
       const url = new URL(window.location.href);
-      const race_id = url.searchParams.get("athlete_id");
-      if (race_id !== null) {
-        console.log("Permanent URL active: " + race_id)
-        // make api call with respective id here
-        // ...
-        // ...
+      const athlete_id = url.searchParams.get("athlete_id");
+      if (athlete_id !== undefined && athlete_id !== null) {
+        const store = useAthletenState()
+        store.getAthlete({"id":athlete_id})
       }
     }
   },
@@ -311,7 +317,7 @@ export default {
   bottom: 10px;
 }
 .main-container {
-  min-height: calc(100vh - (var(--navbar-height)) - 95px);
+  min-height: calc(100vh - (var(--navbar-height)) - 94px);
 }
 
 @media print {

@@ -28,17 +28,16 @@
           ></v-select>
         </v-col>
       </v-container>
-
-
+      <v-autocomplete class="pt-4" :items="optionsNations" v-model="selectedNation"
+                      variant="outlined" color="blue" label="Nation" density="comfortable"
+                      :rules="[v => !!v || 'Wähle mindestens eine Nation']"
+      ></v-autocomplete>
       <v-select class="pt-2" clearable chips multiple color="blue"
                 label="Event(s)" :items="optionsCompTypes"
                 v-model="selectedCompTypes" variant="outlined"
                 :rules="[v => v.length > 0 || 'Wähle mindestens eine Wettkampfklasse']"
       ></v-select>
-      <v-autocomplete class="pt-4" :items="optionsNations" v-model="selectedNation"
-                      variant="outlined" color="blue" label="Nation" density="comfortable"
-                      :rules="[v => !!v || 'Wähle mindestens eine Nation']"
-      ></v-autocomplete>
+
 
       <!--
       <v-label>Bootsklasse</v-label>
@@ -99,7 +98,7 @@ export default {
       // competition type
       compTypes: [],
       optionsCompTypes: [],
-      selectedCompTypes: ["Olympics"],
+      selectedCompTypes: ["WCH", "WCp 1", "WCp 2", "WCp 3", "OG", "JWCH", "U23WCH", "PG"],
 
       // year
       birthYear: null,
@@ -110,7 +109,7 @@ export default {
 
       // nations
       optionsNations: [],
-      selectedNation: "GER (Deutschland)",
+      selectedNation: "GER (Germany)",
 
       // boat classes
       genderTypeOptions: [],
@@ -138,6 +137,8 @@ export default {
       this.endYear = Object.values(data.years[1])[0]
       this.optionsStartYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.startYear + i)
       this.optionsEndYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.startYear + i)
+      this.startYear = Number(new Date().getFullYear()) - 1
+      this.endYear = new Date().getFullYear()
 
       // competition category id
       this.compTypes = data.competition_categories
@@ -151,6 +152,16 @@ export default {
         finalCountryNames.push(countryCode + " (" + countryNames[idx] + ")")
       }
       this.optionsNations = finalCountryNames
+
+      if (this.startYear && this.endYear) {
+        const store = useTeamsState()
+        store.setFilterConfig({"events": this.selectedCompTypes.join(", ")})
+        store.fetchTeams({
+          "interval": [this.startYear, this.endYear],
+          "competition_categories": this.compTypes.filter(item => this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
+          "nation": this.selectedNation
+        })
+      }
     },
     async onSubmit() {
       const {valid} = await this.$refs.filterForm.validate()
@@ -167,11 +178,11 @@ export default {
     },
     submitFormData() {
       const store = useTeamsState()
-      return store.postFormData({
-        "birthYear": this.birthYear,
-        "gender": this.selectedGenders,
-        "competition_categories": this.compTypes.filter(item => this.optionsCompTypes.includes(item.display_name)).map(item => item.id),
-        "nation_ioc": this.selectedNation
+      store.setFilterConfig({"events": this.selectedCompTypes.join(", ")})
+      return store.fetchTeams({
+        "interval": [this.startYear, this.endYear],
+        "competition_categories": this.compTypes.filter(item => this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
+        "nation": this.selectedNation
       }).then(() => {
         console.log("Form data sent...")
       }).catch(error => {
@@ -179,17 +190,14 @@ export default {
       })
     },
     clearFormInputs() {
-      this.startYear = 1950
-      this.endYear = new Date().getFullYear()
-      this.selectedCompTypes = ["OG", "EM", "WCh", "WCI", "WCII", "WCIII", "LS"]
-      this.selectedNation = "GER (Deutschland)"
-      this.selectedGenders = [3]
-      this.selectedAgeGroups = 0
-      this.selectedBoatClasses = this.optionsBoatClasses[0]
+      this.startYear = Object.values(this.filterOptions[0].years[0])[0]
+      this.endYear = Object.values(this.filterOptions[0].years[1])[0]
+      this.selectedCompTypes = ["WCH"]
+      this.selectedNation = "GER (Germany))"
     },
     checkScreen() {
       this.windowWidth = window.innerWidth
-      this.mobile = this.windowWidth <= 769
+      this.mobile = this.windowWidth < 890
     },
     setFilterState() {
       this.filterOpen = !this.filterOpen;

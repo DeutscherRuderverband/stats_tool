@@ -33,7 +33,7 @@
                 :rules="[v => v.length > 0 || 'Wähle mindestens eine Wettkampfklasse']"
       ></v-select>
       <v-autocomplete class="pt-4" :items="optionsNations" clearable multiple chips v-model="selectedNation"
-                      variant="outlined" color="blue" label="Nation" density="comfortable"
+                      variant="outlined" color="blue" label="Nation(en)" density="comfortable"
                       :rules="[v => !!v || 'Wähle mindestens eine Nation']"
       ></v-autocomplete>
       <!--
@@ -50,6 +50,7 @@
                 :rules="[v => !!v || 'Wähle mindestens eine Bootsklasse']"
       ></v-select>
       -->
+      <!--
       <v-chip-group filter color="blue" v-model="selectedMedalTypes">
         <v-chip v-for="medalType in optionsMedalTypes">{{ medalType }}</v-chip>
       </v-chip-group>
@@ -57,6 +58,7 @@
                 :items="optionsBoatClasses" v-model="selectedBoatClasses" variant="outlined"
                 :rules="[v => !!v || 'Wähle mindestens eine Bootsklasse']"
       ></v-select>
+      -->
 
       <v-container class="pa-0 pt-8 text-right">
         <v-btn color="grey" class="mx-2" @click="clearFormInputs">
@@ -73,7 +75,6 @@
 import Checkbox from "@/components/filters/checkbox.vue";
 import {mapState} from "pinia";
 import {useMedaillenspiegelState} from "@/stores/medaillenspiegelStore";
-import {useBerichteState} from "@/stores/berichteStore";
 
 export default {
   components: {Checkbox},
@@ -98,7 +99,7 @@ export default {
       // competition type
       compTypes: [],
       optionsCompTypes: [],
-      selectedCompTypes: ["WCH", "U23WCH"],
+      selectedCompTypes: ["WCH", "WCp 1", "WCp 2", "WCp 3", "OG"],
 
       // year
       startYear: 0,
@@ -112,8 +113,16 @@ export default {
 
       // nations
       optionsNations: [],
-      selectedNation: ["GER (Germany)", "AUT (Austria)", "FRA (France)", "ITA (Italia)"],
-
+      selectedNation: [
+        "ITA (Italy)",
+        "GER (Germany)",
+        "GBR (Great Britain)",
+        "USA (United States)",
+        "AUS (Australia)",
+        "NZL (New Zealand)",
+        "ROU (Romania)",
+        "FRA (France)"
+      ],
       // boat classes
       optionsBoatClasses: [],
       selectedBoatClasses: this.optionsBoatClasses,
@@ -159,20 +168,21 @@ export default {
           }
         }
       }
+
       getMostInnerValue(Object.values(data.boat_classes))
       this.selectedBoatClasses = boatClassValues[0]
       this.optionsBoatClasses = boatClassValues
 
       if (this.startYear && this.endYear && this.selectedNation) {
         const store = useMedaillenspiegelState()
-      store.postFormData({
-            "years": [this.startYear, this.endYear],
-            "gender": this.selectedGenders,
-            "competition_categories": this.compTypes.filter(item => this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
-            "nations": Array.isArray(this.selectedNation) ? this.selectedNation : [this.selectedNation],
-            "types": this.selectedMedalTypes
-          }
-      )
+        store.postFormData({
+              "years": [this.startYear, this.endYear],
+              "gender": this.selectedGenders,
+              "competition_type": this.compTypes.filter(item => this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
+              "nations": Array.isArray(this.selectedNation) ? this.selectedNation : [this.selectedNation],
+              "types": this.selectedMedalTypes
+            }
+        )
       }
     },
     async onSubmit() {
@@ -193,7 +203,7 @@ export default {
       const data = {
         "years": [this.startYear, this.endYear],
         "gender": this.selectedGenders,
-        "competition_categories": this.compTypes.filter(item => this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
+        "competition_type": this.compTypes.filter(item => this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
         "nations": Array.isArray(this.selectedNation) ? this.selectedNation : [this.selectedNation],
         "types": this.selectedMedalTypes
       }
@@ -205,17 +215,14 @@ export default {
       })
     },
     clearFormInputs() {
-      this.selectedGenders = 0
-      this.startYear = 1950
-      this.endYear = new Date().getFullYear()
-      this.selectedCompTypes = ["WCH", "U23WCH"]
-      this.selectedNation = []
-      this.selectedMedalTypes = 0
-      this.selectedBoatClasses = this.optionsBoatClasses[0]
+      this.startYear = Object.values(this.filterOptions[0].years[0])[0]
+      this.endYear = Object.values(this.filterOptions[0].years[1])[0]
+      this.selectedCompTypes = ["WCH"]
+      this.selectedNation = "GER (Germany))"
     },
     checkScreen() {
       this.windowWidth = window.innerWidth
-      this.mobile = this.windowWidth <= 769
+      this.mobile = this.windowWidth < 890
     }
   },
   watch: {

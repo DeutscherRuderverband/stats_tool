@@ -59,6 +59,7 @@
 import Checkbox from "@/components/filters/checkbox.vue";
 import {mapState} from "pinia";
 import {useAthletenState} from "@/stores/athletenStore";
+import router from "@/router";
 
 export default {
   components: {Checkbox},
@@ -134,8 +135,8 @@ export default {
       // boatclasses
       this.boatClasses = {}
       this.genderTypeOptions = Object.keys(data.boat_classes)
-      let ageGroupOptions = Object.keys(data.boat_classes.men)
-      ageGroupOptions.push(...Object.keys(data.boat_classes.women))
+      let ageGroupOptions = Object.keys(data.boat_classes.m)
+      ageGroupOptions.push(...Object.keys(data.boat_classes.w))
       this.ageGroupOptions = ageGroupOptions.filter((v, i, a) => a.indexOf(v) === i); // exclude non-unique values
 
       let boatClassOptions = []
@@ -184,10 +185,9 @@ export default {
     },
     submitFormData() {
       const store = useAthletenState()
-      return store.getAthlete({
-        "id": this.previewAthleteResults.find(item => item.name === this.selectedAthlete).id
-      }).then(() => {
-        console.log("Form data sent...")
+      const athleteId = this.previewAthleteResults.find(item => item.name === this.selectedAthlete).id
+      store.getAthlete({"id": athleteId}).then(() => {
+        router.push(`/athleten?athlete_id=${athleteId}`)
       }).catch(error => {
         console.error(error)
       })
@@ -196,13 +196,13 @@ export default {
       this.selectedAthlete = null
       this.selectedNation = null
       this.selectedBirthYear = null
-      this.selectedGenders = 0
-      this.selectedAgeGroups = 0
-      this.selectedBoatClasses = this.optionsBoatClasses[0]
+      this.selectedGenders = 3
+      this.optionsDisciplines = []
+      this.selectedBoatClasses = [0]
     },
     checkScreen() {
       this.windowWidth = window.innerWidth
-      this.mobile = this.windowWidth <= 769
+      this.mobile = this.windowWidth < 890
     },
     setFilterState() {
       this.filterOpen = !this.filterOpen;
@@ -216,11 +216,11 @@ export default {
         this.selectedBoatClasses = null
         let optionsList = []
         if (newVal === 0) { // men
-          optionsList.push(...Object.keys(this.filterData.boat_classes.men))
+          optionsList.push(...Object.keys(this.filterData.boat_classes.m))
           this.optionsDisciplines = ["Skull", "Riemen"]
         }
         if (newVal === 1) { // women
-          optionsList.push(...Object.keys(this.filterData.boat_classes.women))
+          optionsList.push(...Object.keys(this.filterData.boat_classes.w))
           this.optionsDisciplines = ["Skull", "Riemen"]
         }
         if (newVal === 2) { // mixed

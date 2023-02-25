@@ -28,7 +28,8 @@ def outlier_detection_race_data(session:Session, boat_class: model.Boat_Class) -
         .join(model.Race_Boat.race)
         .join(model.Race.event)
         .join(model.Event.competition)
-        .join(model.Competition.competition_category)
+        .join(model.Competition.competition_type)
+        .join(model.Competition_Type.competition_category)
         .where(model.Event.boat_class_id == boat_class.id)
         .order_by(model.Race_Data.distance_meter)
         .group_by(
@@ -53,7 +54,8 @@ def outlier_detection_race_data(session:Session, boat_class: model.Boat_Class) -
             .join(model.Race_Boat.race)
             .join(model.Race.event)
             .join(model.Event.competition)
-            .join(model.Competition.competition_category)
+            .join(model.Competition.competition_type)
+            .join(model.Competition_Type.competition_category)
             .where(
                 and_(
                     model.Event.boat_class_id == boat_class.id,
@@ -65,15 +67,16 @@ def outlier_detection_race_data(session:Session, boat_class: model.Boat_Class) -
         )
 
         percentiles = session.execute(percentiles_statement).fetchall()[0]
+
         if not all(percentiles): 
             # if there is a None in percentiles, it means they could not have been calculated. 
             # This is a result from no data present to calc the percentiles.
             logger.info(
-                f"Could not calculate the percentiles. The folloing filters result in no data:",
-                f"\n - Event.boat_class_id: {boat_class.id}",
-                f"\n - Race_Data.distance_meter: {row.distance_meter}",
-                f"\n - Event.boat_class_id: {row.competition_category_id}",
-                "\n moving on to next distance_meter."
+                f"""Could not calculate the percentiles. The folloing filters result in no data:
+                    - Event.boat_class_id: {boat_class.id}
+                    - Race_Data.distance_meter: {row.distance_meter}
+                    - Event.competition_category: {row.competition_category_id}
+                moving on to next distance_meter."""
             )
             continue
         else: 
@@ -88,6 +91,8 @@ def outlier_detection_race_data(session:Session, boat_class: model.Boat_Class) -
             .join(model.Race_Boat.race)
             .join(model.Race.event)
             .join(model.Event.competition)
+            .join(model.Competition.competition_type)
+            .join(model.Competition_Type.competition_category)
             .where(
                 and_(
                     model.Event.boat_class_id == boat_class.id,
@@ -96,7 +101,7 @@ def outlier_detection_race_data(session:Session, boat_class: model.Boat_Class) -
                         ~model.Race_Data.stroke.between(min_stroke, max_stroke),
                     ),
                     model.Race_Data.distance_meter == row.distance_meter,
-                    model.Competition.competition_category_id == row.competition_category_id
+                    model.Competition_Category.id == row.competition_category_id
                 )
             )
         )
@@ -131,7 +136,8 @@ def outlier_detection_result_data(session:Session, boat_class: model.Boat_Class)
         .join(model.Race_Boat.race)
         .join(model.Race.event)
         .join(model.Event.competition)
-        .join(model.Competition.competition_category)
+        .join(model.Competition.competition_type)
+        .join(model.Competition_Type.competition_category)
         .where(model.Event.boat_class_id == boat_class.id)
         .order_by(model.Intermediate_Time.distance_meter)
         .group_by(
@@ -174,7 +180,8 @@ def outlier_detection_result_data(session:Session, boat_class: model.Boat_Class)
             .join(model.Race_Boat.race)
             .join(model.Race.event)
             .join(model.Event.competition)
-            .join(model.Competition.competition_category)
+            .join(model.Competition.competition_type)
+            .join(model.Competition_Type.competition_category)
             .where(
                 and_(
                     model.Event.boat_class_id == boat_class.id,
@@ -206,6 +213,9 @@ def outlier_detection_result_data(session:Session, boat_class: model.Boat_Class)
             .join(model.Intermediate_Time.race_boat)
             .join(model.Race_Boat.race)
             .join(model.Race.event)
+            .join(model.Event.competition)
+            .join(model.Competition.competition_type)
+            .join(model.Competition_Type.competition_category)
             .where(
                 and_(
                     model.Event.boat_class_id == boat_class.id,

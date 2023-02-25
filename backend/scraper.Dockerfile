@@ -17,4 +17,4 @@ RUN pip install --no-cache-dir -r $REQUIREMENTS_TXT
 
 COPY . .
 
-CMD [ "python", "scraper.py" ]
+ENTRYPOINT [ "python", "scraper.py" ]

@@ -8,6 +8,7 @@ import MedaillenspiegelView from "@/views/MedaillenspiegelView.vue";
 import DatenschutzView from "@/views/DatenschutzView.vue";
 import ImpressumView from "@/views/ImpressumView.vue";
 import HilfeView from "@/views/HilfeView.vue";
+import MitwirkendeView from "@/views/MitwirkendeView.vue";
 import LoginView from "@/views/LoginView.vue";
 
 const router = createRouter({
@@ -57,6 +58,11 @@ const router = createRouter({
             path: '/hilfe',
             name: 'hilfe',
             component: HilfeView
+        },
+        {
+            path: '/mitwirkende',
+            name: 'mitwirkende',
+            component: MitwirkendeView
         },
         {
             path: '/auth',

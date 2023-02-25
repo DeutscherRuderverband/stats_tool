@@ -1,10 +1,13 @@
 import datetime
 from collections import OrderedDict, defaultdict
+from contextlib import suppress
 import itertools
 import statistics
+from collections.abc import Iterable
 
 from sqlalchemy import select, or_, and_, func
 
+from common.helpers import stepfunction
 from model import model
 
 COND_VALID_2000M_RESULTS = and_(
@@ -43,13 +46,17 @@ def result_time_best_of_year_interval(session, boat_class_id, year_start,
     return result_time
 
 
-def _transpose_boatclass_intermediates(race_boats) -> OrderedDict:
+def _transpose_boatclass_intermediates(race_boats, force_500m_grid) -> OrderedDict:
     transposed = dict()
     race_boat: model.Race_Boat
     for race_boat in race_boats:
         intermediate: model.Intermediate_Time
         for intermediate in race_boat.intermediates:
             dist = intermediate.distance_meter
+            if force_500m_grid:
+                fits_on_500m_grid = dist%500 == 0
+                if not fits_on_500m_grid:
+                    continue
             if not dist in transposed:
                 transposed[dist] = []
             transposed[dist].append(intermediate)
@@ -95,15 +102,17 @@ def _speeds(boats_dict, distance):
         figures = distance_dict[distance]
         yield figures['speed']
 
-def compute_intermediates_figures(race_boats):
+def compute_intermediates_figures(race_boats, force_500m_grid=True):
     """ returns: dict[race_boat_id][distance] each containing {"pace":..., ...}
     """
     dict_key = lambda i: i[0]
-    lookup = _transpose_boatclass_intermediates(race_boats)
+    lookup = _transpose_boatclass_intermediates(race_boats, force_500m_grid=force_500m_grid)
     lookup = OrderedDict( sorted(lookup.items(), key=dict_key ) )
-    grid_resolution = _find_min_difference(lookup.keys())
-    if grid_resolution == None:
-        return []
+    grid_resolution = 500
+    if not force_500m_grid:
+        grid_resolution = _find_min_difference(lookup.keys())
+        if grid_resolution == None:
+            return []
 
     result = defaultdict(lambda: defaultdict(dict))
     last_distance = 0
@@ -160,13 +169,16 @@ def compute_intermediates_figures(race_boats):
             figures["result_time"] = intermediate.result_time_ms
 
         # now we have all the pace values, we can compute avg speeds
-        avg_speed = statistics.mean(_skip_NoneType(_speeds(boats_dict=result, distance=distance)))
+        avg_speed = None
+        with suppress(statistics.StatisticsError):
+            avg_speed = statistics.mean(_skip_NoneType(_speeds(boats_dict=result, distance=distance)))
 
         for race_boat_id, intermediate in valid_intermeds_lookup.items():
             figures = result[intermediate.race_boat_id][distance]
             speed = figures['speed']
-            rel_diff_to_avg_speed = (speed - avg_speed) / avg_speed * 100.0
-            figures["rel_diff_to_avg_speed"] = rel_diff_to_avg_speed
+            if avg_speed:
+                rel_diff_to_avg_speed = (speed - avg_speed) / avg_speed * 100.0
+                figures["rel_diff_to_avg_speed"] = rel_diff_to_avg_speed
 
         first_distance = False
         last_distance = distance
@@ -174,6 +186,27 @@ def compute_intermediates_figures(race_boats):
 
     return result
 
+def is_valid_race_data(race_data: model.Race_Data) -> bool:
+    return race_data.is_outlier == False
+
+def _iter_strokes_from_race_data(race_data_list: Iterable[model.Race_Data]) -> model.Race_Data:
+    for race_data in race_data_list:
+        is_valid_stroke = (
+            race_data.is_outlier == False
+            and race_data.stroke != None
+        )
+        if is_valid_stroke:
+            yield race_data.stroke
+
+def strokes_for_intermediate_steps(race_data_list, stepsize=500):
+    result = {}
+    map_to_steps_func = lambda race_data: stepfunction(race_data.distance_meter, stepsize=stepsize)
+    for meter_mark, data_points in itertools.groupby(race_data_list, key=map_to_steps_func):
+        avg = None
+        with suppress(TypeError, statistics.StatisticsError):
+            avg = statistics.fmean(_iter_strokes_from_race_data(data_points))
+        result[meter_mark] = avg
+    return result
 
 if __name__ == '__main__':
     from sys import exit as sysexit

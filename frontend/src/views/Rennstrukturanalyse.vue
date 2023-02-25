@@ -16,17 +16,17 @@
       <v-navigation-drawer
           v-model="filterOpen"
           temporary
-          v-bind:style='{"margin-top" : (mobile? "71.25px" : "158px" )}'
+          v-bind:style='{"margin-top": (mobile ? "71.25px" : (headerReduced ? "81px" : "159px"))}'
           width="500">
         <rennstruktur-filter/>
       </v-navigation-drawer>
-      <v-container :class="mobile ? 'pa-5 main-container' : 'px-10 pt-0 main-container'">
-        <v-col cols="6" class="d-flex flex-row px-0" style="align-items: center">
-          <h1>Rennstrukturanalyse</h1>
-          <v-icon id="tooltip-analyis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
+      <v-container :class="mobile ? 'px-5 py-2 main-container' : 'px-10 pt-0 main-container'">
+        <v-col cols="6" class="d-flex flex-row px-0" style="align-items: center" v-bind:style='{"padding-top": windowWidth < 450 ? "18px" : "12px"}, {"padding-bottom": (windowWidth < 450 ? "18px" : "12px")}'>
+          <h1 v-bind:style='{"font-size": (windowWidth < 450 ? "22px" : "30px")}'>Rennstrukturanalyse</h1>
+          <v-icon id="tooltip-analysis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
           </v-icon>
           <v-tooltip
-              activator="#tooltip-analyis-icon"
+              activator="#tooltip-analysis-icon"
               location="end"
               open-on-hover
           >Die Rennstrukturanalyse erlaubt die gezielte Betrachtung des Rennverlaufs auf Basis von Ergebnis- und GPS
@@ -42,15 +42,15 @@
           </v-icon>
         </v-col>
         <v-divider></v-divider>
-        <v-breadcrumbs style="color: grey; height: 22px" class="pa-0 my-2" :items="breadCrumbs"></v-breadcrumbs>
+        <v-breadcrumbs v-if="getAnalysis" style="color: grey; height: 22px" class="pa-0 my-2" :items="breadCrumbs"></v-breadcrumbs>
         <v-container class="pa-0" v-if="!displayRaceDataAnalysis">
           <v-row>
             <v-col cols="12">
-              <h2>Suchergebnisse</h2>
+              <h2 v-if="getAnalysis && !loading">Suchergebnisse</h2>
               <v-container class="pa-0 mt-3">
                 <v-col cols="12" class="pa-0">
                   <v-alert type="info" variant="tonal" v-if="!getAnalysis && !loading" :width="mobile ? '100%':'50%'">
-                    Bitte wählen Sie ein Jahr und eine Wettkampfklasse in dem Filter auf der linken Seite.
+                    Bitte wähle ein Jahr und ein Event in dem Filter auf der linken Seite.
                   </v-alert>
                   <v-progress-circular v-if="loading" indeterminate color="blue" size="40"></v-progress-circular>
 
@@ -158,9 +158,15 @@
                 <tr v-for="(country, idx) in tableData.slice(1)">
                   <td v-for="item in country" class="px-2">
                     <template v-if="Array.isArray(item)">
-                      <p v-for="element in item">
-                        {{ element }}
-                      </p>
+                      <template v-for="element in item">
+                        <a v-if="element && typeof element === 'object'
+                        && element.hasOwnProperty('link') && element.hasOwnProperty('name')"
+                           :href="element.link"
+                           class="link-underline">
+                          {{ element.name }}<br/>
+                        </a>
+                        <p v-else-if="element">{{ element }}</p>
+                      </template>
                     </template>
                     <template v-else>
                       <p>
@@ -171,30 +177,42 @@
                 </tr>
                 </tbody>
               </v-table>
-              <v-col class="text-right font-weight-black" style="font-size: 0.9em">
-                <a v-if="competitionData.pdf_urls.result"
-                   :href=competitionData.pdf_urls.result target="_blank" class="mr-2" style="color: black">
-                  Ergebnisse
-                  <v-icon color="grey">mdi-open-in-new</v-icon>
-                </a>
-                <a v-if="competitionData.pdf_urls.race_data"
-                   :href=competitionData.pdf_urls.race_data target="_blank" class="ml-2" style="color: black">
-                  GPS-Daten
-                  <v-icon color="grey">mdi-open-in-new</v-icon>
-                </a>
+              <v-col class="d-flex align-center justify-space-between font-weight-black px-0" style="font-size: 0.9em">
+                <p class="mr-2"><b>Progression:</b> {{ competitionData.progression_code || '–' }}</p>
+                <div class="text-right">
+                  <a v-if="competitionData.pdf_urls.result" :href=competitionData.pdf_urls.result target="_blank"
+                     class="mr-2" style="color: black">
+                    Ergebnisse
+                    <v-icon color="grey">mdi-open-in-new</v-icon>
+                  </a>
+                  <a v-if="competitionData.pdf_urls.race_data" :href=competitionData.pdf_urls.race_data target="_blank"
+                     class="ml-2" style="color: black">
+                    GPS-Daten
+                    <v-icon color="grey">mdi-open-in-new</v-icon>
+                  </a>
+                </div>
               </v-col>
             </v-col>
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
-              <v-container v-for="(data, idx) in getGPsData" :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="data" :chartOptions="gpsChartOptions[idx]" class="chart-bg"></LineChart>
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getGPsData[0]" :chartOptions="gpsChartOptions[0]" class="chart-bg"></LineChart>
+              </v-container>
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getGPsData[2]" :chartOptions="gpsChartOptions[2]" class="chart-bg"></LineChart>
+              </v-container>
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getIntermediateData[1]" :chartOptions="intermediateChartOptions[1]"
+                           class="chart-bg"></LineChart>
               </v-container>
             </v-col>
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
-              <v-container v-for="(data, idx) in getIntermediateData" :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="data" :chartOptions="intermediateChartOptions[idx]" class="chart-bg"></LineChart>
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getGPsData[1]" :chartOptions="gpsChartOptions[1]" class="chart-bg"></LineChart>
               </v-container>
-            </v-col>
-            <v-col :cols="mobile ? 12 : 6" class="pa-0">
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getIntermediateData[0]" :chartOptions="intermediateChartOptions[0]"
+                           class="chart-bg"></LineChart>
+              </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
                 <LineChart :data="deficitMeters" :chartOptions="deficitChartOptions" class="chart-bg"></LineChart>
               </v-container>
@@ -220,10 +238,13 @@ ChartJS.register(Tooltip, Legend, TimeScale);
 import {useRennstrukturAnalyseState} from "@/stores/baseStore";
 import {mapState} from "pinia";
 import router from "@/router";
-import {useMedaillenspiegelState} from "@/stores/medaillenspiegelStore";
+import {useGlobalState} from "@/stores/globalStore";
 
 export default {
   computed: {
+    ...mapState(useGlobalState, {
+      headerReduced: "getHeaderReducedState"
+    }),
     ...mapState(useRennstrukturAnalyseState, {
       getAnalysis: "getAnalysisData"
     }),
@@ -375,7 +396,6 @@ export default {
     this.checkScreen();
     this.filterOpen = this.filterState
 
-    // possible solution for permanent url --> in the real scenario there must be a fetch to the backend
     window.onload = () => {
       const url = new URL(window.location.href);
       const race_id = url.searchParams.get("race_id");
@@ -440,8 +460,8 @@ export default {
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth <= 750
-      let navbarHeight = window.innerWidth < 750 ? '71.25px' : '160px';
+      this.mobile = this.windowWidth < 890
+      let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
     }
   },
@@ -564,12 +584,23 @@ export default {
 }
 
 .main-container {
-  min-height: calc(100vh - (var(--navbar-height)) - 95px);
+  min-height: calc(100vh - (var(--navbar-height)) - 94px);
 }
 
 @media print {
-  i, .filterToggleButton, .filterToggleButtonMobile {
+  i, .filterToggleButton, .filterToggleButtonMobile, .sources {
     display: none;
   }
+}
+
+.link-underline {
+  text-decoration: none;
+  color: #1369b0;
+}
+
+.link-underline:hover {
+  text-decoration: none;
+  color: black;
+  border-bottom: 1px solid black;
 }
 </style>

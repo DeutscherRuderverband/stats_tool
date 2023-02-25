@@ -1,5 +1,5 @@
 <template>
-  <v-container class="px-10 py-0 main-container">
+  <v-container :class="mobile ? 'px-5 py-2 main-container' : 'px-10 pt-0 main-container'">
     <v-col cols="12" class="d-flex flex-row px-0" style="align-items: center">
       <h1>Impressum</h1>
     </v-col>
@@ -43,8 +43,8 @@ export default {
   methods: {
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth <= 750
-      let navbarHeight = window.innerWidth < 750 ? '71.25px' : '160px';
+      this.mobile = this.windowWidth < 890
+      let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
     }
   },
@@ -58,6 +58,6 @@ export default {
 
 <style lang="scss" scoped>
 .main-container {
-  min-height: calc(100vh - (var(--navbar-height)) - 95px);
+  min-height: calc(100vh - (var(--navbar-height)) - 94px);
 }
 </style>

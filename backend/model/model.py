@@ -132,8 +132,8 @@ class Association_Race_Boat_Athlete(Base):
 
     __tablename__ = "association_raceboat_athlete"
 
-    race_boat_id = Column(ForeignKey("race_boats.id"), primary_key=True)
-    athlete_id = Column(ForeignKey("athletes.id"), primary_key=True)
+    race_boat_id = Column(ForeignKey("race_boats.id", name="fk_assoc_rbta_race_boat"), primary_key=True)
+    athlete_id = Column(ForeignKey("athletes.id", name="fk_assoc_rbta_athlete"), primary_key=True)
 
     # extra data fields
     boat_position = Column(String)
@@ -168,7 +168,7 @@ class Venue(Base):
 
     id = Column(Integer, primary_key=True)
     additional_id_ = Column(String, index=True, unique=True)
-    country_id = Column(ForeignKey("countries.id"))
+    country_id = Column(ForeignKey("countries.id", name="fk_venue_country"))
     country    = relationship("Country")
 
     city = Column(String)
@@ -224,7 +224,7 @@ class Boat_Class(Base):
     name = Column(String) # e.g. Lightweight Men's Quadruple Sculls // NOTE: full name not in API data
 
     # world best time
-    world_best_race_boat_id = Column(ForeignKey("race_boats.id"))
+    world_best_race_boat_id = Column(ForeignKey("race_boats.id", name="fk_boat_class_wb_race_boat"))
     world_best_race_boat    = relationship("Race_Boat")
 
     # relationships
@@ -241,8 +241,11 @@ class Competition_Type(Base):
     abbreviation = Column(String)
     name = Column(String)
 
+    competition_category_id = Column(ForeignKey("competition_categories.id", name="fk_comp_type_comp_category"))
+    competition_category    = relationship("Competition_Category", back_populates="competition_types")
+
     # relationships
-    competition_categories = relationship("Competition_Category", back_populates="competition_type")
+    competitions = relationship("Competition", back_populates="competition_type")
 
 
 class Competition_Category(Base):
@@ -254,11 +257,8 @@ class Competition_Category(Base):
 
     name = Column(String)
 
-    competition_type_id = Column(ForeignKey("competition_types.id"))
-    competition_type    = relationship("Competition_Type", back_populates="competition_categories")
-
     # relationships
-    competitions = relationship("Competition", back_populates="competition_category")
+    competition_types = relationship("Competition_Type", back_populates="competition_category")
 
 
 class Competition(Base):
@@ -273,9 +273,9 @@ class Competition(Base):
     scraper_last_scrape = Column(DateTime)
     scraper_data_provider = Column(Integer) # Use Enum_Data_Provider
 
-    competition_category_id = Column(ForeignKey("competition_categories.id"))
-    competition_category    = relationship("Competition_Category", back_populates="competitions")
-    venue_id = Column(ForeignKey("venues.id"))
+    competition_type_id = Column(ForeignKey("competition_types.id", name="fk_competition_comp_type"))
+    competition_type    = relationship("Competition_Type", back_populates="competitions")
+    venue_id = Column(ForeignKey("venues.id", name="fk_competition_venue"))
     venue    = relationship("Venue", back_populates="competitions")
 
     name = Column(String)
@@ -298,11 +298,11 @@ class Event(Base):
     additional_id_ = Column(String, index=True, unique=True)
     name = Column(String)
 
-    competition_id = Column(ForeignKey("competitions.id"))
+    competition_id = Column(ForeignKey("competitions.id", name="fk_event_competition"))
     competition    = relationship("Competition", back_populates="events")
-    boat_class_id = Column(ForeignKey("boat_classes.id"))
+    boat_class_id = Column(ForeignKey("boat_classes.id", name="fk_event_boat_class"))
     boat_class    = relationship("Boat_Class", back_populates="events")
-    gender_id = Column(ForeignKey("genders.id"))
+    gender_id = Column(ForeignKey("genders.id", name="fk_event_gender"))
     gender    = relationship("Gender")
 
     rsc_code__ = Column(String) # RSC-Codes of races contain more information
@@ -316,7 +316,7 @@ class Race(Base): # https://world-rowing-api.soticcloud.net/stats/api/race/b0eae
 
     id = Column(BigInteger, primary_key=True)
     additional_id_ = Column(String, index=True, unique=True)
-    event_id = Column(ForeignKey("events.id"))
+    event_id = Column(ForeignKey("events.id", name="fk_race_event"))
     event    = relationship("Event", back_populates="races")
 
     name = Column(String)
@@ -367,9 +367,9 @@ class Race_Boat(Base):
 
     id = Column(BigInteger, primary_key=True)
     additional_id_ = Column(String, index=True, unique=True)
-    race_id = Column(ForeignKey("races.id"))
+    race_id = Column(ForeignKey("races.id", name="fk_race_boat_race"))
     race    = relationship("Race", back_populates="race_boats")
-    country_id = Column(ForeignKey("countries.id"))
+    country_id = Column(ForeignKey("countries.id", name="fk_race_boat_country"))
     country    = relationship("Country")
 
     # many-to-many relationship
@@ -382,7 +382,7 @@ class Race_Boat(Base):
 
     # If race was invalid, this field should provide the reason.
     # E.g. "DNS" Did not start; "BUW" Boat under weight, etc.
-    invalid_mark_result_code_id = Column(ForeignKey("invalid_mark_result_codes.id"))
+    invalid_mark_result_code_id = Column(ForeignKey("invalid_mark_result_codes.id", name="fk_race_boat_invalid_mark_result_code"))
     invalid_mark_result_code    = relationship("Invalid_Mark_Result_Code")
 
     lane = Column(Integer) # e.g. 1
@@ -408,7 +408,7 @@ class Race_Data(Base):
     __tablename__ = "race_data"
 
     # Multi Column Primary Key: https://stackoverflow.com/a/9036128
-    race_boat_id = Column(BigInteger, ForeignKey("race_boats.id"), primary_key=True, autoincrement=False)
+    race_boat_id = Column(BigInteger, ForeignKey("race_boats.id", name="fk_race_data_race_boat"), primary_key=True, autoincrement=False)
     race_boat    = relationship("Race_Boat", back_populates="race_data")
     distance_meter = Column(Integer, primary_key=True, autoincrement=False)
 
@@ -419,21 +419,21 @@ class Race_Data(Base):
     stroke = Column(Float)
 
     # outlier detection
-    is_outlier = Column(Boolean)
+    is_outlier = Column(Boolean, nullable=False, default=True)
 
 
 class Intermediate_Time(Base):
     __tablename__ = "intermediate_times"
 
     # Multi Column Primary Key: https://stackoverflow.com/a/9036128
-    race_boat_id = Column(ForeignKey("race_boats.id"), primary_key=True, autoincrement=False)
+    race_boat_id = Column(ForeignKey("race_boats.id", name="fk_intermediate_time_race_boat"), primary_key=True, autoincrement=False)
     race_boat    = relationship("Race_Boat", back_populates="intermediates")
     distance_meter = Column(Integer, primary_key=True, autoincrement=False)
 
     data_source = Column(Integer) # Use Enum_Data_Source class
 
     # E.g. "DNS" Did not start; "BUW" Boat under weight, etc.
-    invalid_mark_result_code_id = Column(ForeignKey("invalid_mark_result_codes.id"))
+    invalid_mark_result_code_id = Column(ForeignKey("invalid_mark_result_codes.id", name="fk_intermediate_time_invalid_mark_result_code"))
     invalid_mark_result_code    = relationship("Invalid_Mark_Result_Code")
 
     # Data fields from JSON Web API aka "Intermediates"

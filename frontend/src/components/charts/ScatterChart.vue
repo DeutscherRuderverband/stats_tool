@@ -27,7 +27,7 @@ export default {
   methods: {
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth <= 750
+      this.mobile = this.windowWidth < 890
     }
   }
 }
@@ -39,5 +39,21 @@ export default {
   margin: auto;
   height: 100%;
   width: 100%;
+}
+</style>
+
+<style lang="scss" scoped>
+@media print {
+  canvas {
+    min-height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    height: auto!important;
+    width: auto!important;
+  }
+
+  .chart-container {
+    min-height: 0 !important;
+  }
 }
 </style>

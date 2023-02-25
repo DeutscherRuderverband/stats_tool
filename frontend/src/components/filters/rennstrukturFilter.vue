@@ -55,7 +55,7 @@ export default {
       // competition type
       compTypes: [], // list of dicts with objects containing displayName, id and key
       optionsCompTypes: [],
-      selectedCompTypes: ["World Rowing Cup"],
+      selectedCompTypes: ["WCH"],
       // year
       optionsYear: [],
       selectedYear: new Date().getFullYear(),
@@ -71,12 +71,12 @@ export default {
     const setFilterValues = async () => {
       this.raceAnalysisFilterOptions = await store.getFilterOptions()
       // year
-      this.startYear = Object.values(this.raceAnalysisFilterOptions[0].year[0])[0]
-      this.endYear = Object.values(this.raceAnalysisFilterOptions[0].year[1])[0]
+      this.startYear = this.raceAnalysisFilterOptions.years[0]
+      this.endYear = this.raceAnalysisFilterOptions.years[1]
       this.optionsYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.endYear - i)
 
       // competition category id
-      this.compTypes = this.raceAnalysisFilterOptions[0].competition_category_ids.data
+      this.compTypes = this.raceAnalysisFilterOptions.competition_categories
       this.optionsCompTypes = this.compTypes.map(item => item.display_name)
     }
     setFilterValues()
@@ -100,7 +100,7 @@ export default {
       store.setToLoadingState()
       const data = {
         "year": this.selectedYear,
-        "competition_category_id": this.compTypes.filter(item =>
+        "competition_type": this.compTypes.filter(item =>
             this.selectedCompTypes.includes(item.display_name)).map(item => item.id)[0]
       }
       return store.postFormData(data).then(() => {
@@ -111,7 +111,7 @@ export default {
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth <= 769;
+      this.mobile = this.windowWidth < 890;
     }
   }
 }

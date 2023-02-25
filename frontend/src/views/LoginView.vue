@@ -1,8 +1,9 @@
 <template>
-  <v-container :class="mobile ? 'px-5 main-container' : 'px-10 pt-0 main-container'">
+  <v-container :class="mobile ? 'px-5 py-2 main-container' : 'px-10 pt-0 main-container'">
     <v-col cols="12" class="pa-0 pt-0" justify="center">
       <h1 class="py-3">Login</h1>
-      <v-col cols="6" class="px-0">
+      <v-divider></v-divider>
+      <v-col :cols="mobile ? 12 : 6" class="px-0">
         <v-alert type="info" variant="tonal">
           Diese Seite ist passwortgeschützt. Bitte melde dich an um fortzufahren.
         </v-alert>
@@ -13,14 +14,23 @@
               label="Nutzername"
               v-model="username"
               variant="outlined"
-              density="compact"></v-text-field>
+              hide-details
+              density="compact"
+              class="py-2"
+          >
+          </v-text-field>
           <v-text-field
               label="Passwort"
               type="password"
               v-model="password"
               variant="outlined"
-              density="compact"></v-text-field>
-          <v-btn color="#1369b0" style="color: white" type="submit">Login</v-btn>
+              hide-details
+              density="compact"
+              class="py-2"
+          >
+          </v-text-field>
+          <p v-if="credentialsWrong" style="color: red">Nutzername oder Passwort falsch.<br>Bitte überprüfe deine Eingabe.</p>
+          <v-btn class="mt-2" color="#1369b0" style="color: white; width: 150px" type="submit">Login</v-btn>
         </v-form>
       </v-col>
     </v-col>
@@ -35,7 +45,9 @@ export default {
   data() {
     return {
       username: 'drv_test_user',
-      password: ''
+      password: '',
+      credentialsWrong: false,
+      mobile: false
     }
   },
   created() {
@@ -50,21 +62,19 @@ export default {
           user: this.username,
           pass: this.password
         });
-
         const token = response.data.access_token;
         localStorage.setItem('session_token', token)
         router.push('/');
 
       } catch (error) {
         console.log("Login failed. Wrong credentials.")
-        console.log(error)
-        /** TODO: render fail msg to DOM */
+        this.credentialsWrong = true
       }
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth <= 750
-      let navbarHeight = window.innerWidth < 750 ? '71.25px' : '160px';
+      this.mobile = this.windowWidth < 890
+      let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
     }
   }
@@ -73,6 +83,6 @@ export default {
 
 <style scoped>
 .main-container {
-  min-height: calc(100vh - (var(--navbar-height)) - 95px);
+  min-height: calc(100vh - (var(--navbar-height)) - 94px);
 }
 </style>

@@ -26,31 +26,36 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
       <v-navigation-drawer
           v-model="filterOpen"
           temporary
-          v-bind:style='{"margin-top" : (mobile? "71.25px" : "158px" )}'
+          v-bind:style='{"margin-top": (mobile ? "71.25px" : (headerReduced ? "81px" : "159px"))}'
           style="background-color: white; border: none"
           width="600">
         <berichte-filter/>
       </v-navigation-drawer>
 
-      <v-container :class="mobile ? 'px-5 py-0 main-container' : 'px-10 py-0 main-container'">
+      <v-container :class="mobile ? 'px-5 py-2 main-container' : 'px-10 py-0 main-container'">
         <v-col cols="12" class="d-flex flex-row px-0" style="align-items: center">
           <h1>Berichte</h1>
-          <v-icon id="tooltip-analyis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
+          <v-icon id="tooltip-analysis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
           </v-icon>
           <v-tooltip
-              activator="#tooltip-analyis-icon"
+              activator="#tooltip-analysis-icon"
               location="end"
               open-on-hover
-          >In Berichte kannst du Analysen über längere Zeiträume und weitere Filterkriterien erstellen.
+          >Auf der Seite Berichte lassen sich Analysen über längere Zeiträume und weitere Filterkriterien erstellen.
           </v-tooltip>
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
-          <v-icon @click="exportTableData()" color="grey" class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
+          <v-icon v-if="matrixVisible" @click="exportMatrixTableData()" color="grey" class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
+          <v-icon v-if="!matrixVisible" @click="exportBoatClassTableData()" color="grey" class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
         </v-col>
         <v-divider></v-divider>
-        <v-container class="pa-0 mt-2 pb-8">
+        <v-container v-if="loading" class="d-flex flex-column align-center">
+          <v-progress-circular indeterminate color="blue" size="40" class="mt-15"></v-progress-circular>
+          <div class="text-center" style="color: #1369b0">Lade Ergebnisse...</div>
+        </v-container>
+        <v-container class="pa-0 mt-2 pb-8" v-else>
           <v-row>
-            <v-col :cols="mobile ? 12 : 5">
-              <h2>{{ data.boat_classes }}</h2>
+            <v-col :cols="mobile ? 12 : (matrixVisible ? 8 : 5)" class="py-0 pt-1">
+              <h2 v-if="!matrixVisible">{{ data.boat_classes }}</h2>
               <v-alert type="error" variant="tonal" class="my-2" v-if="data.results === 0 && !matrixVisible">
                 <v-row>
                   <v-col cols="12">
@@ -61,8 +66,11 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
               <v-alert type="success" variant="tonal" class="my-2" v-else>
                 <v-row>
                   <v-col cols="12">
-                    <p>{{ matrixVisible ? matrixResults : data.results }} Datensätze |
-                      Von {{ filterConf.start }} bis {{ filterConf.end }}</p>
+                    <p><b>{{ matrixVisible ? matrixResults : data.results }} Datensätze |
+                      Von {{ filterConf.interval[0] }} bis {{ filterConf.interval[1] }}</b></p>
+                    <p><b>Events</b>: {{filterConf.competition_type}}</p>
+                    <p><b>Läufe</b>: {{filterConf.race_phase_type}}</p>
+                    <p><b>Läufe (erweitert)</b>: {{filterConf.race_phase_subtype}}</p>
                   </v-col>
                 </v-row>
               </v-alert>
@@ -188,10 +196,13 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
 <script>
 import {mapState} from "pinia";
 import {useBerichteState} from "@/stores/berichteStore";
-import {useMedaillenspiegelState} from "@/stores/medaillenspiegelStore";
+import {useGlobalState} from "@/stores/globalStore";
 
 export default {
   computed: {
+    ...mapState(useGlobalState, {
+      headerReduced: "getHeaderReducedState"
+    }),
     ...mapState(useBerichteState, {
       tableData: "getTableData"
     }),
@@ -221,15 +232,22 @@ export default {
     }),
     ...mapState(useBerichteState, {
       matrixVisible: "getSelectedBoatClass"
+    }),
+    ...mapState(useBerichteState, {
+      loading: "getLoadingState"
     })
   },
   methods: {
     openPrintDialog() {
       window.print();
     },
-    exportTableData() {
+    exportMatrixTableData() {
       const store = useBerichteState()
-      store.exportTableData()
+      store.exportMatrixTableData()
+    },
+    exportBoatClassTableData() {
+      const store = useBerichteState()
+      store.exportBoatClassTableData()
     },
     setFilterState() {
       this.filterOpen = !this.filterOpen;
@@ -238,7 +256,7 @@ export default {
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth <= 750
+      this.mobile = this.windowWidth < 890
     },
     formatMilliseconds(ms) {
       if (ms) {
@@ -251,7 +269,7 @@ export default {
   created() {
     window.addEventListener('resize', this.checkScreen);
     this.checkScreen();
-    let navbarHeight = window.innerWidth < 750 ? '71.25px' : '160px';
+    let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
     document.documentElement.style.setProperty('--navbar-height', navbarHeight);
   },
   data() {
@@ -388,7 +406,7 @@ export default {
 }
 
 .main-container {
-  min-height: calc(100vh - (var(--navbar-height)) - 95px);
+  min-height: calc(100vh - (var(--navbar-height)) - 94px);
 }
 
 @media print {

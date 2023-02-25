@@ -1,6 +1,12 @@
 import axios from "axios";
 import {defineStore} from "pinia";
-import {ar} from "vuetify/locale";
+
+const formatMilliseconds = ms => {
+    if (!ms) {
+        return '00:00.00';
+    }
+    return new Date(ms).toISOString().slice(14, -2);
+};
 
 export const useAthletenState = defineStore({
     id: "athleten",
@@ -10,7 +16,7 @@ export const useAthletenState = defineStore({
         filterOptions: [{
             "birth_years": [{"start_year": 1950}, {"end_year": 2025}],
             "boat_classes": {
-                'men': {
+                'm': {
                     'junior': {
                         'single': {"JM1x": "Junior Men's Single Sculls"},
                         'double': {"JM2x": "Junior Men's Double Sculls"},
@@ -52,7 +58,7 @@ export const useAthletenState = defineStore({
                         '3': {"PR3 M2-": "PR3 Men's Pair"}
                     }
                 },
-                'women': {
+                'w': {
                     'junior': {
                         'single': {"JW1x": "Junior Women's Single Sculls"},
                         'double': {"JW2x": "Junior Women's Double Sculls"},
@@ -146,9 +152,29 @@ export const useAthletenState = defineStore({
             return state.filterOptions
         },
         getTableData(state) {
-            // TODO: Convert table data to array that could be rendered in the template.
-            // Also relevant for CSV Export as the export data should be the same.
-            return state.data.athlete
+            const athleteData = state.data.athlete
+
+            if (athleteData && athleteData.race_list) {
+                const athleteValues = Object.entries(athleteData).map(([key, val]) => {
+                    if (typeof val === 'string') {
+                        return val.replace(/,/g, ' ');
+                    } else if (val !== null) {
+                        return val;
+                    } else {
+                        return null
+                    }
+                }).filter(val => val !== null);
+                state.tableExportAthlete = [Object.keys(athleteData).filter((v) => v !== "race_list"), athleteValues];
+
+                let raceListExportData = [Object.keys(athleteData.race_list[0])];
+                Object.values(athleteData.race_list).forEach(race => {
+                    race["result_time"] = formatMilliseconds(race["result_time"])
+                    const subArray = Object.values(race).map(el => String(el).replace(/,/g, ' '));
+                    raceListExportData = raceListExportData.concat([subArray]);
+                })
+                state.tableExportAthleteRaceList = raceListExportData;
+            }
+            return athleteData
         }
     },
     actions: {
@@ -180,13 +206,65 @@ export const useAthletenState = defineStore({
             this.filterOpen = !filterState
         },
         exportTableData() {
-            const csvContent = "data:text/csv;charset=utf-8," + this.tableExport.map(row => row.join(",")).join("\n");
+            var weight = 0;
+            var height = 0;
+            var gender = "";
+
+            if(this.data.athlete.weight > 0) {
+                weight = this.data.athlete.weight + "kg"
+            } else {
+                weight = "-"
+            }
+
+            if(this.data.athlete.height > 0) {
+                height = this.data.athlete.height + "cm"
+            } else {
+                height = "-"
+            }
+
+            if(this.data.athlete.gender == "Men") {
+                gender = "Männlich"
+            } else {
+                gender = "Weiblich"
+            }
+
+            var disciplines = []
+            for(const item of this.data.athlete.disciplines) {
+                disciplines.push(item)
+            }
+            disciplines = disciplines.toString()
+
+            const csvContent = "data:text/csv;charset=utf-8,"
+                + "Name,Nation,Geburtsdatum,Geschlecht,Gewicht,Größe,Bootsklasse(n),Disziplin(en),Rennanzahl,Medaillen Gesamt,Medaillen Gold,Medaillen Silber,Medaillen Bronze,Finale A,Finale B\n"
+                + this.data.athlete.name.replaceAll(",", " ") + ","
+                + this.data.athlete.nation + ","
+                + this.data.athlete.dob + ","
+                + gender + ","
+                + weight + ","
+                + height + ","
+                + this.data.athlete.boat_class.replaceAll(",", " |") + ","
+                + disciplines.replaceAll(",", " | ") + ","
+                + this.data.athlete.num_of_races + ","
+                + this.data.athlete.medals_total + ","
+                + this.data.athlete.medals_gold + ","
+                + this.data.athlete.medals_silver + ","
+                + this.data.athlete.medals_bronze + ","
+                + this.data.athlete.final_a + ","
+                + this.data.athlete.final_b
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "athleten.csv");
+            link.setAttribute("download", `${this.data.athlete.name.replace(", ", "_")}_Profile.csv`);
             document.body.appendChild(link);
             link.click();
+
+            const csvContentRaceList = "data:text/csv;charset=utf-8," + this.tableExportAthleteRaceList.map(row => row.join(",")).join("\n");
+            const encodedUriRaceList = encodeURI(csvContentRaceList);
+            const linkRaceList = document.createElement("a");
+            linkRaceList.setAttribute("href", encodedUriRaceList);
+            linkRaceList.setAttribute("download", `${this.data.athlete.name.replace(", ", "_")}_Races.csv`);
+            document.body.appendChild(linkRaceList);
+            linkRaceList.click();
         }
     }
 })

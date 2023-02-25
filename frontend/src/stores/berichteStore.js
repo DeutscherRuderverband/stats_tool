@@ -1,7 +1,5 @@
 import axios from "axios";
 import {defineStore} from "pinia";
-import {resolve} from "chart.js/helpers";
-import {it} from "vuetify/locale";
 
 const formatMilliseconds = ms => new Date(ms).toISOString().slice(14, -2);
 
@@ -9,17 +7,19 @@ export const useBerichteState = defineStore({
     id: "berichte",
     state: () => ({
         filterOpen: false,
-        tableExport: [],
-        lastFilterConfig: null,
-        selectedBoatClass: "Alle",
-        filterConfig: {
-            start: 0,
-            end: 0,
+        loading: true,
+        matrixTableExport: [],
+        lastFilterConfig: {
+          "interval": [0, 0],
+          "competition_type": "",
+          "boat_class": "",
+          "race_phase_type": "",
         },
+        selectedBoatClass: "Alle",
         filterOptions: [{
             "years": [{"start_year": 0}, {"end_year": 0}],
             "boat_classes": {
-                'men': {
+                'm': {
                     'junior': {
                         'single': {"JM1x": "Junior Men's Single Sculls"},
                         'double': {"JM2x": "Junior Men's Double Sculls"},
@@ -61,7 +61,7 @@ export const useBerichteState = defineStore({
                         '3': {"PR3 M2-": "PR3 Men's Pair"}
                     }
                 },
-                'women': {
+                'w': {
                     'junior': {
                         'single': {"JW1x": "Junior Women's Single Sculls"},
                         'double': {"JW2x": "Junior Women's Double Sculls"},
@@ -206,13 +206,16 @@ export const useBerichteState = defineStore({
             return state.filterOpen
         },
         getFilterConfig(state) {
-            return state.filterConfig
+            return state.lastFilterConfig
         },
         getReportFilterOptions(state) {
             return state.filterOptions
         },
         getTableData(state) {
             return state.data
+        },
+        getLoadingState(state) {
+            return state.loading
         },
         getMatrixTableResults(state) {
             if (state.matrixData === null) {
@@ -229,14 +232,14 @@ export const useBerichteState = defineStore({
                 return null;
             }
             const subHeaders = {
-                "OPEN MEN": Object.values(state.filterOptions[0].boat_classes.men.elite),
-                "OPEN WOMEN": Object.values(state.filterOptions[0].boat_classes.women.elite),
-                "PARA MEN": Object.values(state.filterOptions[0].boat_classes.men.para),
-                "PARA WOMEN": Object.values(state.filterOptions[0].boat_classes.women.para),
-                "U23 MEN": Object.values(state.filterOptions[0].boat_classes.men.u23),
-                "U23 WOMEN": Object.values(state.filterOptions[0].boat_classes.women.u23),
-                "U19 MEN": Object.values(state.filterOptions[0].boat_classes.men.u19),
-                "U19 WOMEN": Object.values(state.filterOptions[0].boat_classes.women.u19)
+                "OPEN MEN": Object.values(state.filterOptions[0].boat_classes.m.elite),
+                "OPEN WOMEN": Object.values(state.filterOptions[0].boat_classes.w.elite),
+                "PARA MEN": Object.values(state.filterOptions[0].boat_classes.m.para),
+                "PARA WOMEN": Object.values(state.filterOptions[0].boat_classes.w.para),
+                "U23 MEN": Object.values(state.filterOptions[0].boat_classes.m.u23),
+                "U23 WOMEN": Object.values(state.filterOptions[0].boat_classes.w.u23),
+                "U19 MEN": Object.values(state.filterOptions[0].boat_classes.m.u19),
+                "U19 WOMEN": Object.values(state.filterOptions[0].boat_classes.w.u19)
             }
 
             let rowValues = []
@@ -257,7 +260,7 @@ export const useBerichteState = defineStore({
                     }
                 }
             })
-            state.tableExport = rowValues
+            state.matrixTableExport = rowValues
             return rowValues
         },
         getSelectedBoatClass(state) {
@@ -463,6 +466,7 @@ export const useBerichteState = defineStore({
                     },
                     y: {
                         type: 'time',
+                        reverse: true,
                         time: {
                             parser: 'HH:mm:ss',
                             unit: "seconds",
@@ -500,19 +504,23 @@ export const useBerichteState = defineStore({
                 })
         },
         async postFormData(data) {
+            this.loading = true
             this.selectedBoatClass = data.boat_classes
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_report_boat_class`, {data})
                 .then(response => {
                     this.data = response.data
+                    this.loading = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
         },
         async postFormDataMatrix(data) {
             this.selectedBoatClass = "Alle"
+            this.loading = true
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/matrix`, {data})
                 .then(response => {
                     this.matrixData = response.data
+                    this.loading = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
@@ -526,26 +534,87 @@ export const useBerichteState = defineStore({
         setLastFilterConfig(filterConfig) {
             this.lastFilterConfig = filterConfig
         },
-        setFilterConfig(interval) {
-            this.filterConfig.start = interval[0]
-             this.filterConfig.end = interval[1]
+        setFilterConfig(data) {
+            this.filterConfig = data
         },
-        exportTableData() {
-            const csvContent = "data:text/csv;charset=utf-8," + this.tableExport.map(row => {
-                if (Array.isArray(row)) {
-                    return row.map(cell => {
-                        if (typeof cell === "string") {
-                            return `"${cell}"`;
-                        }
-                        return cell;
-                    }).join(",");
-                }
-                return row;
-            }).join("\n");
+        exportMatrixTableData() {
+            var results = 0;
+
+            if(this.data.results > 0) {
+                results = this.data.results;
+            } else {
+                results = 0;
+            }
+
+            const csvContent = "data:text/csv;charset=utf-8,"
+                + "Bootsklassen,Alle\n"
+                + "Datensätze," + results + "\n"
+                + "Zeitraum," + this.lastFilterConfig.interval[0] + " - " + this.lastFilterConfig.interval[1] + "\n"
+                + "Events," + this.lastFilterConfig.competition_type.replaceAll(",", " |") + "\n"
+                + "Läufe," + this.lastFilterConfig.race_phase_type.replaceAll(",", " |") + "\n"
+                + "Läufe (erweitert)," + this.lastFilterConfig.race_phase_subtype.replaceAll(",", " |") + "\n\n"
+                
+                + ",WB [t],Ø [t],Δ [s],n\n"
+                + this.matrixTableExport.map(row => {
+                    if (Array.isArray(row)) {
+                        return row.map(cell => {
+                            if (typeof cell === "string") {
+                                return `"${cell}"`;
+                            }
+                            return cell;
+                        }).join(",");
+                    }
+                    return row;
+                }).join("\n");
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "berichte.csv");
+            link.setAttribute("download", "Berichte_" + "Matrix.csv");
+            document.body.appendChild(link);
+            link.click();
+        },
+        exportBoatClassTableData() {
+            var results = 0;
+            var worldbesttime = 0;
+
+            if(this.data.results > 0) {
+                results = this.data.results;
+            } else {
+                results = 0;
+            }
+
+            if(this.data.world_best_time_boat_class > 0) {
+                worldbesttime = formatMilliseconds(this.data.world_best_time_boat_class)
+            } else {
+                worldbesttime = "-"
+            }
+            
+            const csvContent = "data:text/csv;charset=utf-8,"
+                + "Bootsklasse," + this.data.boat_classes + "\n"
+                + "Datensätze," + this.data.results + "\n"
+                + "Zeitraum," + this.lastFilterConfig.interval[0] + " - " + this.lastFilterConfig.interval[1] + "\n"
+                + "Events," + this.lastFilterConfig.competition_type.replaceAll(",", " |") + "\n"
+                + "Läufe," + this.lastFilterConfig.race_phase_type.replaceAll(",", " |") + "\n"
+                + "Läufe (erweitert)," + this.lastFilterConfig.race_phase_subtype.replaceAll(",", " |") + "\n\n"
+
+                + "Weltbestzeit," + worldbesttime + "\n"
+                + "Beste im Zeitraum," + formatMilliseconds(this.data.best_in_period) + "\n"
+                + "Ø Geschwindigkeit (m/s)," + this.data["mean"]["m/s"] + "\n"
+                + "Ø t über 500m," + formatMilliseconds(this.data["mean"]["pace 500m"]) + "\n"
+                + "Ø t über 1000m," + formatMilliseconds(this.data["mean"]["pace 1000m"]) + "\n"
+                + "Ø t über 2000m," + formatMilliseconds(this.data["mean"]["mm:ss,00"]) + "\n"
+                + "Standardabweichung," + formatMilliseconds(this.data.std_dev) + "\n"
+                + "Median," + formatMilliseconds(this.data.median) + "\n"
+                + ",Bedingungen\n"
+                + "Abstufung schnellste," + "(n=" + this.data["gradation_fastest"]["results"] + ") " + formatMilliseconds(this.data["gradation_fastest"]["time"]) + "\n"
+                + "Abstufung mittel," + "(n=" + this.data["gradation_medium"]["results"] + ") " + formatMilliseconds(this.data["gradation_medium"]["time"]) + "\n"
+                + "Abstufung langsam," + "(n=" + this.data["gradation_slow"]["results"] + ") " + formatMilliseconds(this.data["gradation_slow"]["time"]) + "\n"
+                + "Abstufung langsamste," + "(n=" + this.data["gradation_slowest"]["results"] + ") " + formatMilliseconds(this.data["gradation_slowest"]["time"]);
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Berichte_" + this.data.boat_classes + ".csv");
             document.body.appendChild(link);
             link.click();
         }

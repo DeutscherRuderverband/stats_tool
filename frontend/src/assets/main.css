@@ -22,8 +22,12 @@ a {
     margin: 0;
   }
 
-  nav, header, footer {
+  nav, header {
     display: none;
+  }
+
+  footer {
+    visibility: hidden;
   }
 
   body {

@@ -65,7 +65,8 @@
                 "SCRAPER_SINGLEPASS": "1",
                 "DRV_SCRAPER_DEV_MODE": "1",
                 "DB_VERBOSITY": "0",
-                "SCRAPER_YEAR_MIN": "2019"
+                "SCRAPER_YEAR_MIN": "2019",
+                "SCRAPER_YEAR_MAX": "2024"
             },
             "args": [],
             "console": "integratedTerminal",
