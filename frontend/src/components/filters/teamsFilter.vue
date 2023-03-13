@@ -137,8 +137,6 @@ export default {
       this.endYear = Object.values(data.years[1])[0]
       this.optionsStartYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.startYear + i)
       this.optionsEndYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.startYear + i)
-      this.startYear = Number(new Date().getFullYear()) - 1
-      this.endYear = new Date().getFullYear()
 
       // competition category id
       this.compTypes = data.competition_categories
@@ -157,7 +155,7 @@ export default {
         const store = useTeamsState()
         store.setFilterConfig({"events": this.selectedCompTypes.join(", ")})
         store.fetchTeams({
-          "interval": [this.startYear, this.endYear],
+          "interval": [Number(new Date().getFullYear() - 1), Number(new Date().getFullYear())],
           "competition_categories": this.compTypes.filter(item => this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
           "nation": this.selectedNation
         })

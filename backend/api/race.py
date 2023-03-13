@@ -46,21 +46,35 @@ def result_time_best_of_year_interval(session, boat_class_id, year_start,
     return result_time
 
 
-def _transpose_boatclass_intermediates(race_boats, force_500m_grid) -> OrderedDict:
-    transposed = dict()
+def _assign_intermediates_to_grid(race_boats, grid) -> OrderedDict:
+    transposed = OrderedDict()
+
+    for distance in grid:
+        transposed[distance] = { race_boat.id : None for race_boat in race_boats }
+
     race_boat: model.Race_Boat
     for race_boat in race_boats:
         intermediate: model.Intermediate_Time
         for intermediate in race_boat.intermediates:
             dist = intermediate.distance_meter
-            if force_500m_grid:
-                fits_on_500m_grid = dist%500 == 0
-                if not fits_on_500m_grid:
-                    continue
-            if not dist in transposed:
-                transposed[dist] = []
-            transposed[dist].append(intermediate)
+
+            fits_to_grid = dist in transposed
+            if not fits_to_grid:
+                continue
+
+            transposed[dist][race_boat.id] = intermediate
     return transposed
+
+def prepare_grid(race_boats, force_grid_resolution=None, course_length=2000) -> list:
+    """ This functions assumes 2km race course length by default
+    """
+    grid_resolution = force_grid_resolution
+
+    if not force_grid_resolution:
+        # grid_resolution = _find_min_difference( ... sorted Race_Boat.distance_meter list ... )
+        raise NotImplementedError('Automatic grid resolution are not supported')
+
+    return list(range(grid_resolution, course_length+grid_resolution, grid_resolution))
 
 def _skipping_non_int(values):
     """iterates only ints"""
@@ -86,10 +100,19 @@ def _find_min_difference(values):
 
 def valid_intermediate(interm: model.Intermediate_Time) -> bool:
     return (
-        interm.invalid_mark_result_code_id == None
+        isinstance(interm, model.Intermediate_Time)
+        and interm.invalid_mark_result_code_id == None
         and not interm.is_outlier
         and not interm.result_time_ms == None
     )
+
+def _best_time(intermediates: list[model.Intermediate_Time]) -> int:
+    valid_intermediates = tuple(( i for i in intermediates if valid_intermediate(i) ))
+    result_times = tuple( map(lambda i: i.result_time_ms, valid_intermediates) )
+    best_time = None
+    with suppress(ValueError):
+        best_time = min(result_times)
+    return best_time
 
 def _instantaneous_speed(figures_dict, grid_resolution):
     pace = figures_dict.get('pace', None)
@@ -102,79 +125,78 @@ def _speeds(boats_dict, distance):
         figures = distance_dict[distance]
         yield figures['speed']
 
-def compute_intermediates_figures(race_boats, force_500m_grid=True):
+def compute_intermediates_figures(race_boats):
     """ returns: dict[race_boat_id][distance] each containing {"pace":..., ...}
     """
-    dict_key = lambda i: i[0]
-    lookup = _transpose_boatclass_intermediates(race_boats, force_500m_grid=force_500m_grid)
-    lookup = OrderedDict( sorted(lookup.items(), key=dict_key ) )
     grid_resolution = 500
-    if not force_500m_grid:
-        grid_resolution = _find_min_difference(lookup.keys())
-        if grid_resolution == None:
-            return []
+
+    grid = prepare_grid(race_boats, force_grid_resolution=grid_resolution, course_length=2000)
+    lookup = _assign_intermediates_to_grid(race_boats, grid=grid)
 
     result = defaultdict(lambda: defaultdict(dict))
     last_distance = 0
     last_valid_intermeds_lookup = {}
     first_distance = True
-    for distance, intermediates in lookup.items():
-        valid_intermediates = tuple(( i for i in intermediates if valid_intermediate(i) ))
-        result_times = tuple( map(lambda i: i.result_time_ms, valid_intermediates) )
-        
-        best_time = min(result_times)
+    for distance, intermediates_dict in lookup.items():
+        intermediates = intermediates_dict.values()
+
+        best_time = _best_time(intermediates)
 
         valid_intermeds_lookup = {}
         intermediate: model.Intermediate_Time
-        for intermediate in intermediates:
+        for race_boat_id, intermediate in intermediates_dict.items():
             figures = {
+                "__intermediate": None,
                 "deficit": None,
                 "rel_diff_to_avg_speed": None,
                 "pace": None,
                 "speed": None,
                 "result_time": None
             }
-            result[intermediate.race_boat_id][distance] = figures
+            result[race_boat_id][distance] = figures
 
-            if not valid_intermediate(intermediate):
-                inv_mark_code = intermediate.invalid_mark_result_code_id
-                if inv_mark_code:
-                    figures["result_time"] = inv_mark_code
-                else:
-                    pass # is outlier -> leaves "result_time" as None
+            figures["__intermediate"] = intermediate
+
+            # handle cases with no meaningful result_time
+            if intermediate == None or intermediate.result_time_ms == None:
+                figures["result_time"] = "NaN"
+                continue
+            if intermediate.invalid_mark_result_code_id != None:
+                figures["result_time"] = intermediate.invalid_mark_result_code_id
                 continue
 
-            valid_intermeds_lookup[intermediate.race_boat_id] = intermediate
+            valid_intermeds_lookup[race_boat_id] = intermediate
 
             # relative to best boat
-            deficit = intermediate.result_time_ms - best_time
+            deficit = None
+            if best_time != None:
+                deficit = intermediate.result_time_ms - best_time
 
             pace = None
-            within_grid_resolution = (distance - last_distance) == grid_resolution
-            if within_grid_resolution:
-                if first_distance:
-                    pace = intermediate.result_time_ms
-                elif intermediate.race_boat_id in last_valid_intermeds_lookup:
-                    last_result_time = last_valid_intermeds_lookup[intermediate.race_boat_id].result_time_ms
-                    pace = intermediate.result_time_ms - last_result_time
+            if first_distance:
+                pace = intermediate.result_time_ms
+            elif race_boat_id in last_valid_intermeds_lookup:
+                last_result_time = last_valid_intermeds_lookup[race_boat_id].result_time_ms
+                pace = intermediate.result_time_ms - last_result_time
         
             speed = None
             if pace != None:
                 pace_in_seconds = pace / 1000 # assuming milliseconds here
-                speed = grid_resolution/pace_in_seconds
+                dist_ = distance - last_distance
+                speed = dist_/pace_in_seconds
 
             figures["deficit"] = deficit
             figures["pace"] = pace
             figures["speed"] = speed
             figures["result_time"] = intermediate.result_time_ms
 
-        # now we have all the pace values, we can compute avg speeds
+        # now that we have all the pace values, we can compute avg speeds
         avg_speed = None
         with suppress(statistics.StatisticsError):
             avg_speed = statistics.mean(_skip_NoneType(_speeds(boats_dict=result, distance=distance)))
 
         for race_boat_id, intermediate in valid_intermeds_lookup.items():
-            figures = result[intermediate.race_boat_id][distance]
+            figures = result[race_boat_id][distance]
             speed = figures['speed']
             if avg_speed:
                 rel_diff_to_avg_speed = (speed - avg_speed) / avg_speed * 100.0

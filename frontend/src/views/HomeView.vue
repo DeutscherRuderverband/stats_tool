@@ -39,7 +39,7 @@
                 <div v-for="attr in attributes" class="rounded-sm my-1"
                     :key="attr.key" :style=attr.customData.style>
                   <router-link style="color: white; display: flex; flex-direction: column;"
-                    :to="`/rennstrukturanalyse?comp_id=${attr.key}`">
+                    :to="`/rennstrukturanalyse?competition_id=${attr.key}`">
                     <p class="leading-tight pa-1"
                       :style="{
                         wordWrap: 'break-word', display: 'inline-block',
@@ -105,7 +105,7 @@ export default {
       this.mobile = this.windowWidth < 890
       let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
-    }
+    },
   },
   watch: {
     calenderData(newVal) {

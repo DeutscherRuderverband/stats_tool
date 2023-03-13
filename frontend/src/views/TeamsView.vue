@@ -51,10 +51,10 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
           <div class="text-center" style="color: #1369b0">Lade Ergebnisse...</div>
         </v-container>
 
-        <v-container class="pa-0 mt-2 pb-8" style="min-height: 400px" v-if="!loading && metaData.results">
+        <v-container class="pa-0 mt-2 pb-8" style="min-height: 400px" v-if="!loading">
           <v-row>
             <v-col cols="12">
-              <h2>{{ metaData.nation }}</h2>
+              <h2 v-if="metaData.results">{{ metaData.nation }}</h2>
               <v-col :cols="mobile ? 12 : 8" class="pa-0">
                 <v-alert type="success" variant="tonal" class="my-2" v-if="metaData.results">
                   <v-row>
@@ -76,7 +76,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
                 </v-alert>
               </v-col>
 
-              <v-col cols="12" class="pa-0">
+              <v-col cols="12" class="pa-0" v-if="metaData.results">
                 <v-table class="tableStyles" density="compact">
                   <tbody class="nth-grey">
                   <template v-for="row in tableData">

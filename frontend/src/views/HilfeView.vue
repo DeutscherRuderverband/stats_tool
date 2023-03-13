@@ -8,7 +8,7 @@
       <v-col>
         <h2>Allgemeines</h2>
         <p>Auf <a href="https://drv-stats.up.railway.app/">https://drv-stats.up.railway.app/</a> können automatisiert
-          erfasste öffentlich zugängliche Wettkampf- und Ergebnisdaten (EM, WM, OS) anhand verschiedener Filterkriterien
+          erfasste öffentlich zugängliche Wettkampf- und Ergebnisdaten anhand verschiedener Filterkriterien
           abgerufen werden. Hierzu stehen sechs Module zur Verfügung:</p>
         <br>
         <h3>Kalender</h3>
@@ -110,11 +110,11 @@ export default {
     return {
       mobile: false,
       events: {
-        "EMM": "European Championship/Europameisterschaft",
-        "WChM": "World Championship/Weltmeisterschaft",
-        "WCM": "Worldcup/Weltcup",
-        "OGM": "Olympic Games/Olympische Spiele",
-        "LSM": "Langstrecke",
+        "EM": "European Championship/Europameisterschaft",
+        "WCh": "World Championship/Weltmeisterschaft",
+        "WC": "Worldcup/Weltcup",
+        "OG": "Olympic Games/Olympische Spiele",
+        "LS": "Langstrecke",
         "DKBM": "Deutsche Kleinbootmeisterschaft"
       },
       agegroups: {

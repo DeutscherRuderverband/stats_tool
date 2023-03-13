@@ -113,7 +113,10 @@ def get_race_analysis_filter_results() -> dict:
         - year
         - competition_type
     of interest.
-    @param filter_dict: example for filter_dict {  "year": 2008, "competition_type": f5da0ad6-afea-436c-a396-19de6497762f  }
+    OR 
+    This endpoint is used, when the user clicks on a competition in the calendar subpage.
+    BOTH USAGES ARE VALID!
+    @param filter_dict: example for filter_dict {  "year": 2008, "competition_type": f5da0ad6-afea-436c-a396-19de6497762f , [OPTIONAL] "competition_id": 42 }
     @return: nested dict/json: structure containing competitions, their events and their races respectively.
     See https://github.com/N10100010/DRV_project/blob/api-design/doc/backend-api.md#user-auswahl-jahr-einzeln-und-wettkampfklasse-zb-olympics for mock of return value.
 
@@ -121,26 +124,37 @@ def get_race_analysis_filter_results() -> dict:
     from datetime import datetime
     import logging
 
-    year = request.json["data"].get('year')
-    competition_type_id = request.json["data"].get('competition_type') 
+    year = request.json["data"].get('year', None)
+    competition_type_id = request.json["data"].get('competition_type', None) 
+    competition_id = request.json["data"].get('competition_id', None) 
 
-    logging.debug(f"Year: {year}, comp cat: {competition_type_id}")
+    logging.info(f"Year: {year}, comp cat: {competition_type_id}, comp id: {competition_id}")
 
     session = Scoped_Session()
 
-    statement = (
-        select(
-            model.Competition
-        )
-        .join(model.Competition.competition_type)
-        .join(model.Competition_Type.competition_category)
-        .where(
-            and_(
-                model.Competition_Type.additional_id_ == competition_type_id,
-                model.Competition.year == year,
+    if competition_id: 
+        statement = (
+            select(
+                model.Competition
+            )
+            .where(
+                model.Competition.id == competition_id
             )
         )
-    )
+    else: 
+        statement = (
+            select(
+                model.Competition
+            )
+            .join(model.Competition.competition_type)
+            .join(model.Competition_Type.competition_category)
+            .where(
+                and_(
+                    model.Competition_Type.additional_id_ == competition_type_id,
+                    model.Competition.year == year,
+                )
+            )
+        )
 
     filtered_competitions = session.execute(statement).fetchall()
 
@@ -224,7 +238,7 @@ def get_matrix() -> dict:
         .join(model.Competition_Type.competition_category)
         .where(
             model.Intermediate_Time.distance_meter == 2000,
-            # model.Intermediate_Time.is_outlier == False, 
+            model.Intermediate_Time.is_outlier == False, 
             model.Intermediate_Time.result_time_ms != 0
         )
         .group_by(
@@ -318,7 +332,7 @@ def get_race(race_id: int) -> dict:
         year_start=datetime.date.today().year - 4
     )
 
-    intermediates_figures = compute_intermediates_figures(race.race_boats, force_500m_grid=True)
+    intermediates_figures = compute_intermediates_figures(race.race_boats)
 
     result = {
         "race_id": race.id,
@@ -375,38 +389,36 @@ def get_race(race_id: int) -> dict:
 
         # intermediates
         strokes_for_intermediates = strokes_for_intermediate_steps(race_boat.race_data)
-        sorted_intermediates = sorted(race_boat.intermediates, key=lambda x: x.distance_meter)
-        intermediate: model.Intermediate_Time
-        for intermediate in sorted_intermediates:
-            figures = intermediates_figures[intermediate.race_boat_id][intermediate.distance_meter]
-            result_time_ms = intermediate.result_time_ms
-            if intermediate.is_outlier:
-                continue
-            if intermediate.invalid_mark_result_code:
-                result_time_ms = intermediate.invalid_mark_result_code.id
-
-            rb_result['intermediates'][str(intermediate.distance_meter)] = {
-                "rank": intermediate.rank,
-                "time [millis]": result_time_ms,
-                "pace [millis]": figures.get('pace'),
-                "speed [m/s]": figures.get('speed'),
-                "deficit [millis]": figures.get('deficit'),
-                "rel_diff_to_avg_speed [%]": figures.get('rel_diff_to_avg_speed'),
-                "stroke [1/min]": strokes_for_intermediates.get(intermediate.distance_meter)
+        for distance_meter, figures in intermediates_figures[race_boat.id].items(): # ❌ TODO: iterate over figure matrix (see intermediates_figures) to provide dicts for all 'cells'
+            intermediate: model.Intermediate_Time = figures["__intermediate"]
+            intermediate_dict = {
+                "rank": None,
+                "time [millis]": None,
+                "pace [millis]": None,
+                "speed [m/s]": None,
+                "deficit [millis]": None,
+                "rel_diff_to_avg_speed [%]": None,
+                "stroke [1/min]": None,
+                "is_outlier": None
             }
-            # relative difference to average time at this mark
+            rb_result['intermediates'][str(distance_meter)] = intermediate_dict
+
+            result_time = figures.get('result_time')
+            intermediate_dict["time [millis]"] = result_time
+
+            is_valid_mark = isinstance(result_time, int)
+            if is_valid_mark:
+                intermediate_dict.update({
+                    "rank": intermediate.rank if intermediate else None,
+                    "pace [millis]": figures.get('pace'),
+                    "speed [m/s]": figures.get('speed'),
+                    "deficit [millis]": figures.get('deficit'),
+                    "rel_diff_to_avg_speed [%]": figures.get('rel_diff_to_avg_speed'),
+                    "stroke [1/min]": strokes_for_intermediates.get(distance_meter),
+                    "is_outlier": intermediate.is_outlier if intermediate else None
+                })
 
     return Response(json.dumps(result, sort_keys=False), content_type='application/json')
-
-
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    ''' Enable Flask to automatically remove database sessions at the
-    end of the request or when the application shuts down.
-    Ref: http://flask.pocoo.org/docs/patterns/sqlalchemy/
-    Ref: https://stackoverflow.com/a/45719168
-    '''
-    Scoped_Session.remove()
 
 
 @app.route('/get_report_boat_class', methods=['POST'])
@@ -427,8 +439,7 @@ def get_report_boat_class():
 
     statement = (
         select(
-            model.Race.id.label("race_id"),
-            model.Competition.id.label("competition_id")
+            model.Race.id.label("race_id")
         )
         .join(model.Race.event)
         .join(model.Event.competition)
@@ -449,7 +460,7 @@ def get_report_boat_class():
     comp_categories = set()
 
     for row in result:
-        race_id, competition_id = row
+        race_id = row
         race = session.query(model.Race).get(race_id)
         boat_class_name = race.event.boat_class.abbreviation
         comp_categories.add(race.event.competition.competition_type.competition_category.name)
@@ -466,7 +477,9 @@ def get_report_boat_class():
                 race_dates.append(
                     '{:02d}'.format(date.year) + '-{:02d}'.format(date.month) + '-{:02d}'.format(date.day))
                 intermediate_times_for_race_boat = session.query(model.Intermediate_Time).filter(
-                    model.Intermediate_Time.race_boat_id == race_boat.id).all()
+                    model.Intermediate_Time.race_boat_id == race_boat.id, 
+                    model.Intermediate_Time.is_outlier == False
+                ).all()
                 for intermediate_time in intermediate_times_for_race_boat:
                     if intermediate_time.distance_meter == 500:
                         int_times_500.append(intermediate_time.result_time_ms)
@@ -991,3 +1004,13 @@ def get_calendar(year: int):
                 }
             })
     return result
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    ''' Enable Flask to automatically remove database sessions at the
+    end of the request or when the application shuts down.
+    Ref: http://flask.pocoo.org/docs/patterns/sqlalchemy/
+    Ref: https://stackoverflow.com/a/45719168
+    '''
+    Scoped_Session.remove()

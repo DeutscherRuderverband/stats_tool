@@ -142,7 +142,6 @@ def assoc_has_athlete_uuid(uuid: str):
 def wr_map_race_boat(session, entity: model.Race_Boat, data):
     entity.country = wr_insert(session, model.Country, wr_map_country, get_(data, 'country'))
     
-    # Current Strategy: Delete all associations and create new ones according to given data.
     for raceBoatAthlete in get_(data, 'raceBoatAthletes', []):
         athlete_data = get_(raceBoatAthlete, 'person', {})
         if athlete_data:
@@ -303,6 +302,10 @@ def wr_map_competition_prescrape(session, entity, data):
     entity.name = get_(data, 'DisplayName')
     with suppress(TypeError, ValueError):
         entity.year = int(get_(data, 'Year'))
+    with suppress(TypeError, ValueError):
+        entity.start_date = dt.datetime.fromisoformat(get_(data, 'StartDate', ''))
+    with suppress(TypeError, ValueError):
+        entity.end_date = dt.datetime.fromisoformat(get_(data, 'EndDate', ''))
     return entity
 
 
@@ -342,18 +345,7 @@ def __wr_map_competition(session, entity: model.Competition, data):
 
 
 def wr_map_competition_scrape(session, entity: model.Competition, data: dict):
-    # Check maintenance state
-    STATE_RESULT_STATE = model.Enum_Maintenance_Level.world_rowing_api_scraped.value
-    STATE_UPPER_LIMIT  = STATE_RESULT_STATE
-
-    state = entity.scraper_maintenance_level
-    update_entity = state == None or state <= STATE_UPPER_LIMIT
-    if not update_entity:
-        return entity
-
-    entity.scraper_maintenance_level = STATE_RESULT_STATE
     entity.scraper_data_provider = model.Enum_Data_Provider.world_rowing.value
-    entity.scraper_last_scrape = dt.datetime.now()
 
     entity = __wr_map_competition(session, entity, data)
     return entity

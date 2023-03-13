@@ -1,6 +1,6 @@
 <template>
   <Navigation />
-    <RouterView />
+  <RouterView />
   <FooterC />
 </template>
 

@@ -1,17 +1,20 @@
 import logging
 from contextlib import suppress
+from itertools import count
 
 from sqlalchemy import select, update
 from sqlalchemy.sql.expression import func
+from sqlalchemy.orm import joinedload
 
+from .common import bubble_up_2km_intermediate, bubble_down_2km_intermediate
 from model import model
 from model import dbutils
 from scraping_wr import api
 from scraper_procedures import outlier_detection
-from common.helpers import Timedelta_Parser, get_
+from common.helpers import Timedelta_Parser, get_, true_every_nth
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("postprocessing")
 
 def _wr_select_boat_class(boat_classes_dict, search_str):
     result = None
@@ -21,12 +24,12 @@ def _wr_select_boat_class(boat_classes_dict, search_str):
             break
     return result
 
-def refresh_world_best_times(session, logger=logger):
+def refresh_world_best_times(session):
     wbts = api.get_world_best_times()
     boat_classes = api.get_boatclasses()
     for wbt in wbts:
         boat_class_abbr = wbt.get('boat_class','')
-        logger.error(f'Boat Class "{boat_class_abbr}"')
+        logger.info(f'Boat Class "{boat_class_abbr}"')
         boat_class_data = _wr_select_boat_class(boat_classes, boat_class_abbr)
         if not boat_class_data:
             logger.error(f'Could not resolve uuid of boat class')
@@ -64,6 +67,14 @@ def refresh_world_best_times(session, logger=logger):
         race_boat.result_time_ms = result_time_ms
         race_boat.invalid_mark_result_code_id = None
 
+        bubble_down_2km_intermediate(
+            session=session,
+            race_boat=race_boat,
+            data_source=model.Enum_Data_Source.world_rowing_api.value,
+            force_overwrite=True,
+            outlier_val=False
+        )
+
         boat_class.world_best_race_boat = race_boat
 
         logger.info(f"Updating wbt for boat_class: {boat_class_abbr}")
@@ -71,7 +82,7 @@ def refresh_world_best_times(session, logger=logger):
     session.commit()
 
 
-def mark_outliers(session, logger=logger):
+def mark_outliers(session):
     # todo: add me to the actual postprocessing
     with model.Scoped_Session() as session:
         statement = select(model.Boat_Class).order_by(model.Boat_Class.id)
@@ -87,57 +98,33 @@ def mark_outliers(session, logger=logger):
 
             # Low Prio TODO: session.commit() should ideally be executed here
 
-# def _get_competitions_to_maintain(session):
-#     """Returns tuple: competitions_iterator, number_of_competitions"""
-#     DATA_PROVIDER_ID = model.Enum_Data_Provider.world_rowing.value
-#     LEVEL_SCRAPED = model.Enum_Maintenance_Level.world_rowing_api_scraped.value
-#     LEVEL_POSTPROCESSED = model.Enum_Maintenance_Level.world_rowing_api_postprocessed.value
-#     scrape_before_date = datetime.datetime.now() - datetime.timedelta(days=int(SCRAPER_MAINTENANCE_PERIOD_DAYS))
+def bubble_down_2km_intermediate_(session, force_overwrite=True, outlier_val=True):
+    statement = (
+        select(model.Race_Boat)
+        # .options( joinedload(model.Race_Boat.intermediates) )
+    )
+    iterator = session.execute(statement).scalars()
+    entities_written = 0
+    for race_boat, n, print_log in zip(iterator, count(), true_every_nth(1500)):
+        written = bubble_down_2km_intermediate(session=session, race_boat=race_boat, force_overwrite=force_overwrite, outlier_val=outlier_val)
+        if written:
+            entities_written += 1
 
-#     statement = (
-#         select(model.Competition)
-#         .where(model.Competition.scraper_data_provider == DATA_PROVIDER_ID)
-#         .where(
-#             or_(
-#                 model.Competition.scraper_maintenance_level == LEVEL_SCRAPED,
-#                 and_(
-#                     model.Competition.scraper_maintenance_level == LEVEL_POSTPROCESSED,
-#                     model.Competition.scraper_last_scrape < scrape_before_date
-#                 )
-#             )
-#         )
-#     )
-#     competitions = session.execute(statement).scalars().all()
-#     return competitions, len(competitions)
+        if print_log:
+            logger.info(f'... visited so far: {n}')
 
+    session.commit()
+    logger.info(f"Bubbled down count={entities_written}")
 
 def postprocess():
-    logger = logging.getLogger("postprocessing")
     with model.Scoped_Session() as session:
-        logger.info(f"Fetch & write world best times")
-        refresh_world_best_times(session=session, logger=logger)
+        logger.info(f"Bubble-down precedure (synchronize/create 2km intermediate)")
+        bubble_down_2km_intermediate_(session=session, force_overwrite=True, outlier_val=True)
+
+        logger.info(f"Fetch & write world best times. Also syncs to 2km intermediate")
+        refresh_world_best_times(session=session)
 
         logger.info("Outlier Marking")
-        mark_outliers(session=session, logger=logger)
-
-
-"""
-        logger.info("Find competitions that have to be maintained")
-        competitions, N = _get_competitions_to_maintain(session)
-        logger.info(f"Found N={N} competitions")
-        for competition in competitions:
-            competition_uuid = competition.additional_id_
-            if not competition_uuid:
-                logger.error(f"Competition with id={competition.id} has no UUID (w.r.t. World Rowing API); Skip")
-                continue
-            logger.info(f"Competition id={competition.additional_id_}")
-
-            # New concept: api.get_by_competition_id_(..., parse_pdf=True)
-            #    -> does it make sense to put validation logic (db/model imports) inside api?
-
-            logger.info("Fetch & Parse PDF")
-
-            logger.info("Check Quality of both Datasets")
-
-            # logger.info("Mark maintenance state in db") # Deprecated (?)
-"""
+        mark_outliers(session=session)
+        
+        session.commit()

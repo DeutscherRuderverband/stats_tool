@@ -148,6 +148,10 @@
 
           <v-row>
             <v-col cols="12">
+              <p v-show="outliers.size > 0" style="color: orange">
+                <v-icon color="orange">mdi-information</v-icon>
+                <b>Diese Tabelle enthält Ausreißerwerte.</b>
+              </p>
               <v-table class="tableStyles" density="compact">
                 <thead>
                 <tr>
@@ -156,7 +160,7 @@
                 </thead>
                 <tbody class="nth-grey">
                 <tr v-for="(country, idx) in tableData.slice(1)">
-                  <td v-for="item in country" class="px-2">
+                    <td v-for="item in country" :key="item" class="px-2" :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
                     <template v-if="Array.isArray(item)">
                       <template v-for="element in item">
                         <a v-if="element && typeof element === 'object'
@@ -275,6 +279,10 @@ export default {
     ...mapState(useRennstrukturAnalyseState, {
       intermediateChartOptions: "getIntermediateChartOptions"
     }),
+    ...mapState(useRennstrukturAnalyseState, {
+      outliers: "getOutlierCountries"
+    }),
+
   },
   data() {
     return {
@@ -483,6 +491,20 @@ export default {
       immediate: true,
       deep: true,
       handler(to, from) {
+          
+        if (typeof to !== 'undefined') {
+          // redirect from calendar to RSA 
+          if (to.fullPath.includes("?competition_id=")) {
+            const url = new URL(window.location.href);
+            const comp_id = url.searchParams.get("competition_id");
+            this.displayCompetitions = !!comp_id; 
+            const store = useRennstrukturAnalyseState()
+            const data = {
+              "competition_id": comp_id
+            }
+            store.fetchCompetitionData(data)
+          }
+        }
         if (typeof from !== 'undefined' && typeof to !== 'undefined') {
           // from events backwards to comp
           if (to.path === "/rennstrukturanalyse" && from.path.match(/\/rennstrukturanalyse\/[\w-]+/)) {

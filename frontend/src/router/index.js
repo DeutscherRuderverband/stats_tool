@@ -10,6 +10,7 @@ import ImpressumView from "@/views/ImpressumView.vue";
 import HilfeView from "@/views/HilfeView.vue";
 import MitwirkendeView from "@/views/MitwirkendeView.vue";
 import LoginView from "@/views/LoginView.vue";
+import PageNotFoundView from '@/views/PageNotFoundView.vue';
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -69,6 +70,11 @@ const router = createRouter({
             name: 'Login',
             component: LoginView
         },
+        {
+            path: '/:catchAll(.*)',
+            name: 'PageNotFound',
+            component: PageNotFoundView
+        }
     ]
 })
 

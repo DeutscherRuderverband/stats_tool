@@ -108,9 +108,6 @@ class Enum_Maintenance_Level(enum.Enum):
     """Enum for Competition Entity"""
     world_rowing_api_prescraped = 25
     world_rowing_api_scraped = 50
-    world_rowing_api_postprocessed = 100
-
-    manually_entered_data = 1000
 
 class Enum_Data_Provider(enum.Enum):
     manually_entered = 1
@@ -331,7 +328,7 @@ class Race(Base): # https://world-rowing-api.soticcloud.net/stats/api/race/b0eae
 
     # To be able to filter for standard 2000m races // inferred by year threshold
     # NOTE: Consider to hold this info at event or even competition level
-    course_length = Column(Integer, index=True)
+    # course_length = Column(Integer, index=True) # assumed 2km for all data existing in database
     
     pdf_url_results = Column(String)
     pdf_url_race_data = Column(String)
@@ -441,10 +438,9 @@ class Intermediate_Time(Base):
     result_time_ms = Column(Integer) # in milliseconds // TODO: as String?
 
     # outlier detection
-    is_outlier = Column(Boolean)
+    is_outlier = Column(Boolean, nullable=False, default=True)
 
     # other wr API fields
-    difference__ = Column(String)
     start_position__ = Column(String)
 
 

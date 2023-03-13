@@ -251,8 +251,8 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
 
 def print_stats(total: int, errors: int, empties: int, rate: str) -> None:
     """ Prints basic statistics for the pdf reading process. """
-    logger.warning("{txt:-^25}".format(txt=f"\nRead: {total - errors}/{total} PDFs | ({rate}%)"))
-    logger.warning("{txt:-^25}".format(txt=f" Empty Files: {empties} "))
+    logger.debug("{txt:-^25}".format(txt=f"\nRead: {total - errors}/{total} PDFs | ({rate}%)"))
+    logger.debug("{txt:-^25}".format(txt=f" Empty Files: {empties} "))
 
 
 def check_speed_stroke(df: pd.DataFrame, lb: float = 0.0, ub: float = float('inf')) -> list:

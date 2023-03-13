@@ -6,6 +6,12 @@ const formatMilliseconds = ms => {
     if (!ms) {
         return '00:00.00';
     }
+
+    const is_string = typeof ms === 'string' || ms instanceof String;
+    if (is_string) {
+        return ms;
+    }
+
     return new Date(ms).toISOString().slice(14, -2);
 };
 
@@ -24,6 +30,7 @@ export const useRennstrukturAnalyseState = defineStore({
         loadingState: false,
         compData: [],
         tableExport: [],
+        outlierCountries: new Set(),
         data: {
             filterOptions: {
                 "years": [0, 0],
@@ -75,6 +82,9 @@ export const useRennstrukturAnalyseState = defineStore({
         getRaceAnalysisFilterOptions(state) {
             return state.data.filterOptions
         },
+        getOutlierCountries(state) {
+            return state.outlierCountries
+        },
         getOldTableData(state) {
             return state.data.raceData[0].data
         },
@@ -94,7 +104,7 @@ export const useRennstrukturAnalyseState = defineStore({
             const tableData = [];
             tableData.push(tableHead);
 
-            state.data.raceData[0].race_boats.forEach(dataObj => {
+            state.data.raceData[0].race_boats.forEach((dataObj, countryIdx) => {
                 if (dataObj.intermediates !== '0') {
                     const rowData = [dataObj.rank, dataObj.lane, dataObj.name];
                     const athleteNames = Object.values(dataObj.athletes).map(athlete => {
@@ -116,6 +126,9 @@ export const useRennstrukturAnalyseState = defineStore({
                     });
                     for (const [index, [key, intermediate]] of Object.entries(dataObj.intermediates).entries()) {
                         if (key !== '0') {
+                            if (intermediate["is_outlier"]) {
+                                state.outlierCountries.add(countryIdx)
+                            }
                             firstArray.push(
                                 formatMilliseconds(intermediate["time [millis]"]),
                                 formatMilliseconds(intermediate["pace [millis]"]),
@@ -302,9 +315,9 @@ export const useRennstrukturAnalyseState = defineStore({
                             type: 'time',
                             time: {
                                 parser: 'mm:ss.SS',
-                                unit: 'millisecond',
+                                unit: 'second',
                                 displayFormats: {
-                                    millisecond: 'mm:ss.SS',
+                                    second: 'mm:ss.SS',
                                     tooltip: 'mm:ss.SS'
                                 }
                             },
@@ -349,6 +362,15 @@ export const useRennstrukturAnalyseState = defineStore({
             await axios.get(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_race/${raceId}/`)
                 .then(response => {
                     this.data.raceData[0] = response.data
+                    this.loadingState = false
+                }).catch(error => {
+                    console.error(`Request failed: ${error}`)
+                })
+        },
+        async fetchCompetitionData(data) {
+            await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
+                .then(response => {
+                    this.data.analysis = response.data
                     this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)

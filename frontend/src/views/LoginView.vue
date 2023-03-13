@@ -64,7 +64,8 @@ export default {
         });
         const token = response.data.access_token;
         localStorage.setItem('session_token', token)
-        router.push('/');
+        let redirect_url = this.$route.query.redirect || '/'
+        router.push(redirect_url).then(() => {this.$router.go()});
 
       } catch (error) {
         console.log("Login failed. Wrong credentials.")
