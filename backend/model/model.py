@@ -8,65 +8,19 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import Column, ForeignKey, Integer, BigInteger, Float, String, Boolean, Date, DateTime, Enum
 
-# logging stuff
 import logging
-# logging.basicConfig()
 # logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
-
-# In-memory
-# engine = create_engine("sqlite:///:memory:", echo=True)
-
-# sqlite file relative path
-# engine = create_engine("sqlite:///foo.sqlite", echo=True)
 
 # postgres
 # engine = create_engine("postgresql+psycopg2://postgres:postgres@localhost:5432/rowing", echo=True)
 
 # Session = sessionmaker(bind=engine)
-
-# connect will actually establish a connection or create/load the sqlite file
 # engine.connect()
 
 """
 TODO:
-    - https://worldrowing.com/event/2018-world-rowing-coastal-championships -> Has Result PDFs but not in JSON API, only in HTML
-    - https://worldrowing.com/event/2021-world-rowing-final-paralympic-qualification-regatta -> same
-    - Wettkampfklassen / Competition Classes
-
-    - !!! CountryCodes are not official
-    - ??? communityTypes -> U23, Senior, ...
-        -> https://worldrowing.com/event/2022-world-rowing-under-23-championships
-        -> https://world-rowing-api.soticcloud.net/stats/api/competition/7ee519e5-288d-4585-bab4-bf916dca49b8?include=venue,venue.country,competitionType.competitionCategory,communityTypes
-        -> BEWARE: Multiple communities: https://world-rowing-api.soticcloud.net/stats/api/competition/718b3256-e778-4003-88e9-832c4aad0cc2?include=venue,venue.country,competitionType.competitionCategory,communityTypes
-
-    - world-rowing GUIDs -> As String or Postgres UUID ?
-    - race data (high res)
-    - Specify Not Null Columns
-    - add backref / back_populates for easy access ---> use back_populates for clean code
-    - add athlete names
-    - add progression string
-    - Consider foreign key checking via constraints
-    - Define Indexes
-    - Ask DRV: Time resolution (milli, micro) !!! -> seems to be millisec -> research what res postgres' INTERVAL has
-    - No data source hints are written into db (?)
-    - INCLUDE PDFs!!! -> More maximalist apporach
-
-    - Timestamp and timezones:
-        https://www.postgresqltutorial.com/postgresql-tutorial/postgresql-timestamp/
-        https://codeofmatt.com/please-dont-call-it-epoch-time/#:~:text=Unix%20timestamps%20are%20always%20based,without%20any%20leaps%20ever%20occurring.
-
-    - Query ORM Examples: https://docs.sqlalchemy.org/en/14/orm/queryguide.html#select-statements
-        - Query case insensiive https://stackoverflow.com/a/47642360
-https://worldrowing.com/event/2022-world-rowing-cup-iii
-https://world-rowing-api.soticcloud.net/stats/api/race/?include=racePhase%2Cevent.competition.competitionType%2Cevent.competition.competitionType.competitionCategory%2Cevent.boatClass&filter%5Bevent.competitionId%5D=b56cf9a5-a7d3-4e64-9571-38218f39413b&sort%5Bdate%5D=asc
-
-    - Efficiency of relationship fields / lazy loading:
-        - https://stackoverflow.com/q/34186225
-        - https://docs.sqlalchemy.org/en/14/orm/loading_relationships.html
-
-    - Consider BigInteger for Primary Key for races / athletes
-        - Will it map to bigserial postgres type?
+    - Consider: https://worldrowing.com/event/2018-world-rowing-coastal-championships -> Has Result PDFs but not in JSON API, only in HTML
 """
 
 # Provide DB objects
@@ -448,11 +402,4 @@ class Intermediate_Time(Base):
 
 
 if __name__ == '__main__':
-    # Problem with PYTHONPATH vs CWD/PWD: https://stackoverflow.com/a/24435742
-    from sys import path as syspath
-    print("PYTHONPATH", syspath[0])
-    # import backend.scraping_wr.api
-
-    # solution: run as module `python -m backend.model.model`
-    # from .. scraping_wr import api
-    # print("api", api)
+    pass

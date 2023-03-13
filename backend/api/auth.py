@@ -10,6 +10,7 @@ if os.environ.get('BACKEND_MASTER_PASSWORD'):
     MASTER_PASSWORD_HASHED = hashed(os.environ.get('BACKEND_MASTER_PASSWORD'))
 
 if __name__ == '__main__':
+    # run this module in order to generate a hash that can be used for MASTER_PASSWORD_HASHED
     pass_raw = input("Password to hash: ")
     pass_ = pass_raw.strip()
     hash_ = hashed(pass_)

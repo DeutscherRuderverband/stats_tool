@@ -7,7 +7,6 @@ import datetime as dt
 from common.helpers import Timedelta_Parser, parse_wr_intermediate_distance_key, get_, select_first
 from common import rowing
 
-# from ..scraping_wr import utils_wr
 from scraping_wr import api
 
 from . import model
@@ -76,7 +75,6 @@ def wr_map_country(session, entity, data):
 
 def wr_map_boat_class(session, entity, data):
     entity.abbreviation = get_(data, 'DisplayName')
-    # TODO: entity.name // full name not in API data
     return entity
 
 
@@ -224,8 +222,6 @@ def wr_map_race(session, entity: model.Race, data):
     entity.progression = get_(data, 'Progression')
     entity.rsc_code = rsc_code
 
-    # entity.course_length = rowing.get_course_length(...) # done in maintenace
-
     entity.pdf_url_results = get_(api.select_pdf_(get_(data, 'pdfUrls', []), 'results'), 'url')
     entity.pdf_url_race_data = get_(api.select_pdf_(get_(data, 'pdfUrls', []), 'race data'), 'url')
 
@@ -364,14 +360,6 @@ if __name__ == '__main__':
     # ----------------------------------
 
     import json
-
-    ### NOTE: database_exists() is deprecated if database does not exist the config is wrong.
-    ### this behaviour shouldn't be enforced like that. env var PGDATABASE has to be used.
-    # from sqlalchemy_utils import database_exists, create_database
-    # if not database_exists(engine.url): 
-    #     print("----- Create Database 'rowing' -----")
-    #     create_database(engine.url)
-
     logging.basicConfig(level=logging.DEBUG)
 
     if args.drop:

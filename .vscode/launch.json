@@ -2,24 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Py: Dev Playground (Rapha)",
-            "type": "python",
-            "request": "launch",
-            "cwd": "${workspaceFolder}/backend",
-            "program": "raphael_temp.py",
-            "justMyCode": true
-        },
-        {
-            "name": "Py: Scrape competition to JSON",
+            "name": "Py: Dev Playground",
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/backend",
             "program": "dev-playground.py",
-            "args": [
-                "grabc",
-                "--out",
-                "tmp.dump.json"
-            ],
             "justMyCode": true
         },
         {
@@ -31,7 +18,7 @@
             "args": [
                 "--create",
                 "--insert",
-                "tmp.dump.json"
+                "tmp.competition.json"
             ],
             "env": {
                 "DB_VERBOSITY": "1"
@@ -111,14 +98,6 @@
                 "--port=5000"
             ],
             "console": "integratedTerminal",
-            "justMyCode": true
-        },
-        {
-            "name": "Py: Dev Playground (Nick)",
-            "type": "python",
-            "request": "launch",
-            "cwd": "${workspaceFolder}/backend",
-            "program": "dev-playground.py",
             "justMyCode": true
         }
     ]

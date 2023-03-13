@@ -1,6 +1,6 @@
 from tenacity import retry, wait_exponential, stop_after_attempt
 from datetime import datetime
-from typing import Union
+from typing import Union, Tuple
 
 import re
 import requests
@@ -155,7 +155,7 @@ def process_rsc_code(code: str) -> tuple[str, str]:
     return boat_class, phase
 
 
-def extract_race_phase_from_rsc(processed: str) -> (str, int):
+def extract_race_phase_from_rsc(processed: str) -> Tuple[str,int]:
     """
     This extraction allows to identify a race, within a competition, given the class of a race.
     CAUTION: Expects the second value from the function process-rsc-code.
