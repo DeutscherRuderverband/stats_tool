@@ -439,6 +439,7 @@ export default {
       }
       router.push("/rennstrukturanalyse/" + compId)
       this.lastCompId = compId
+      competition.sort((a,b) => a.boat_class.localeCompare(b.boat_class))
       this.events = competition
       this.breadCrumbs.push({title: displayName})
       this.displayCompetitions = false
