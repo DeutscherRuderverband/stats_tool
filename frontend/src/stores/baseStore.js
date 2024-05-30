@@ -216,12 +216,13 @@ export const useRennstrukturAnalyseState = defineStore({
                 const backgroundColor = COLORS[colorIndex % 6]
                 const borderColor = COLORS[colorIndex % 6]
                 const data = Object.values(value)
+                data.splice(0,0,0)           //add data at position 0
                 datasets.push({label, backgroundColor, borderColor, data})
                 colorIndex++;
             });
             const allKeys = Object.values(speedPerTeam).map(obj => Object.keys(obj))
             return {
-                labels: Array.from(new Set([].concat(...allKeys))),
+                labels: ['0', ...Array.from(new Set([].concat(...allKeys)))],       //Add 0 in x-axis
                 datasets,
             };
         },
@@ -235,13 +236,13 @@ export const useRennstrukturAnalyseState = defineStore({
                     const label = dataObj.name
                     const backgroundColor = COLORS[colorIndex % 6]
                     const borderColor = COLORS[colorIndex % 6]
-                    //dataObj.race_data["0"] = {'speed [m/s]': 0, 'stroke [1/min]': 0, 'propulsion [m/stroke]': 0}
                     const data = Object.values(dataObj.race_data).map(obj => obj[key])
+                    data.splice(0,0,null)           //No value at 0
                     datasets.push({label, backgroundColor, borderColor, data})
                     colorIndex++
                 });
                 return {
-                    labels: Object.keys(state.data.raceData[0].race_boats[0].race_data),
+                    labels: ['0', ...Object.keys(state.data.raceData[0].race_boats[0].race_data)], //Add 0 in x-axis
                     datasets
                 };
             })
@@ -275,6 +276,7 @@ export const useRennstrukturAnalyseState = defineStore({
             const max_val = Math.max(...state.data.raceData[0].race_boats.map(obj =>
                 Math.max(...Object.values(obj.intermediates).map(el => el["deficit [millis]"]))
             ));
+            const number_of_boats = state.data.raceData[0].race_boats.length
 
             return [{
                 responsive: true,
@@ -291,7 +293,12 @@ export const useRennstrukturAnalyseState = defineStore({
                         title: {
                             display: true,
                             text: 'Platzierung'
-                        }
+                        },
+                        ticks: {
+                            stepSize: 1
+                        },
+                        min: 1,
+                        max: number_of_boats
                     }
                 },
                 plugins: {
