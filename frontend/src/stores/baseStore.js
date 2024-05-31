@@ -122,7 +122,11 @@ export const useRennstrukturAnalyseState = defineStore({
                     var totalTime = 0
                     if (dataObj.intermediates && dataObj.intermediates[2000] && dataObj.intermediates[2000]["time [millis]"]) {
                         totalTime = dataObj.intermediates[2000]["time [millis]"]
+                        if(totalTime == 'NaN') {
+                            totalTime = 'DNS'
+                        }
                     }
+                    console.log(`${dataObj.name} ${totalTime}`)
                     //Zeit
                     rowData.push(formatMilliseconds(totalTime))
 
@@ -134,19 +138,23 @@ export const useRennstrukturAnalyseState = defineStore({
                             if (intermediate["is_outlier"]) {
                                 state.outlierCountries.add(countryIdx)
                             }
-
-                            const time = intermediate["time [millis]"]
-                            const rank = intermediate["rank"]
-                            const pace = intermediate["pace [millis]"]
-                            const relativePace = (pace / totalTime * 400).toFixed(1)
-                            const strokeFrequency = intermediate["stroke [1/min]"] ? roundToTwoDecimal(intermediate["stroke [1/min]"]).toString() : "-"
-                            const speed = intermediate["speed [m/s]"] ? roundToTwoDecimal(intermediate["speed [m/s]"]): "-"
+                            if(totalTime != 'DNS' || totalTime == 0) {
+                                const time = intermediate["time [millis]"]
+                                const rank = intermediate["rank"]
+                                const pace = intermediate["pace [millis]"]
+                                const relativePace = (pace / totalTime * 400).toFixed(1)
+                                const strokeFrequency = intermediate["stroke [1/min]"] ? roundToTwoDecimal(intermediate["stroke [1/min]"]).toString() : "-"
+                                const speed = intermediate["speed [m/s]"] ? roundToTwoDecimal(intermediate["speed [m/s]"]): "-"
                            
-                            intermediate_values.push([
-                                `${formatMilliseconds(time)} (${rank})`,
-                                `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                `${strokeFrequency} (${speed})`]
-                            )
+                                intermediate_values.push([
+                                    `${formatMilliseconds(time)} (${rank})`,
+                                    `${formatMilliseconds(pace)} (${relativePace}%)`,
+                                    `${strokeFrequency} (${speed})`]
+                                )
+                            }
+                            else {
+                                intermediate_values.push('-')
+                            }
                         }
                     }
                     
