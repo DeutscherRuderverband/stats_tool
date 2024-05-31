@@ -92,81 +92,76 @@ export const useRennstrukturAnalyseState = defineStore({
             return state.loadingState
         },
         getTableData(state) {
-            const tableHead = ['Platz', 'Bahn', 'Nation', 'Mannschaft'];
-            const intermediateDistances = state.data.raceData[0].race_boats[0].intermediates
 
+            const tableData = [];
+            const tableHead = ['Platz', 'Bahn', 'Nation', 'Mannschaft', 'Zeit'];
+
+            const intermediateDistances = state.data.raceData[0].race_boats[0].intermediates
             for (const key in intermediateDistances) {
                 // ignore first as this is the starting value
                 if (key !== '0') {
-                    tableHead.push(key + "m", "Position")
+                    tableHead.push(key + "m")
                 }
             }
-            const tableData = [];
-            tableData.push(tableHead);
+            tableHead.push('Relationszeit')
+            tableData.push(tableHead)
 
+            //Iterate over participating race boats
             state.data.raceData[0].race_boats.forEach((dataObj, countryIdx) => {
                 if (dataObj.intermediates !== '0') {
+                    //Platz, Bahn, Nation
                     const rowData = [dataObj.rank, dataObj.lane, dataObj.name];
                     const athleteNames = Object.values(dataObj.athletes).map(athlete => {
                         const link = `/athleten?athlete_id=${athlete.id}`;
                         const name = `(${athlete.boat_position}) ${athlete.first_name} ${athlete.last_name}`;
                         return {link, name};
                     });
+                    //Mannschaft
                     rowData.push(athleteNames);
+                    
+                    var totalTime = 0
+                    if (dataObj.intermediates && dataObj.intermediates[2000] && dataObj.intermediates[2000]["time [millis]"]) {
+                        totalTime = dataObj.intermediates[2000]["time [millis]"]
+                    }
+                    //Zeit
+                    rowData.push(formatMilliseconds(totalTime))
 
-                    const firstArray = [];
-                    const secondArray = [];
-                    const propulsionValues = [];
+                    //dispalys time, rank, pace, relative pace, strokeFrequency and propulsion for each 500m section
+                    const intermediate_values = [];
 
-                    Object.values(dataObj.race_data).forEach(gpsData => {
-                        if (dataObj.intermediates !== '0') {
-                            const propVal = gpsData["propulsion [m/stroke]"]
-                            propulsionValues.push(propVal ? roundToTwoDecimal(propVal) : 0);
-                        }
-                    });
                     for (const [index, [key, intermediate]] of Object.entries(dataObj.intermediates).entries()) {
                         if (key !== '0') {
                             if (intermediate["is_outlier"]) {
                                 state.outlierCountries.add(countryIdx)
                             }
-                            firstArray.push(
-                                formatMilliseconds(intermediate["time [millis]"]),
-                                formatMilliseconds(intermediate["pace [millis]"]),
-                                formatMilliseconds(intermediate["deficit [millis]"])
-                            )
 
-                            const strokeVal = intermediate["stroke [1/min]"]
-                            const speedVal = intermediate["speed [m/s]"]
-                            const propulsionVal = propulsionValues[index]
-                            secondArray.push([
-                                "(" + intermediate["rank"] + ")",
-                                speedVal ? roundToTwoDecimal(speedVal) + "[m/s]" : "–",
-                                strokeVal ? roundToTwoDecimal(strokeVal) + "[1/smin]" : "–",
-                                propulsionVal ? roundToTwoDecimal(propulsionVal) + "[m/Schlag]" : "–"
-                            ])
+                            const time = intermediate["time [millis]"]
+                            const rank = intermediate["rank"]
+                            const pace = intermediate["pace [millis]"]
+                            const relativePace = (pace / totalTime * 400).toFixed(1)
+                            const strokeFrequency = intermediate["stroke [1/min]"] ? roundToTwoDecimal(intermediate["stroke [1/min]"]).toString() : "-"
+                            const speed = intermediate["speed [m/s]"] ? roundToTwoDecimal(intermediate["speed [m/s]"]): "-"
+                           
+                            intermediate_values.push([
+                                `${formatMilliseconds(time)} (${rank})`,
+                                `${formatMilliseconds(pace)} (${relativePace}%)`,
+                                `${strokeFrequency} (${speed})`]
+                            )
                         }
                     }
-                    const chunkSize = 3;
-                    const tempArray = [];
-                    for (let i = 0; i < firstArray.length; i += chunkSize) {
-                        tempArray.push(firstArray.slice(i, i + chunkSize));
-                    }
-                    tempArray.forEach((value, index) => {
+                    
+                    //500m, 1000m, 1500m, 2000m
+                    intermediate_values.forEach(value => {
                         rowData.push(value)
-                        rowData.push(secondArray[index])
                     })
+
+                    //Relationszeit
+                    rowData.push("? %")
+                    
                     tableData.push(rowData);
                 }
             })
-            // changes for correct representation in csv export
-            // deep copy here so the changes for the export won't change the original table data
-            let tableExportData = JSON.parse(JSON.stringify(tableData));
-            for (let i = 1; i < tableExportData.length; i++) {
-                tableExportData[i][3] = tableExportData[i][3].map(el => el.name);
-            }
-            state.tableExport = tableExportData;
 
-            // return original table data for rendering
             return tableData;
         },
         getDeficitInMeters(state) {
