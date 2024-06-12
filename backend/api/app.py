@@ -15,7 +15,7 @@ from flask_cors import CORS
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 
 # disable auth by uncommenting the following line
-# jwt_required = lambda: (lambda x: x) # disable auth
+#jwt_required = lambda: (lambda x: x) # disable auth
 
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import joinedload

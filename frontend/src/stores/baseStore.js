@@ -92,9 +92,17 @@ export const useRennstrukturAnalyseState = defineStore({
             return state.loadingState
         },
         getTableData(state) {
-
+            /*
+            return [["Anzahl", "Zeitraum", "Events", "Position", "Strecken", "Nationen", "Zeit", "500m", "1000m", "1500m", "2000m", "Relationszeit"],
+                    ["5", ["2023 -", "2024"], ["WCH", "WCP"], ["1,2,3 (1,8)", "fa, fb, fc"],["Luzern", "Varese"], "Ger, FRA, NED, USA",
+                    "6:32.05", "1:56.56 (896)", "1:56.56 (896)","1:56.56 (896)","1:56.56 (896)", "?"]]
+                    */
+           
             const tableData = [];
             const tableHead = ['Platz', 'Bahn', 'Nation', 'Mannschaft', 'Zeit'];
+
+            console.log(state.data.raceData[0])
+
 
             const intermediateDistances = state.data.raceData[0].race_boats[0].intermediates
             for (const key in intermediateDistances) {
@@ -122,11 +130,10 @@ export const useRennstrukturAnalyseState = defineStore({
                     var totalTime = 0
                     if (dataObj.intermediates && dataObj.intermediates[2000] && dataObj.intermediates[2000]["time [millis]"]) {
                         totalTime = dataObj.intermediates[2000]["time [millis]"]
-                        if(totalTime == 'NaN') {
+                        if(totalTime == 'NaN') {        //TODO: Mehrere Aunahmen, nicht nur DNS!
                             totalTime = 'DNS'
                         }
                     }
-                    console.log(`${dataObj.name} ${totalTime}`)
                     //Zeit
                     rowData.push(formatMilliseconds(totalTime))
 
@@ -169,8 +176,9 @@ export const useRennstrukturAnalyseState = defineStore({
                     tableData.push(rowData);
                 }
             })
-
             return tableData;
+        
+
         },
         getDeficitInMeters(state) {
             const raceBoats = state.data.raceData[0].race_boats;
@@ -308,7 +316,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     title: {
                         display: true,
                         text: "Platzierung"
-                    }
+                    },
                 }
             },
                 {

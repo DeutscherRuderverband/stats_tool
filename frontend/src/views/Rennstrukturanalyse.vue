@@ -229,7 +229,7 @@
 </template>
 
 <script setup>
-import RennstrukturFilter from "@/components/filters/rennstrukturFilter.vue";
+import RennstrukturFilter from "@/components/filters/rennstrukturFilter2.vue";
 import LineChart from "@/components/charts/LineChart.vue";
 import '@/assets/base.css';
 import 'chartjs-adapter-moment';
