@@ -42,6 +42,14 @@
             <v-chip v-for="genderType in optionsGender">{{ genderType }}
             </v-chip>
           </v-chip-group>
+
+          <!-- Gender-->
+          <v-chip-group multiple color="blue" v-model="selectedAges">
+            <v-chip v-for="ageGroup in optionsAges">{{ ageGroup }}
+            </v-chip>
+          </v-chip-group>
+
+
           <!-- Bootsklasse-->
           <v-select class="pt-3" density="comfortable" label="Bootsklasse" :items="optionsBoatClass"
             v-model="selectedBoatClass" variant="outlined"></v-select>
@@ -168,11 +176,15 @@ export default {
       tab: "one",
 
       //Gender
-      optionsGender: ["Women", "Men", "Mixed"],
-      selectedGenders: [0,1,2],
+      optionsGender: [],
+      selectedGenders: [0],
+
+      //Age Group
+      optionsAges: [],
+      selectedAges: [2],
 
       //Boat class
-      optionsBoatClass: ["W1x", "W2-", "W2x", "W4-", "W4x", "W4+", "W8+"],
+      optionsBoatClass: [],
       selectedBoatClass: null,
 
       //Year
@@ -190,13 +202,12 @@ export default {
       optionsCompetitions: ["WCH", "WCp 1", "Wcp 2", "Wcp 3"],
       compTypes: [], // list of dicts with objects containing displayName, id and key
 
-
       //Phase
       //selectedPhases: ["final", "semifinal", "qualifying"],
-      optionsPhases: ["final", "semifinal", "qualifying", "preliminary", "heat"],
+      optionsPhases: [],
 
       //Placement
-      optionsPlacements: [1,2,3,4,5,6],
+      optionsPlacements: [],
       //selectedPlacements: [1,2,3,4,5,6],
 
       //Races
@@ -209,8 +220,8 @@ export default {
       formValid: true,
 
       panels: [
-        { title: 'Gruppe 1', startYear: '2020', endYear: '2025', selectedCountry: "GER", selectedCompetitions: ["WCH"],
-         selectedPhases: ["final", "semifinal", "qualifying"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] },
+        { title: 'Gruppe 1', startYear: '2020', endYear: '2025', selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
+         selectedPhases: ["final", "semifinal"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] },
       ],
       alertVisible: false,
 
@@ -223,14 +234,48 @@ export default {
     const store = useRennstrukturAnalyseState()
     const setFilterValues = async () => {
       this.raceAnalysisFilterOptions = await store.getFilterOptions()
+      // Boat class
+      this.optionsGender = Object.keys(this.raceAnalysisFilterOptions.boat_classes)
+      this.optionsGender.pop() //Remove the all option
+      for (let ageGroup in this.raceAnalysisFilterOptions.boat_classes.m) {
+        //console.log(ageGroup)
+        this.optionsAges.push(ageGroup)
+        if (ageGroup == "elite") {
+          for (let boatClass in this.raceAnalysisFilterOptions.boat_classes.m[ageGroup]) {
+          this.optionsBoatClass.push(this.raceAnalysisFilterOptions.boat_classes.m[ageGroup][boatClass][0]);
+          //console.log(boatClass)
+        }
+        }
+        
+
+      }
+
+
+
+
       // year
       this.startYear = this.raceAnalysisFilterOptions.years[0]
       this.endYear = this.raceAnalysisFilterOptions.years[1]
       this.optionsYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.endYear - i)
+      
+      // nation_code
+      let countryCodes = Object.keys(this.raceAnalysisFilterOptions.nations)
+      let countryNames = Object.values(this.raceAnalysisFilterOptions.nations)
+      let finalCountryNames = []
+      for (const [idx, countryCode] of countryCodes.entries()) {
+        finalCountryNames.push(countryCode + " (" + countryNames[idx] + ")")
+      }
+      this.optionsCountry = finalCountryNames
 
       // competition category id
       this.compTypes = this.raceAnalysisFilterOptions.competition_categories
       this.optionsCompetitions = this.compTypes.map(item => item.display_name)
+
+      // Runs
+      this.optionsPhases = this.raceAnalysisFilterOptions.runs
+      
+      // Placement
+      this.optionsPlacements = this.raceAnalysisFilterOptions.ranks
     }
     setFilterValues()
 
@@ -263,8 +308,8 @@ export default {
     addPanel() {
       const newIndex = this.panels.length + 1;
       if (this.panels.length < 6) {
-        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: '2020', endyear: '2025', selectedCountry: "GER", selectedCompetitions: ["WCH"],
-        selectedPhases: ["final", "semifinal", "qualifying"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] });
+        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: '2020', endyear: '2025', selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
+        selectedPhases: ["final", "semifinal"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] });
       }
       else {
         this.alertVisible = true;
@@ -287,6 +332,38 @@ export default {
     checkScreen() {
       this.windowWidth = window.innerWidth;
       this.mobile = this.windowWidth < 890;
+    },
+
+    updateBoatClass() {
+      //Map Gender
+      const genderMapping = {0: "m", 1: "w", 2: "mixed"};
+      let selectedGendersValue = this.selectedGenders.map(value => genderMapping[value])
+
+      //Map Age
+      const ageMapping = {0: "u19", 1: "u23", 2: "elite", 3: "para"};
+      let selectedAgesValue = this.selectedAges.map(value => ageMapping[value])
+
+      this.optionsBoatClass = []
+
+      //Gender Loop
+      for (const gender of selectedGendersValue) {
+        //Age Grpup
+        for (const age of selectedAgesValue) {
+          //Category
+          for(const category in this.raceAnalysisFilterOptions.boat_classes[gender][age]) {
+            const boatClass = this.raceAnalysisFilterOptions.boat_classes[gender][age][category][0]
+            this.optionsBoatClass.push(boatClass)
+          }
+        }
+      }
+    }
+  },
+  watch: {
+    selectedGenders: function () {
+      this.updateBoatClass()
+    },
+    selectedAges: function () {
+      this.updateBoatClass()
     }
   }
 }

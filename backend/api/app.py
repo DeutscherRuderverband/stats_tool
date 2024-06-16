@@ -92,6 +92,7 @@ def get_race_analysis_filter_options():
     This endpoint give the filter options data for the race data page.
     """
     session = Scoped_Session()
+
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
     statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation)
@@ -101,7 +102,15 @@ def get_race_analysis_filter_options():
     } for v in session.execute(statement).fetchall()]
     sorted_categories = sorted(competition_categories, key=lambda x: x['display_name'])
 
-    return {"years": (min_year, max_year), "competition_categories": sorted_categories}
+    nations = {entity.country_code: entity.name for entity in session.execute(select(model.Country)).scalars()}
+
+    return {"years": (min_year, max_year),
+            "competition_categories": sorted_categories,
+            "boat_classes": globals.BOATCLASSES_BY_GENDER_AGE_WEIGHT,
+            "nations": dict(sorted(nations.items(), key=lambda x: x[0])),
+            "runs": session.execute(select(model.Race.phase_type).distinct()).scalars().all(),
+            "ranks": [1, 2, 3, 4, 5, 6]
+            }
 
 
 @app.route('/race_analysis_filter_results', methods=['POST'])
