@@ -160,7 +160,7 @@ export const useRennstrukturAnalyseState = defineStore({
                                 intermediate_values.push([
                                     `${formatMilliseconds(time)} (${rank})`,
                                     `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                    `${strokeFrequency} (${speed})`]
+                                    `${strokeFrequency}spm (${speed}m/s)`]
                                 )
                             }
                             else {
@@ -175,7 +175,8 @@ export const useRennstrukturAnalyseState = defineStore({
                     })
 
                     //Relationszeit
-                    rowData.push("? %")
+                    const relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
+                    rowData.push(`${relationsZeit}%`)
                     
                     tableData.push(rowData);
                 }
