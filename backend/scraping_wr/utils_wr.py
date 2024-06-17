@@ -173,6 +173,8 @@ def extract_race_phase_from_rsc(processed: str) -> Tuple[str,int]:
     else:
         logger.warning(f"Encountered unknown phase in rsc-code. Seen value: {lower}")
         return processed, 0
+    if len(processed) == 0:
+        return processed, 0
 
     # remove unwanted parts of the string
     processed = processed[0: start + end]
