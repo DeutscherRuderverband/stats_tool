@@ -35,7 +35,7 @@
 
       <!-- MULIPLE RACES -->
       <v-tabs-window-item v-if="tab === 'two'">
-        <v-form id="rennstrukturFilterFormular2" class="mt-2" ref="filterForm2"
+        <v-form id="rennstrukturFilterFormular2" class="mt-2" @submit.prevent="onMultipleSubmit" ref="filterForm2"
           v-model="formValid2" lazy-validation>
           <!-- Gender-->
           <v-chip-group multiple color="blue" v-model="selectedGenders">
@@ -169,6 +169,10 @@ export default {
     ...mapState(useRennstrukturAnalyseState, {
       showFilter: "getFilterState"
     }),
+    ...mapState(useRennstrukturAnalyseState, {
+      multiple: "getMultiple"
+    }),
+
   },
   data() {
     return {
@@ -218,9 +222,10 @@ export default {
       hoverFilter: false,
       drawer: null,
       formValid: true,
+      formValid2: true,
 
       panels: [
-        { title: 'Gruppe 1', startYear: '2020', endYear: '2025', selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
+        { title: 'Gruppe 1', startYear: 2020, endYear: 2025, selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
          selectedPhases: ["final", "semifinal"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] },
       ],
       alertVisible: false,
@@ -231,9 +236,9 @@ export default {
     window.addEventListener('resize', this.checkScreen);
     this.checkScreen();
 
-    const store = useRennstrukturAnalyseState()
+    const store = useRennstrukturAnalyseState() //DELETE?
     const setFilterValues = async () => {
-      this.raceAnalysisFilterOptions = await store.getFilterOptions()
+      this.raceAnalysisFilterOptions = await store.getFilterOptions() //DELETE?
       // Boat class
       this.optionsGender = Object.keys(this.raceAnalysisFilterOptions.boat_classes)
       this.optionsGender.pop() //Remove the all option
@@ -246,12 +251,7 @@ export default {
           //console.log(boatClass)
         }
         }
-        
-
       }
-
-
-
 
       // year
       this.startYear = this.raceAnalysisFilterOptions.years[0]
@@ -291,6 +291,17 @@ export default {
         alert("Bitte überprüfen Sie die Eingaben.")
       }
     },
+    //TODO Check Form Validation
+    async onMultipleSubmit() {
+      const {valid} = await this.$refs.filterForm2.validate()
+      if (valid) {
+        console.log("Multiple Form Submitted")
+        this.hideFilter()
+        this.submitMultipleFormData()
+      } else {
+        alert("Bitte überprüfen Sie die Eingaben.")
+      }
+    },
     submitFormData() {
       const store = useRennstrukturAnalyseState()
       store.setToLoadingState()
@@ -305,10 +316,31 @@ export default {
         console.error(error)
       });
     },
+    submitMultipleFormData() {
+      const store = useRennstrukturAnalyseState()
+      store.setToLoadingState()
+      //TODO add other datas
+      const data = {
+        "boat_class": this.selectedBoatClass,
+        "start_year": this.panels[0].startYear,
+        "end_year": this.panels[0].endYear,
+        "country": this.panels[0].selectedCountry.slice(0,3),
+        "events": this.panels[0].selectedCompetitions,
+        "phases": this.panels[0].selectedPhases,
+        "placements": this.panels[0].selectedPlacements
+      }
+      return store.postMultipleFormData(data).then(() => {
+        console.log("Multiple Form data sent...")
+      }).catch(error => {
+        console.error(error)
+      });
+    },
+
     addPanel() {
+      console.log(this.multiple)
       const newIndex = this.panels.length + 1;
       if (this.panels.length < 6) {
-        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: '2020', endyear: '2025', selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
+        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: 2020, endyear: 2025, selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
         selectedPhases: ["final", "semifinal"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] });
       }
       else {

@@ -6,6 +6,7 @@ from itertools import groupby
 from collections import OrderedDict
 from statistics import stdev, median, mean
 import numpy as np
+from typing import List
 
 from flask import Flask
 from flask import request
@@ -290,6 +291,55 @@ def get_matrix() -> dict:
             'count': time.cnt,
             'used_wbt': used_wbt
         }
+    return result
+
+
+
+@app.route('/get_race_boat_groups', methods=['POST'])
+@jwt_required()
+def get_race_boat_groups():
+
+    session = Scoped_Session()
+
+    data = request.json["data"]
+    boat_class = data["boat_class"]
+    min_Year = data["start_year"]
+    max_Year = data["end_year"]
+    country = data["country"]
+    competitions = data["events"]
+    phases = data["phases"]
+    ranks = data["placements"]
+
+
+    statement = (
+        select(model.Race_Boat)
+        .join(model.Race_Boat.country)
+        .join(model.Race_Boat.race)
+        .join(model.Race.event)
+        .join(model.Event.boat_class)
+        .join(model.Event.competition)
+        .join(model.Competition.competition_type)
+        .where(
+            model.Country.country_code == country,
+            model.Race_Boat.rank.in_(ranks),
+            model.Race.phase_type.in_(phases),
+            model.Boat_Class.abbreviation == boat_class,
+            model.Competition.year >= min_Year,
+            model.Competition.year <= max_Year,
+            model.Competition_Type.abbreviation.in_(competitions)
+            )
+    )
+    
+    race_boats: List[model.Race_Boat]
+    race_boats = session.execute(statement).scalars()
+
+    result = []
+    for boat in race_boats:
+        result.append({"id": boat.id, "name": f"{boat.race.event.competition.year}-{boat.race.event.competition.competition_type.abbreviation}-{boat.race.event.competition.venue.city}-{boat.name}-{boat.race.phase_type}-{boat.rank}"})
+    
+
+    #result = f'bc: {boat_class}, start Year: {min_Year}, end Year: {max_Year}, country: {country}, comps: {competitions}, phases: {phases}, ranks{ranks}'
+    
     return result
 
 

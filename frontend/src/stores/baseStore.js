@@ -62,12 +62,16 @@ export const useRennstrukturAnalyseState = defineStore({
                     "race_data": {}
                 }]
             }],
+            multiple: null,
             analysis: null
         },
     }),
     getters: {
         getFilterState(state) {
             return state.filterOpen
+        },
+        getMultiple(state) {
+            return state.data.multiple
         },
         getAnalysisData(state) {
             return state.data.analysis
@@ -371,6 +375,17 @@ export const useRennstrukturAnalyseState = defineStore({
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
                 .then(response => {
                     this.data.analysis = response.data
+                    this.data.multiple = null
+                    this.loadingState = false
+                }).catch(error => {
+                    console.error(`Request failed: ${error}`)
+                })
+        },
+        async postMultipleFormData(data) {
+            await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_race_boat_groups`, {data})
+                .then(response => {
+                    this.data.multiple = response.data
+                    this.data.analysis = null
                     this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)

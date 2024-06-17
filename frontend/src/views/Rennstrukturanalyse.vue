@@ -43,7 +43,7 @@
         </v-col>
         <v-divider></v-divider>
         <v-breadcrumbs v-if="getAnalysis" style="color: grey; height: 22px" class="pa-0 my-2" :items="breadCrumbs"></v-breadcrumbs>
-        <v-container class="pa-0" v-if="!displayRaceDataAnalysis">
+        <v-container class="pa-0" v-if="!displayRaceDataAnalysis && !multiple">
           <v-row>
             <v-col cols="12">
               <h2 v-if="getAnalysis && !loading">Suchergebnisse</h2>
@@ -126,8 +126,8 @@
           </v-row>
         </v-container>
 
+        <!-- Single Rennstrukturanalyse -->
         <v-container v-if="displayRaceDataAnalysis && !loading" class="px-0 py-2">
-
           <v-row no-gutters>
             <v-col cols="6">
               <h2>{{ `${competitionData.display_name} (${competitionData.boat_class})` }}</h2>
@@ -223,6 +223,15 @@
             </v-col>
           </v-row>
         </v-container>
+
+        <!-- TODO Navigation checken!!!-->
+        <!-- Multiple Rennstrukturanalyse -->
+        <v-container v-if="multiple">
+          <h3>Gefundene Rennen</h3>
+          <div v-for="race in multiple">{{race["name"]}}</div>
+        </v-container>
+
+
       </v-container>
     </v-layout>
   </v-card>
@@ -282,6 +291,9 @@ export default {
     ...mapState(useRennstrukturAnalyseState, {
       outliers: "getOutlierCountries"
     }),
+    ...mapState(useRennstrukturAnalyseState, {
+      multiple: "getMultiple"
+    })
 
   },
   data() {

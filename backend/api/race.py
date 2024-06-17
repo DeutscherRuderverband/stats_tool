@@ -211,7 +211,7 @@ def compute_intermediates_figures(race_boats):
 def is_valid_race_data(race_data: model.Race_Data) -> bool:
     return race_data.is_outlier == False
 
-def _iter_strokes_from_race_data(race_data_list: Iterable[model.Race_Data]) -> model.Race_Data:
+def _iter_strokes_from_race_data(race_data_list: Iterable[model.Race_Data]):
     for race_data in race_data_list:
         is_valid_stroke = (
             race_data.is_outlier == False
