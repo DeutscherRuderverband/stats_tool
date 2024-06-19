@@ -319,15 +319,24 @@ export default {
     submitMultipleFormData() {
       const store = useRennstrukturAnalyseState()
       store.setToLoadingState()
+      const groups = []
+      for (const panel of this.panels) {
+        const groupData = {
+          "start_year": panel.startYear,
+          "end_year": panel.endYear,
+          "country": panel.selectedCountry.slice(0, 3),
+          "events": panel.selectedCompetitions,
+          "phases": panel.selectedPhases,
+          "placements": panel.selectedPlacements
+        }
+        groups.push(groupData)
+      }
+      console.log("This is the Group data")
+      console.log(groups)
       //TODO add other datas
       const data = {
         "boat_class": this.selectedBoatClass,
-        "start_year": this.panels[0].startYear,
-        "end_year": this.panels[0].endYear,
-        "country": this.panels[0].selectedCountry.slice(0,3),
-        "events": this.panels[0].selectedCompetitions,
-        "phases": this.panels[0].selectedPhases,
-        "placements": this.panels[0].selectedPlacements
+        "groups": groups
       }
       return store.postMultipleFormData(data).then(() => {
         console.log("Multiple Form data sent...")
@@ -337,10 +346,9 @@ export default {
     },
 
     addPanel() {
-      console.log(this.multiple)
       const newIndex = this.panels.length + 1;
       if (this.panels.length < 6) {
-        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: 2020, endyear: 2025, selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
+        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: 2020, endYear: 2025, selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
         selectedPhases: ["final", "semifinal"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] });
       }
       else {

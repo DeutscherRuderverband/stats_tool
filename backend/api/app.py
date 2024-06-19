@@ -23,7 +23,7 @@ from sqlalchemy.orm import joinedload
 
 from . import auth
 from model import model
-from .race import result_time_best_of_year_interval, compute_intermediates_figures, strokes_for_intermediate_steps
+from .race import result_time_best_of_year_interval, compute_intermediates_figures, strokes_for_intermediate_steps, getIntermediateTimes, calculateIntermediateTimes
 from common.rowing import propulsion_in_meters_per_stroke
 from . import mocks  # todo: remove me
 from . import globals
@@ -300,18 +300,23 @@ def get_matrix() -> dict:
 def get_race_boat_groups():
 
     session = Scoped_Session()
-
-    data = request.json["data"]
-    boat_class = data["boat_class"]
-    min_Year = data["start_year"]
-    max_Year = data["end_year"]
-    country = data["country"]
-    competitions = data["events"]
-    phases = data["phases"]
-    ranks = data["placements"]
+    boat_class = request.json["data"]["boat_class"]
+    groups = []
 
 
-    statement = (
+    datas = request.json["data"]["groups"]
+
+    for index, data in enumerate(datas):
+    
+        min_Year = data["start_year"]
+        max_Year = data["end_year"]
+        country = data["country"]
+        competitions = data["events"]
+        phases = data["phases"]
+        ranks = data["placements"]
+
+
+        statement = (
         select(model.Race_Boat)
         .join(model.Race_Boat.country)
         .join(model.Race_Boat.race)
@@ -328,19 +333,46 @@ def get_race_boat_groups():
             model.Competition.year <= max_Year,
             model.Competition_Type.abbreviation.in_(competitions)
             )
-    )
+        )
     
-    race_boats: List[model.Race_Boat]
-    race_boats = session.execute(statement).scalars()
+        race_boats: List[model.Race_Boat]
+        race_boats = session.execute(statement).scalars()
 
-    result = []
-    for boat in race_boats:
-        result.append({"id": boat.id, "name": f"{boat.race.event.competition.year}-{boat.race.event.competition.competition_type.abbreviation}-{boat.race.event.competition.venue.city}-{boat.name}-{boat.race.phase_type}-{boat.rank}"})
-    
+        boats_formatted = []
+        count = 0
 
-    #result = f'bc: {boat_class}, start Year: {min_Year}, end Year: {max_Year}, country: {country}, comps: {competitions}, phases: {phases}, ranks{ranks}'
-    
+        for boat in race_boats:
+            times = getIntermediateTimes(boat)
+            calculated_times = calculateIntermediateTimes(times)
+            strokes = strokes_for_intermediate_steps(boat.race_data)
+            for stroke, key in strokes.items():
+                if calculated_times.get(key) is not None:
+                    calculated_times[key]["stroke [1/min]"] = stroke
+
+            boat_formatted = {
+                "id": boat.id,
+                "name": boat.name,
+                "time": boat.result_time_ms,
+                "rank": boat.rank,
+                "phase": boat.race.phase_type,
+                "year": boat.race.event.competition.year,
+                "event": boat.race.event.competition.competition_type.abbreviation,
+                "city": boat.race.event.competition.venue.city,
+                "intermediates": calculated_times
+            }
+
+            
+        
+            
+            boats_formatted.append(boat_formatted)
+            count+= 1
+
+        group = f"Gruppe {index + 1}"
+        groups.append({"name": group, "count": count, "min_year": min_Year, "max_year": max_Year,"events": competitions, "phases": phases, "country": country, "race_boats": boats_formatted})
+
+    result = {"boat_class": boat_class, "groups": groups}
     return result
+    
 
 
 @app.route('/get_race/<int:race_id>/', methods=['GET'])
@@ -448,6 +480,7 @@ def get_race(race_id: int) -> dict:
 
         # intermediates
         strokes_for_intermediates = strokes_for_intermediate_steps(race_boat.race_data)
+        total_time = race_boat.result_time_ms
         for distance_meter, figures in intermediates_figures[race_boat.id].items(): # ❌ TODO: iterate over figure matrix (see intermediates_figures) to provide dicts for all 'cells'
             intermediate: model.Intermediate_Time = figures["__intermediate"]
             intermediate_dict = {
@@ -455,6 +488,7 @@ def get_race(race_id: int) -> dict:
                 "time [millis]": None,
                 "pace [millis]": None,
                 "speed [m/s]": None,
+                "rel_speed [%]": None,
                 "deficit [millis]": None,
                 "rel_diff_to_avg_speed [%]": None,
                 "stroke [1/min]": None,
@@ -467,10 +501,12 @@ def get_race(race_id: int) -> dict:
 
             is_valid_mark = isinstance(result_time, int)
             if is_valid_mark:
+                rel_speed = figures.get('speed')/(2000/ total_time * 1000 )
                 intermediate_dict.update({
                     "rank": intermediate.rank if intermediate else None,
                     "pace [millis]": figures.get('pace'),
                     "speed [m/s]": figures.get('speed'),
+                    "rel_speed [%]": rel_speed,
                     "deficit [millis]": figures.get('deficit'),
                     "rel_diff_to_avg_speed [%]": figures.get('rel_diff_to_avg_speed'),
                     "stroke [1/min]": strokes_for_intermediates.get(distance_meter),

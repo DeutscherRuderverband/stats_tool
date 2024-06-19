@@ -230,6 +230,36 @@ def strokes_for_intermediate_steps(race_data_list, stepsize=500):
         result[meter_mark] = avg
     return result
 
+def getIntermediateTimes(race_boat):
+    intermediates = {}
+
+    grid = prepare_grid(race_boat, force_grid_resolution=500, course_length=2000)
+
+    for distance in grid:
+        intermediates[distance] = {}
+
+    intermediate : model.Intermediate_Time
+    for intermediate in race_boat.intermediates:
+        distance = intermediate.distance_meter
+        if intermediates.get(distance) is not None:
+            intermediates[distance]["rank"] = intermediate.rank
+            intermediates[distance]["time [millis]"] = intermediate.result_time_ms
+            intermediates[distance]["is_outlier"] = intermediate.is_outlier
+    return intermediates
+
+def calculateIntermediateTimes(intermediates):
+    time = 0
+    total_time = intermediates[2000]["time [millis]"]
+    for key, value in intermediates.items():
+        pace = value["time [millis]"] - time
+        intermediates[key]["pace [millis]"] = pace
+        time = value["time [millis]"]
+        intermediates[key]["speed [m/s]"] = 500 / pace * 1000
+        intermediates[key]["rel_speed [%]"] =  total_time / (4 * pace)
+
+    return intermediates
+
+
 if __name__ == '__main__':
     from sys import exit as sysexit
 

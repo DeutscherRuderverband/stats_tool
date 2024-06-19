@@ -95,6 +95,20 @@ export const useRennstrukturAnalyseState = defineStore({
         getLoadingState(state) {
             return state.loadingState
         },
+        getMultipleTableData(state) {
+            const tableData = []
+            const tableHead = ['Gruppe', 'Zeitraum', 'Events', 'Läufe', 'Nation', 'Zeit', '500m', '1000m', '1500m', '2000m', 'Relationszeit', 'Rennstruktur']
+            tableData.push(tableHead)
+            for (const group of state.data.multiple.groups) {
+                const time_period = `${group.min_year} - ${group.max_year}`
+                const name = `${group.name} (${group.count})`
+                const rowData = [name, time_period, group.events, group.phases, group.country]
+                tableData.push(rowData)
+            }
+            console.log(state.data.multiple)
+            
+            return tableData
+        },
         getTableData(state) {
             /*
             return [["Anzahl", "Zeitraum", "Events", "Position", "Strecken", "Nationen", "Zeit", "500m", "1000m", "1500m", "2000m", "Relationszeit"],
