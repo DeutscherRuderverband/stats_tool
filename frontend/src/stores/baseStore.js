@@ -97,15 +97,80 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getMultipleTableData(state) {
             const tableData = []
-            const tableHead = ['Gruppe', 'Zeitraum', 'Events', 'Läufe', 'Nation', 'Zeit', '500m', '1000m', '1500m', '2000m', 'Relationszeit', 'Rennstruktur']
+            const tableHead = [
+                {text: 'Gruppe', tooltip: "Gruppe (Anzahl Rennen)"},
+                {text: 'Zeitraum', tooltip: null},
+                {text: 'Events', tooltip: null},
+                {text: 'Läufe', tooltip: "Läufe (Platzierungen)"},
+                {text: 'Nation', tooltip: null},
+                {text: 'Zeit', tooltip: "mm:ss"},
+                {text: '500m', tooltip: "Zeit (Platzierung), Pace (rel. Pace), Schläge pro Minute (m/s)"},
+                {text: '1000m', tooltip: "Zeit (Platzierung), Pace (rel. Pace), Schläge pro Minute (m/s)"},
+                {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge pro Minute (m/s)"},
+                {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge pro Minute (m/s)"},
+                {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"},
+                {text: 'Rennstruktur', tooltip: null}
+            ]
             tableData.push(tableHead)
+            
             for (const group of state.data.multiple.groups) {
                 const time_period = `${group.min_year} - ${group.max_year}`
                 const name = `${group.name} (${group.count})`
-                const rowData = [name, time_period, group.events, group.phases, group.country]
+                let totalTime = 0
+                if (group.stats[2000] && group.stats[2000]["time [millis]"]) {
+                    totalTime =  group.stats[2000]["time [millis]"]["mean"]
+                }
+                //dispalys time, rank, pace, relative pace, strokeFrequency and propulsion for each 500m section
+                const intermediate_values = [];
+
+                for (const [index, [key, intermediate]] of Object.entries(group.stats).entries()) {
+                    if (key !== '0') {
+                        if (intermediate["is_outlier"]) {
+                            state.outlierCountries.add(countryIdx)
+                        }
+                        if(totalTime != 'DNS' && totalTime != 0) {
+                            const time = intermediate["time [millis]"]["mean"]
+                            const rank = intermediate["rank"]["mean"]
+                            const pace = intermediate["pace [millis]"]["mean"]
+                            const relativePace = (pace / totalTime * 400).toFixed(1)
+                            const strokeFrequency = intermediate["stroke [1/min]"] ? roundToTwoDecimal(intermediate["stroke [1/min]"]).toString() : "-"
+                            const speed = intermediate["speed [m/s]"]["mean"] ? roundToTwoDecimal(intermediate["speed [m/s]"]["mean"]): "-"
+                       
+                            intermediate_values.push([
+                                `${formatMilliseconds(time)} (${rank.toFixed(1)})`,
+                                `${formatMilliseconds(pace)} (${relativePace}%)`,
+                                `${strokeFrequency} spm (${speed} m/s)`]
+                            )
+                        }
+                        else {
+                            intermediate_values.push('-')
+                        }
+                    }
+                }
+
+                const rowData = [name, time_period, group.events, group.phases, group.country, formatMilliseconds(totalTime)]
+
+                //500m, 1000m, 1500m, 2000m
+                intermediate_values.forEach(value => {
+                    rowData.push(value)
+                })
+
+                //Relationszeit
+                let relationsZeit = "-"
+                if (totalTime != 0) {
+                    relationsZeit = (state.data.multiple.world_best_time / totalTime * 100).toFixed(1)
+                    rowData.push(`${relationsZeit}%`)
+                    rowData.push(group.pacing_profile)  //Rennstruktur
+                }
+                if (rowData.length < tableHead.length) {
+                    rowData.push(...(new Array(tableHead.length - rowData.length).fill("-")))
+                }
+                
+
                 tableData.push(rowData)
             }
             console.log(state.data.multiple)
+            
             
             return tableData
         },

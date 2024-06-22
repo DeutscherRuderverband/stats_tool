@@ -106,7 +106,11 @@
                   v-model="panel.selectedPlacements" multiple variant="outlined" chips
                   :rules="[v => v.length > 0 || 'Wähle mindestens eine Laufkategorie']">
                 </v-select>
-                
+
+
+                <!-- Races (calculated based on other filters) -->
+                <!-- To do show selected count-->
+                <!-- 
                 <v-row>
                   <v-col>
                     <h3>Ausgewählte Rennen:</h3>
@@ -116,11 +120,12 @@
                   </v-col>
                 </v-row>
 
-                <!-- Races (calculated based on other filters) -->
-                <!-- To do show selected count-->
+                
                 <v-select label="Rennen" class="pt-4" clearable :items="optionsRaces" v-model="selectedRaces" multiple
                   variant="outlined">
                 </v-select>
+
+                -->
 
               </v-expansion-panel-text>
             </v-expansion-panel>
@@ -130,7 +135,7 @@
           <v-row class="pt-2">
             <v-col>
               <v-btn @click="removePanel" width="50%" size="small" color="#EEEEEE"
-                prepend-icon="mdi-cancel">Löschen</v-btn>
+                prepend-icon="mdi-cancel">Entfernen</v-btn>
               <v-btn @click="addPanel" width="50%" size="small" color="#EEEEEE"
                 prepend-icon="mdi-plus">Hinzufügen</v-btn>
             </v-col>
@@ -189,7 +194,7 @@ export default {
 
       //Boat class
       optionsBoatClass: [],
-      selectedBoatClass: null,
+      selectedBoatClass: "M1x",
 
       //Year
       //startYear: 2020,
@@ -225,7 +230,7 @@ export default {
       formValid2: true,
 
       panels: [
-        { title: 'Gruppe 1', startYear: 2020, endYear: 2025, selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
+        { title: 'Gruppe 1', startYear: 2020, endYear: 2025, selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH", "WCp 1", "WCp 2", "WCp 3"],
          selectedPhases: ["final", "semifinal"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] },
       ],
       alertVisible: false,
@@ -333,7 +338,6 @@ export default {
       }
       console.log("This is the Group data")
       console.log(groups)
-      //TODO add other datas
       const data = {
         "boat_class": this.selectedBoatClass,
         "groups": groups
@@ -348,7 +352,7 @@ export default {
     addPanel() {
       const newIndex = this.panels.length + 1;
       if (this.panels.length < 6) {
-        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: 2020, endYear: 2025, selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH"],
+        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: 2020, endYear: 2025, selectedCountry: "GER (Germany)", selectedCompetitions: ["WCH", "WCp 1", "WCp 2", "WCp 3"],
         selectedPhases: ["final", "semifinal"], selectedPlacements: [1,2,3,4,5,6], optionsRaces: [] });
       }
       else {

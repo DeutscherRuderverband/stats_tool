@@ -5,6 +5,10 @@ import itertools
 import statistics
 from collections.abc import Iterable
 
+from scipy import stats
+import numpy as np
+import math
+
 from sqlalchemy import select, or_, and_, func
 
 from common.helpers import stepfunction
@@ -236,14 +240,14 @@ def getIntermediateTimes(race_boat):
     grid = prepare_grid(race_boat, force_grid_resolution=500, course_length=2000)
 
     for distance in grid:
-        intermediates[distance] = {}
+        intermediates[distance] = {"rank": 0, "time [millis]": 0, "is_outlier": 0}
 
     intermediate : model.Intermediate_Time
     for intermediate in race_boat.intermediates:
         distance = intermediate.distance_meter
         if intermediates.get(distance) is not None:
             intermediates[distance]["rank"] = intermediate.rank
-            intermediates[distance]["time [millis]"] = intermediate.result_time_ms
+            intermediates[distance]["time [millis]"] = intermediate.result_time_ms if intermediate.result_time_ms is not None else 0
             intermediates[distance]["is_outlier"] = intermediate.is_outlier
     return intermediates
 
@@ -254,10 +258,57 @@ def calculateIntermediateTimes(intermediates):
         pace = value["time [millis]"] - time
         intermediates[key]["pace [millis]"] = pace
         time = value["time [millis]"]
-        intermediates[key]["speed [m/s]"] = 500 / pace * 1000
-        intermediates[key]["rel_speed [%]"] =  total_time / (4 * pace)
+        if pace != 0:
+            intermediates[key]["speed [m/s]"] = 500 / pace * 1000 
+            intermediates[key]["rel_speed [%]"] =  total_time / (4 * pace)
+        else:
+            intermediates[key]["speed [m/s]"] = 0
+            intermediates[key]["rel_speed [%]"] = 0
 
     return intermediates
+
+#Calculate the 95% confidence intervall of sample data
+#Assume n < 30, t-distribution
+def calculateConfidenceIntervall(sample_data):
+    #return mean, lower, upper
+    if len(sample_data) == 1:
+        return sample_data[0], sample_data[0], sample_data[0]
+    mean, lower, upper = 0, 0, 0
+    if len(sample_data) >= 1:
+        mean = np.mean(sample_data)
+        std_dev = np.std(sample_data, ddof=1)  # ddof=1 for sample standard deviation
+        n = len(sample_data)
+        std_error = std_dev / math.sqrt(n)
+        critical_value = stats.t.ppf(1 - 0.05/2, n - 1) #t-value for 95% confidence
+        margin_of_error = critical_value * std_error
+
+        #Calculate confidence Intervall
+        lower = mean - margin_of_error
+        upper = mean + margin_of_error
+
+    return mean, lower, upper
+
+#Possible pacing profiles are: Even, J-shape, Reverse J-shape, negativ, positiv, other
+def getPacingProfile(t1, t2, t3, t4):
+    pacing_profile = "Other"
+    t_average = (t1 + t2 + t3 + t4) / 4
+    if isEven(t1, t_average) and isEven(t2, t_average) and isEven(t3, t_average) and isEven(t4, t_average):
+        pacing_profile = "Even"
+    elif t1 < t4 and t4 < min(t2, t3):
+        pacing_profile = "Reverse J-Shape"
+    elif t4 < t1 and t1 < min(t2, t3):
+        pacing_profile = "J-Shape"
+    elif t1 < t2 and t2 < min(t3, t4):
+        pacing_profile = "Negative"
+    elif t4 < t3 and t3 < min(t1, t2):
+        pacing_profile = "Positive"
+    return pacing_profile
+
+def isEven(ta, t_average):
+    if t_average == 0:
+        return False
+    relative_time = ta / t_average
+    return 0.99 <= relative_time and relative_time <= 1.01
 
 
 if __name__ == '__main__':

@@ -10,3 +10,4 @@ Flask-JWT-Extended~=4.4.4
 
 # math & statistics
 numpy~=1.24.2
+scipy~= 1.7

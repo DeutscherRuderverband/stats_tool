@@ -210,27 +210,30 @@
           <v-table class="tableStyles" density="compact">
             <thead>
               <tr>
-                <th v-for="tableHead in multipleTableData[0]" class="px-2">{{ tableHead }}</th>
+                <th v-for="tableHead in multipleTableData[0]" class="px-2">
+                  <p>{{ tableHead.text }}<v-tooltip activator="parent" location="bottom" v-if="tableHead.tooltip != null">{{ tableHead.tooltip }}</v-tooltip></p>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(country, idx) in multipleTableData.slice(1)">
-                    <td v-for="item in country" :key="item" class="px-2"
-                      :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
-                      <template v-if="Array.isArray(item)">
-                        <template v-for="element in item">
-                          <p>{{ element }}</p>
-                        </template>
-                      </template>
-                      <template v-else>
-                        <p>
-                          {{ item }}
-                        </p>
-                      </template>
-                    </td>
-                  </tr>
+                <td v-for="item in country" :key="item" class="px-2"
+                  :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
+                  <template v-if="Array.isArray(item)">
+                    <template v-for="element in item">
+                      <p>{{ element }}</p>
+                    </template>
+                  </template>
+                  <template v-else>
+                    <p>
+                      {{ item }}
+                    </p>
+                  </template>
+                </td>
+              </tr>
             </tbody>
           </v-table>
+          <p>Die Tabelle zeigt für jede Gruppe die durchschnittlichen Werte über alle Rennen</p>
         </v-container>
 
 

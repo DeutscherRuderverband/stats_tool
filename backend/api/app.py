@@ -5,7 +5,9 @@ import json
 from itertools import groupby
 from collections import OrderedDict
 from statistics import stdev, median, mean
+from scipy import stats
 import numpy as np
+import math
 from typing import List
 
 from flask import Flask
@@ -23,7 +25,7 @@ from sqlalchemy.orm import joinedload
 
 from . import auth
 from model import model
-from .race import result_time_best_of_year_interval, compute_intermediates_figures, strokes_for_intermediate_steps, getIntermediateTimes, calculateIntermediateTimes
+from .race import result_time_best_of_year_interval, compute_intermediates_figures, strokes_for_intermediate_steps, getIntermediateTimes, calculateIntermediateTimes, calculateConfidenceIntervall, getPacingProfile
 from common.rowing import propulsion_in_meters_per_stroke
 from . import mocks  # todo: remove me
 from . import globals
@@ -294,17 +296,19 @@ def get_matrix() -> dict:
     return result
 
 
-
 @app.route('/get_race_boat_groups', methods=['POST'])
 @jwt_required()
 def get_race_boat_groups():
 
     session = Scoped_Session()
+
     boat_class = request.json["data"]["boat_class"]
+    world_best_time_ms = 0
     groups = []
 
 
     datas = request.json["data"]["groups"]
+
 
     for index, data in enumerate(datas):
     
@@ -342,6 +346,12 @@ def get_race_boat_groups():
         count = 0
 
         for boat in race_boats:
+            count+= 1
+
+            world_best_race_boat = boat.race.event.boat_class.world_best_race_boat
+            if world_best_race_boat:
+                world_best_time_ms = world_best_race_boat.result_time_ms
+
             times = getIntermediateTimes(boat)
             calculated_times = calculateIntermediateTimes(times)
             strokes = strokes_for_intermediate_steps(boat.race_data)
@@ -361,17 +371,45 @@ def get_race_boat_groups():
                 "intermediates": calculated_times
             }
 
-            
-        
-            
             boats_formatted.append(boat_formatted)
-            count+= 1
+
+        #Get values of all boats
+        stats = {}
+        for boat in boats_formatted:
+            for distance, values in boat["intermediates"].items():
+                if distance not in stats:
+                    stats[distance] = {}
+                for key, figure in values.items():
+                    if key not in stats[distance]:
+                        stats[distance][key] = []
+                    stats[distance][key].append(figure)
+
+        #Calculate means
+        summary = {}
+        for distance, values in stats.items():
+            summary[distance] = {}
+            for key, figures in values.items():
+                if key != "is_outlier":
+                    summary[distance][key] = {}
+                    mean, lower, upper = calculateConfidenceIntervall(figures)
+                    summary[distance][key]["mean"] = np.mean(figures)
+                    summary[distance][key]["lower_bound"] = lower
+                    summary[distance][key]["upper_bound"] = upper
+
+        #Get Pacing Profile
+        pacing_profile = "-"
+        if summary != {}:
+            pacing_profile = getPacingProfile(summary[500]["pace [millis]"]["mean"], summary[1000]["pace [millis]"]["mean"], summary[1500]["pace [millis]"]["mean"], summary[2000]["pace [millis]"]["mean"])
 
         group = f"Gruppe {index + 1}"
-        groups.append({"name": group, "count": count, "min_year": min_Year, "max_year": max_Year,"events": competitions, "phases": phases, "country": country, "race_boats": boats_formatted})
+        groups.append({"name": group, "stats": summary, "pacing_profile": pacing_profile, "count": count, "min_year": min_Year, "max_year": max_Year,"events": competitions, "phases": phases, "country": country, "race_boats": boats_formatted})
 
-    result = {"boat_class": boat_class, "groups": groups}
+    result = {"boat_class": boat_class, "world_best_time": world_best_time_ms ,"groups": groups}
     return result
+    
+
+
+
     
 
 
