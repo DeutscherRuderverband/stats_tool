@@ -172,7 +172,7 @@ header {
     flex-direction: column;
     padding: 12px 0;
     margin: 0 auto;
-    @media (max-width: 890px) {
+    @media (max-width: 1000px) {
       flex-direction: row;
     }
 

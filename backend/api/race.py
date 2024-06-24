@@ -274,10 +274,11 @@ def calculateConfidenceIntervall(sample_data):
     if len(sample_data) == 1:
         return sample_data[0], sample_data[0], sample_data[0]
     mean, lower, upper = 0, 0, 0
-    if len(sample_data) >= 1:
-        mean = np.mean(sample_data)
-        std_dev = np.std(sample_data, ddof=1)  # ddof=1 for sample standard deviation
-        n = len(sample_data)
+    filtered_sample_data = list(filter(None, sample_data))
+    if len(filtered_sample_data) >= 1:
+        mean = np.mean(filtered_sample_data)
+        std_dev = np.std(filtered_sample_data, ddof=1)  # ddof=1 for sample standard deviation
+        n = len(filtered_sample_data)
         std_error = std_dev / math.sqrt(n)
         critical_value = stats.t.ppf(1 - 0.05/2, n - 1) #t-value for 95% confidence
         margin_of_error = critical_value * std_error

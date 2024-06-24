@@ -133,8 +133,8 @@ export const useRennstrukturAnalyseState = defineStore({
                             const rank = intermediate["rank"]["mean"]
                             const pace = intermediate["pace [millis]"]["mean"]
                             const relativePace = (pace / totalTime * 400).toFixed(1)
-                            const strokeFrequency = intermediate["stroke [1/min]"] ? roundToTwoDecimal(intermediate["stroke [1/min]"]).toString() : "-"
-                            const speed = intermediate["speed [m/s]"]["mean"] ? roundToTwoDecimal(intermediate["speed [m/s]"]["mean"]): "-"
+                            const strokeFrequency = intermediate["stroke [1/min]"] ? intermediate["stroke [1/min]"]["mean"].toFixed(1).toString() : "-"
+                            const speed = intermediate["speed [m/s]"]["mean"] ? intermediate["speed [m/s]"]["mean"].toFixed(1): "-"
                        
                             intermediate_values.push([
                                 `${formatMilliseconds(time)} (${rank.toFixed(1)})`,
@@ -148,7 +148,8 @@ export const useRennstrukturAnalyseState = defineStore({
                     }
                 }
 
-                const rowData = [name, time_period, group.events, group.phases, group.country, formatMilliseconds(totalTime)]
+                const runs = group.phases.concat(` (${group.ranks.join(', ')})`)
+                const rowData = [name, time_period, group.events, runs, group.country, formatMilliseconds(totalTime)]
 
                 //500m, 1000m, 1500m, 2000m
                 intermediate_values.forEach(value => {

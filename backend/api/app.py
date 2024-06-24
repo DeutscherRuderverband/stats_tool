@@ -355,7 +355,7 @@ def get_race_boat_groups():
             times = getIntermediateTimes(boat)
             calculated_times = calculateIntermediateTimes(times)
             strokes = strokes_for_intermediate_steps(boat.race_data)
-            for stroke, key in strokes.items():
+            for key, stroke,  in strokes.items():
                 if calculated_times.get(key) is not None:
                     calculated_times[key]["stroke [1/min]"] = stroke
 
@@ -368,7 +368,8 @@ def get_race_boat_groups():
                 "year": boat.race.event.competition.year,
                 "event": boat.race.event.competition.competition_type.abbreviation,
                 "city": boat.race.event.competition.venue.city,
-                "intermediates": calculated_times
+                "intermediates": calculated_times,
+                "strokes": strokes
             }
 
             boats_formatted.append(boat_formatted)
@@ -392,7 +393,7 @@ def get_race_boat_groups():
                 if key != "is_outlier":
                     summary[distance][key] = {}
                     mean, lower, upper = calculateConfidenceIntervall(figures)
-                    summary[distance][key]["mean"] = np.mean(figures)
+                    summary[distance][key]["mean"] = mean
                     summary[distance][key]["lower_bound"] = lower
                     summary[distance][key]["upper_bound"] = upper
 
@@ -402,7 +403,7 @@ def get_race_boat_groups():
             pacing_profile = getPacingProfile(summary[500]["pace [millis]"]["mean"], summary[1000]["pace [millis]"]["mean"], summary[1500]["pace [millis]"]["mean"], summary[2000]["pace [millis]"]["mean"])
 
         group = f"Gruppe {index + 1}"
-        groups.append({"name": group, "stats": summary, "pacing_profile": pacing_profile, "count": count, "min_year": min_Year, "max_year": max_Year,"events": competitions, "phases": phases, "country": country, "race_boats": boats_formatted})
+        groups.append({"name": group, "stats": summary, "pacing_profile": pacing_profile, "count": count, "min_year": min_Year, "max_year": max_Year,"events": competitions, "phases": phases, "ranks": ranks, "country": country, "race_boats": boats_formatted})
 
     result = {"boat_class": boat_class, "world_best_time": world_best_time_ms ,"groups": groups}
     return result
