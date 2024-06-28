@@ -234,6 +234,46 @@
             </tbody>
           </v-table>
           <p>Die Tabelle zeigt für jede Gruppe die durchschnittlichen Werte über alle Rennen</p>
+
+          <!-- Graphen -->
+          <v-row class="padding">
+          <v-col :cols="mobile ? 12 : 6" class="pa-0">
+            <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getPacingProfiles" :chartOptions="getPacingProfileChartOptions" class="chart-bg"></LineChart>
+              </v-container>
+              
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getMeanGPsData[2]" :chartOptions="gpsChartOptions[2]" class="chart-bg"></LineChart>
+              </v-container>
+
+              
+               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getMeanIntermediateData[0]" :chartOptions="meanIntermediateChartOptions[0]" class="chart-bg">
+                </LineChart>
+              </v-container>
+            </v-col>
+            
+            <v-col :cols="mobile ? 12 : 6" class="pa-0">
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getMeanGPsData[0]" :chartOptions="gpsChartOptions[0]" class="chart-bg"></LineChart>
+              </v-container>
+              
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <LineChart :data="getMeanGPsData[1]" :chartOptions="gpsChartOptions[1]" class="chart-bg"></LineChart>
+              </v-container>
+
+              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                <BarChart :data="getCountData" :chartOptions="config" class="chart-bg"></BarChart>
+              </v-container>
+
+              
+              
+             
+            </v-col>
+          </v-row>
+          
+
+
         </v-container>
 
 
@@ -245,6 +285,7 @@
 <script setup>
 import RennstrukturFilter from "@/components/filters/rennstrukturFilter2.vue";
 import LineChart from "@/components/charts/LineChart.vue";
+import BarChart from "@/components/charts/BarChart.vue";
 import '@/assets/base.css';
 import 'chartjs-adapter-moment';
 import {Chart as ChartJS, Tooltip, Legend, TimeScale} from "chart.js";
@@ -279,7 +320,16 @@ export default {
       getGPsData: "getGPSChartData"
     }),
     ...mapState(useRennstrukturAnalyseState, {
+      getMeanGPsData: "getMeanGPSChartData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
       getIntermediateData: "getIntermediateChartData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getMeanIntermediateData: "getMeanIntermediateChartData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getCountData: "getCountData"
     }),
     ...mapState(useRennstrukturAnalyseState, {
       filterState: "getFilterState"
@@ -294,6 +344,9 @@ export default {
       intermediateChartOptions: "getIntermediateChartOptions"
     }),
     ...mapState(useRennstrukturAnalyseState, {
+      meanIntermediateChartOptions: "getMeanIntermediateChartOptions"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
       outliers: "getOutlierCountries"
     }),
     ...mapState(useRennstrukturAnalyseState, {
@@ -301,6 +354,12 @@ export default {
     }),
     ...mapState(useRennstrukturAnalyseState, {
       multipleTableData: "getMultipleTableData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getPacingProfiles: "getPacingProfiles"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getPacingProfileChartOptions: "getPacingProfileChartOptions"
     })
 
   },
@@ -321,6 +380,21 @@ export default {
       races: {},
       lastCompId: null,
       lastEventId: null,
+      config : {
+        responsive: true,
+        maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          },
+          plugins: {
+          title: {
+            display: true,
+            text: "Anzahl Boote"
+          }
+        }
+      },
       gpsChartOptions: [{
         responsive: true,
         maintainAspectRatio: false,
@@ -464,6 +538,7 @@ export default {
       this.breadCrumbs.push({title: displayName})
       this.displayCompetitions = false
       this.displayEvents = true
+      this.multiple = null
     },
     getRaces(events, displayName, eventId) {
       if (events.length === 0) {
@@ -518,7 +593,8 @@ export default {
           if (to.fullPath.includes("?competition_id=")) {
             const url = new URL(window.location.href);
             const comp_id = url.searchParams.get("competition_id");
-            this.displayCompetitions = !!comp_id; 
+            this.displayCompetitions = !!comp_id;
+            this.displayMultiple = false
             const store = useRennstrukturAnalyseState()
             const data = {
               "competition_id": comp_id
@@ -645,5 +721,11 @@ export default {
   text-decoration: none;
   color: black;
   border-bottom: 1px solid black;
+}
+
+.padding {
+  padding-top: 30px;
+  /* Adds 20 pixels of padding at the bottom */
+  color: white
 }
 </style>

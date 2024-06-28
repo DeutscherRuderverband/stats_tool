@@ -19,10 +19,78 @@ function roundToTwoDecimal(num) {
     return num ? Number(num.toFixed(2)) : num;
 }
 
+function intermediateChartOptions(number_of_boats, max_val) {
+    return [{
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Strecke [m]'
+                }
+            },
+            y: {
+                reverse: true,
+                title: {
+                    display: true,
+                    text: 'Platzierung'
+                },
+                ticks: {
+                    stepSize: 1
+                },
+                min: 1,
+                max: number_of_boats
+            }
+        },
+        plugins: {
+            title: {
+                display: true,
+                text: "Platzierung"
+            },
+        }
+    },
+    {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Strecke [m]'
+                }
+            },
+            y: {
+                type: 'time',
+                time: {
+                    parser: 'mm:ss.SS',
+                    unit: 'second',
+                    displayFormats: {
+                        second: 'mm:ss.SS',
+                        tooltip: 'mm:ss.SS'
+                    }
+                },
+                min: '00:00.00',
+                max: formatMilliseconds(max_val + 100),
+                title: {
+                    display: true,
+                    text: 'Rückstand [mm:ss.ms]'
+                }
+            }
+        },
+        plugins: {
+            title: {
+                display: true,
+                text: "Rückstand zum Führenden [sek]"
+            }
+        }
+    }
+    ]
+}
+
 
 // predefined colors for charts
 const COLORS = ['#0C67F7', '#93E9ED', '#E0A9FA', '#E0B696', '#E0FAAC', '#F0E95A'];
-
 export const useRennstrukturAnalyseState = defineStore({
     id: "base",
     state: () => ({
@@ -75,6 +143,9 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getAnalysisData(state) {
             return state.data.analysis
+        },
+        getMultiple(state) {
+            return state.data.multiple
         },
         getCompetitionData(state) {
             const data = state.data.raceData[0]
@@ -343,6 +414,27 @@ export const useRennstrukturAnalyseState = defineStore({
                 };
             })
         },
+        getMeanGPSChartData(state) {
+            const chartDataKeys = ['speed [m/s]', 'stroke [1/min]', 'propulsion [m/stroke]']
+            return chartDataKeys.map(key => {
+                const datasets = []
+                let colorIndex = 0
+
+                state.data.multiple.groups.forEach(dataObj => {
+                    const label = dataObj.name
+                    const backgroundColor = COLORS[colorIndex % 6]
+                    const borderColor = COLORS[colorIndex % 6]
+                    const data = Object.values(dataObj.stats_race_data).map(obj => obj[key]["mean"])
+                    data.splice(0,0,null)           //No value at 0
+                    datasets.push({label, backgroundColor, borderColor, data})
+                    colorIndex++
+                });
+                return {
+                    labels: ['0', ...Object.keys(state.data.multiple.groups[0].stats_race_data)], //Add 0 in x-axis
+                    datasets
+                };
+            })
+        },
         getIntermediateChartData(state) {
             const intermediateDataKeys = ["rank", "deficit [millis]"];
             return intermediateDataKeys.map(key => {
@@ -368,13 +460,113 @@ export const useRennstrukturAnalyseState = defineStore({
                 };
             })
         },
+        getMeanIntermediateChartData(state) {
+            const intermediateDataKeys = ["rank"];
+            return intermediateDataKeys.map(key => {
+                const datasets = [];
+                let colorIndex = 0;
+                state.data.multiple.groups.forEach(dataObj => {
+                    const label = dataObj.name;
+                    const backgroundColor = COLORS[colorIndex % 6];
+                    const borderColor = COLORS[colorIndex % 6];
+                    let data = Object.values(dataObj.stats).map(distanceObj => distanceObj[key]["mean"]);
+                    data.splice(0,0,1)
+                    datasets.push({label, backgroundColor, borderColor, data});
+                    colorIndex++;
+                });
+                const chartLabels = [0, ...Object.keys(state.data.multiple.groups[0].stats)]
+                return {
+                    labels: chartLabels,
+                    datasets
+                };
+            })
+        },
+        getCountData(state) {
+            let datasets = []
+            let datas = []
+            const labels = []
+            let barColors = []
+            let colorIndex = 0
+            state.data.multiple.groups.forEach(dataObj => {
+                const label = dataObj.name;
+                const backgroundColor = COLORS[colorIndex % 6];
+                const borderColor = COLORS[colorIndex % 6];
+                barColors.push(COLORS[colorIndex % 6])
+                //let data = dataObj.count
+                datas.push(dataObj.count)
+                //datasets.push({label, backgroundColor, borderColor, data});
+                labels.push(label)
+                colorIndex++;
+            });
+            datasets.push({datas})
+            return {
+                labels: labels,
+                datasets: [{
+                    barPercentage: 0.8,
+                    barThickness: 18,
+                    maxBarThickness: 18,
+                    minBarLength: 2,
+                    backgroundColor: barColors,
+                    borderColor: barColors,
+
+                    data: datas, 
+                    label: "Alle Gruppen"
+                }]
+            };
+            
+        },
+        getMeanIntermediateChartOptions(state) {
+            const number_of_boats = state.data.multiple.groups.length
+            return intermediateChartOptions(6, 0)
+
+        },
         getIntermediateChartOptions(state) {
             const max_val = Math.max(...state.data.raceData[0].race_boats.map(obj =>
                 Math.max(...Object.values(obj.intermediates).map(el => el["deficit [millis]"]))
             ));
             const number_of_boats = state.data.raceData[0].race_boats.length
+            return intermediateChartOptions(number_of_boats, max_val)
+        },
+        getPacingProfiles(state) {
+            const labels = Object.keys(state.data.multiple.groups[0].stats)
+            const datasets = [];
+            let colorIndex = 0;
+            const dataKeys = ["mean", "lower_bound", "upper_bound"];
+            state.data.multiple.groups.forEach(group => {
+                const label = group.name;
+                dataKeys.forEach(key => {
+                    let backgroundColor
+                    let borderColor
+                    const data = Object.values(group.stats).map(obj => obj["rel_speed [%]"][key])
+                    if (key == "mean") {
+                        backgroundColor = COLORS[colorIndex % 6];
+                        borderColor = COLORS[colorIndex % 6];
+                        datasets.push({ label, backgroundColor, borderColor, data });
+                    }
+                    else {
+                        backgroundColor = COLORS[colorIndex % 6].concat("15");
+                        borderColor = COLORS[colorIndex % 6].concat("15");
+                        const pointRadius = 0
+                        //const borderWidth = 0
+                        let fill = false
+                        if (key == "upper_bound") {
+                            fill = "-1"
+                        }
+                        //const legend = { display: false }
+                        datasets.push({ label, backgroundColor, borderColor, data, pointRadius, fill});
+                    }
+                })
 
-            return [{
+                colorIndex++;
+
+            })
+            return {
+                labels: labels,
+                datasets
+            }
+        },
+        getPacingProfileChartOptions(state) {
+            return {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
@@ -385,62 +577,36 @@ export const useRennstrukturAnalyseState = defineStore({
                         }
                     },
                     y: {
-                        reverse: true,
                         title: {
                             display: true,
-                            text: 'Platzierung'
-                        },
-                        ticks: {
-                            stepSize: 1
-                        },
-                        min: 1,
-                        max: number_of_boats
+                            text: 'Normalisierte Geschschwindigkeit'
+                        }
                     }
                 },
                 plugins: {
                     title: {
                         display: true,
-                        text: "Platzierung"
+                        text: "Rennstruktur"
                     },
-                }
-            },
-                {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Strecke [m]'
+                    legend: {
+                        labels: {
+                            filter: function (item, chart) {
+                                // Show legend only for 'Dataset 1'
+                                return item.datasetIndex  % 3 == 0;
                             }
                         },
-                        y: {
-                            type: 'time',
-                            time: {
-                                parser: 'mm:ss.SS',
-                                unit: 'second',
-                                displayFormats: {
-                                    second: 'mm:ss.SS',
-                                    tooltip: 'mm:ss.SS'
+                        onClick: (evt, legendItem, legend) => {
+                            let newVal = !legendItem.hidden;
+                            legend.chart.data.datasets.forEach(dataset => {
+                                if (dataset.label === legendItem.text) {
+                                    dataset.hidden = newVal
                                 }
-                            },
-                            min: '00:00.00',
-                            max: formatMilliseconds(max_val + 100),
-                            title: {
-                                display: true,
-                                text: 'Rückstand [mm:ss.ms]'
-                            }
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: "Rückstand zum Führenden [sek]"
-                        }
+                            });
+                            legend.chart.update();
+                        },
                     }
                 }
-
-            ]
+            }
         }
     },
     actions: {
@@ -486,6 +652,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 .then(response => {
                     this.data.analysis = response.data
                     this.loadingState = false
+                    this.data.multiple = null
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
@@ -495,6 +662,9 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         setToLoadingState() {
             this.loadingState = true
+        },
+        resetMultiple() {
+            this.data.multiple = null
         },
         exportTableData() {
             let finalData = []
