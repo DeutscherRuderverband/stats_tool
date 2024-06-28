@@ -19,6 +19,16 @@ function roundToTwoDecimal(num) {
     return num ? Number(num.toFixed(2)) : num;
 }
 
+function createCSV(content, title) {
+    const csvContent = "data:text/csv;charset=utf-8," + content
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "Rennstruktur_" + title + ".csv");
+    document.body.appendChild(link);
+    link.click(); 
+}
+
 function intermediateChartOptions(number_of_boats, max_val) {
     return [{
         responsive: true,
@@ -667,6 +677,7 @@ export const useRennstrukturAnalyseState = defineStore({
             this.data.multiple = null
         },
         exportTableData() {
+            
             let finalData = []
             var progression = null
             if (this.compData.progression_code) {
@@ -682,22 +693,47 @@ export const useRennstrukturAnalyseState = defineStore({
                 }
                 finalData.push(rowData)
             }
-            const csvContent = "data:text/csv;charset=utf-8,"
-                + "Rennen," + this.compData.display_name + "\n"
-                + "Ort," + this.compData.venue.replace(",", " |") + "\n"
-                + "Startzeit," + this.compData.start_date + "\n"
-                + "Weltbestzeit," + this.compData.worldBestTimeBoatClass + "\n"
-                + "Bestzeit laufender OZ/Jahr," + this.compData.bestTimeBoatClassCurrentOZ + "\n"
-                + "Progression," + progression
-                + "\n\n"
-                + finalData.map(e => e.join(",")).join("\n")
-            ;
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "Rennstruktur_" + this.compData.boat_class + ".csv");
-            document.body.appendChild(link);
-            link.click();
+            const csvContent ="Rennen;" + this.compData.display_name + "\n"
+            + "Ort;" + this.compData.venue.replace(",", " |") + "\n"
+            + "Startzeit;" + this.compData.start_date + "\n"
+            + "Weltbestzeit;" + this.compData.worldBestTimeBoatClass + "\n"
+            + "Bestzeit laufender OZ/Jahr;" + this.compData.bestTimeBoatClassCurrentOZ + "\n"
+            + "Progression;" + progression
+            + "\n\n"
+            + finalData.map(e => e.join(",")).join("\n");
+            createCSV(csvContent, "_" + this.compData.boat_class)
+        },
+        exportRaces() {
+            let csvContent = [];
+            const columnNames = ["Gruppe", "Nation", "Jahr", "Event", "Stadt", "Lauf", "Platzierung", "Zeit", "500m_split", "1000m_split", "1500m_split", "2000m_split"]
+            csvContent.push(columnNames.join(";") + "\n")
+            const groups = this.data.multiple.groups
+            groups.forEach(group => {
+                group.race_boats.forEach(boat => {
+                    const row = []
+                    row.push(group.name)
+                    row.push(group.country)
+                    row.push(boat.year)
+                    //Mannschaft
+                    row.push(boat.event)
+                    //Datum
+                    row.push(boat.city)
+                    row.push(boat.phase)
+                    row.push(boat.rank)
+                    row.push(formatMilliseconds(boat.time))
+                    row.push(formatMilliseconds(boat.intermediates[500]["pace [millis]"]))
+                    row.push(formatMilliseconds(boat.intermediates[1000]["pace [millis]"]))
+                    row.push(formatMilliseconds(boat.intermediates[1500]["pace [millis]"]))
+                    row.push(formatMilliseconds(boat.intermediates[2000]["pace [millis]"]))
+                    csvContent.push(Object.values(row).join(';') + "\n")
+
+                })
+
+            });
+
+            createCSV(Object.values(csvContent).join(""), this.data.multiple.boat_class);
         }
+       
+    
     }
 });

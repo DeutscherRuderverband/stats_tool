@@ -32,6 +32,9 @@
           <v-icon @click="exportTableData()" color="grey" class="ml-2 v-icon--size-large"
             v-if="displayRaceDataAnalysis">mdi-table-arrow-right
           </v-icon>
+          <v-icon @click="exportRaces()" color="grey" class="ml-2 v-icon--size-large"
+           v-if="multiple">mdi-table-arrow-right
+          </v-icon>
         </v-col>
         <v-divider></v-divider>
         <v-breadcrumbs v-if="getAnalysis" style="color: grey; height: 22px" class="pa-0 my-2"
@@ -262,13 +265,12 @@
                 <LineChart :data="getMeanGPsData[1]" :chartOptions="gpsChartOptions[1]" class="chart-bg"></LineChart>
               </v-container>
 
+              <!--
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
                 <BarChart :data="getCountData" :chartOptions="config" class="chart-bg"></BarChart>
               </v-container>
-
-              
-              
-             
+              -->
+            
             </v-col>
           </v-row>
           
@@ -521,6 +523,10 @@ export default {
     exportTableData() {
       const store = useRennstrukturAnalyseState()
       store.exportTableData()
+    },
+    exportRaces() {
+      const store = useRennstrukturAnalyseState()
+      store.exportRaces()
     },
     setFilterState() {
       this.filterOpen = !this.filterOpen;
