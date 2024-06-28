@@ -781,7 +781,7 @@ def get_athlete(athlete_id: int):
 
     race_boats = session.query(model.Race_Boat).filter(model.Race_Boat.id.in_(athlete_race_boats)).all()
 
-    race_results, race_ids, athlete_boat_classes, best_time_boat_class, nation, race_phase = {}, [], set(), "", "", ""
+    race_results, race_ids, athlete_boat_classes, best_time_boat_class, nation, race_phase = [], [], set(), "", "", ""
     total, gold, silver, bronze, final_a, final_b = 0, 0, 0, 0, 0, 0
 
     for i, race_boat in enumerate(race_boats):
@@ -806,12 +806,18 @@ def get_athlete(athlete_id: int):
         elif phase == 'final' and phase_num == 2:
             final_b += 1
 
-        race_results[i] = {
+        race_results.append({
             "race_id": race_boat.race_id,
             "rank": race_boat.rank,
             "race_phase": race_phase,
-            "result_time": race_boat.result_time_ms
-        }
+            "result_time": race_boat.result_time_ms,
+
+            "name": race_boat.race.event.competition.name,
+            "venue": f'{race_boat.race.event.competition.venue.city}, {race_boat.race.event.competition.venue.country.name}',
+            "boat_class": race_boat.race.event.boat_class.abbreviation,
+            "start_time": str((race_boat.race.date).strftime("%Y-%m-%d %H:%M")),
+            "competition_category": race_boat.race.event.competition.competition_type.competition_category.name
+        })
         nation = race_boat.country.country_code
 
     races = session.query(model.Race).order_by(model.Race.date.desc()).filter(model.Race.id.in_(race_ids)).all()
@@ -830,12 +836,7 @@ def get_athlete(athlete_id: int):
         elif not any(ath.endswith("x") for ath in athlete_boat_classes):
             athlete_disciplines.add("Riemen")
 
-        comp_type = race.event.competition.competition_type.competition_category.name
-        race_results[i]["name"] = comp.name
-        race_results[i]["venue"] = f'{comp.venue.city}, {comp.venue.country.name}'
-        race_results[i]["boat_class"] = boat_class_name
-        race_results[i]["start_time"] = str((race.date).strftime("%Y-%m-%d %H:%M"))
-        race_results[i]["competition_category"] = comp_type
+    sorted_race_results = sorted(race_results, key=lambda item: item['start_time'], reverse=True)
 
     return json.dumps({
         "name": athlete.name,
@@ -854,7 +855,7 @@ def get_athlete(athlete_id: int):
         "final_a": final_a,
         "final_b": final_b,
         "num_of_races": len(athlete_race_boats),
-        "race_list": race_results,
+        "race_list": sorted_race_results,
     })
 
 
