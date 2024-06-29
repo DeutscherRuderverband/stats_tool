@@ -87,7 +87,7 @@
                 </v-container>
 
                 <!-- Country -->
-                <v-select label="Nation" class="pt-2" clearable :items="optionsCountry" v-model="panel.selectedCountry"
+                <v-select label="Nation" class="pt-2" :items="optionsCountry" v-model="panel.selectedCountry"
                   variant="outlined">
                 </v-select>
 

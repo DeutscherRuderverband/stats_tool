@@ -19,6 +19,16 @@ function roundToTwoDecimal(num) {
     return num ? Number(num.toFixed(2)) : num;
 }
 
+function calculatePropulsion(speed, strokeFrequency) {
+    if(speed != '-' && strokeFrequency != '-' && strokeFrequency != 0) {
+        return  (speed * 60 / strokeFrequency).toFixed(1)
+    }
+    else {
+        return '-'
+    }
+
+}
+
 function createCSV(content, title) {
     const csvContent = "data:text/csv;charset=utf-8," + content
     const encodedUri = encodeURI(csvContent);
@@ -28,6 +38,16 @@ function createCSV(content, title) {
     document.body.appendChild(link);
     link.click(); 
 }
+
+/*
+function createChartOptions(analysis) {
+    result = {
+        boats: analysis.race_boats.map(boat => `${boat.name} (${boat.rank})`),
+        difference_to: "boat_name",
+        boats_in_chart: analysis.race_boats.map(boat => `${boat.name} (${boat.rank})`)
+    }
+}
+*/
 
 function intermediateChartOptions(number_of_boats, max_val) {
     return [{
@@ -123,6 +143,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 "result_time_world_best": 0,
                 "result_time_best_of_current_olympia_cycle": 0,
                 "progression_code": "",
+                "chartOptions": {},
                 "pdf_urls": {
                     "result": "",
                     "race_data": ""
@@ -154,9 +175,6 @@ export const useRennstrukturAnalyseState = defineStore({
         getAnalysisData(state) {
             return state.data.analysis
         },
-        getMultiple(state) {
-            return state.data.multiple
-        },
         getCompetitionData(state) {
             const data = state.data.raceData[0]
             data.worldBestTimeBoatClass = formatMilliseconds(data.result_time_world_best);
@@ -184,11 +202,11 @@ export const useRennstrukturAnalyseState = defineStore({
                 {text: 'Events', tooltip: null},
                 {text: 'Läufe', tooltip: "Läufe (Platzierungen)"},
                 {text: 'Nation', tooltip: null},
-                {text: 'Zeit', tooltip: "mm:ss"},
-                {text: '500m', tooltip: "Zeit (Platzierung), Pace (rel. Pace), Schläge pro Minute (m/s)"},
-                {text: '1000m', tooltip: "Zeit (Platzierung), Pace (rel. Pace), Schläge pro Minute (m/s)"},
-                {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge pro Minute (m/s)"},
-                {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge pro Minute (m/s)"},
+                {text: 'Zeit', tooltip: "mm:ss; Speed"},
+                {text: '500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
                 {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"},
                 {text: 'Rennstruktur', tooltip: null}
             ]
@@ -198,8 +216,11 @@ export const useRennstrukturAnalyseState = defineStore({
                 const time_period = `${group.min_year} - ${group.max_year}`
                 const name = `${group.name} (${group.count})`
                 let totalTime = 0
+                let averageSpeed = 0
                 if (group.stats[2000] && group.stats[2000]["time [millis]"]) {
                     totalTime =  group.stats[2000]["time [millis]"]["mean"]
+                    averageSpeed = 2000 * 1000 / totalTime
+                    
                 }
                 //dispalys time, rank, pace, relative pace, strokeFrequency and propulsion for each 500m section
                 const intermediate_values = [];
@@ -216,11 +237,15 @@ export const useRennstrukturAnalyseState = defineStore({
                             const relativePace = (pace / totalTime * 400).toFixed(1)
                             const strokeFrequency = intermediate["stroke [1/min]"] ? intermediate["stroke [1/min]"]["mean"].toFixed(1).toString() : "-"
                             const speed = intermediate["speed [m/s]"]["mean"] ? intermediate["speed [m/s]"]["mean"].toFixed(1): "-"
+                            const propulsion = calculatePropulsion(speed, strokeFrequency)
                        
                             intermediate_values.push([
                                 `${formatMilliseconds(time)} (${rank.toFixed(1)})`,
                                 `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                `${strokeFrequency} spm (${speed} m/s)`]
+                                `${strokeFrequency} spm`,
+                                `${propulsion} m/Schlag`,
+                                `${speed} m/s`
+                            ]
                             )
                         }
                         else {
@@ -230,7 +255,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 }
 
                 const runs = group.phases.concat(` (${group.ranks.join(', ')})`)
-                const rowData = [name, time_period, group.events, runs, group.country, formatMilliseconds(totalTime)]
+                const rowData = [name, time_period, group.events, runs, group.country, [formatMilliseconds(totalTime), `${averageSpeed.toFixed(1)} m/s`]]
 
                 //500m, 1000m, 1500m, 2000m
                 intermediate_values.forEach(value => {
@@ -256,27 +281,28 @@ export const useRennstrukturAnalyseState = defineStore({
             
             return tableData
         },
-        getTableData(state) {
-            /*
-            return [["Anzahl", "Zeitraum", "Events", "Position", "Strecken", "Nationen", "Zeit", "500m", "1000m", "1500m", "2000m", "Relationszeit"],
-                    ["5", ["2023 -", "2024"], ["WCH", "WCP"], ["1,2,3 (1,8)", "fa, fb, fc"],["Luzern", "Varese"], "Ger, FRA, NED, USA",
-                    "6:32.05", "1:56.56 (896)", "1:56.56 (896)","1:56.56 (896)","1:56.56 (896)", "?"]]
-                    */
-           
-            const tableData = [];
-            const tableHead = ['Platz', 'Bahn', 'Nation', 'Mannschaft', 'Zeit'];
-
-            console.log(state.data.raceData[0])
-
-
-            const intermediateDistances = state.data.raceData[0].race_boats[0].intermediates
-            for (const key in intermediateDistances) {
-                // ignore first as this is the starting value
-                if (key !== '0') {
-                    tableHead.push(key + "m")
-                }
+        getChartOptions(state) {
+            const firstBoat = state.data.raceData[0].race_boats.find(boat => boat.rank == 1)
+            return {
+                boats: state.data.raceData[0].race_boats.map(boat => boat.name),
+                difference_to: firstBoat.name
             }
-            tableHead.push('Relationszeit')
+        },
+        getTableData(state) {
+            
+            const tableData = [];
+            const tableHead = [
+                {text: 'Platz', tooltip: null},
+                {text: 'Bahn', tooltip: null},
+                {text: 'Nation', tooltip: null},
+                {text: 'Mannschaft', tooltip: null},
+                {text: 'Zeit', tooltip: "mm:ss; Speed"},
+                {text: '500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"}
+            ]
             tableData.push(tableHead)
 
             //Iterate over participating race boats
@@ -293,16 +319,19 @@ export const useRennstrukturAnalyseState = defineStore({
                     rowData.push(athleteNames);
                     
                     var totalTime = 0
+                    var averageSpeed = 0
                     if (dataObj.intermediates && dataObj.intermediates[2000] && dataObj.intermediates[2000]["time [millis]"]) {
                         totalTime = dataObj.intermediates[2000]["time [millis]"]
+                        averageSpeed = 2000 * 1000 / totalTime
                         if(totalTime == 'NaN') {        //TODO: Mehrere Aunahmen, nicht nur DNS!
                             totalTime = 'DNS'
+                            averageSpeed = '-'
                         }
                     }
                     //Zeit
-                    rowData.push(formatMilliseconds(totalTime))
+                    rowData.push([formatMilliseconds(totalTime), `${averageSpeed.toFixed(1)} m/s`])
 
-                    //dispalys time, rank, pace, relative pace, strokeFrequency and propulsion for each 500m section
+                    //dispalys time, rank, pace, relative pace, strokeFrequency, propulsion and speed for each 500m section
                     const intermediate_values = [];
 
                     for (const [index, [key, intermediate]] of Object.entries(dataObj.intermediates).entries()) {
@@ -317,16 +346,23 @@ export const useRennstrukturAnalyseState = defineStore({
                                 const relativePace = (pace / totalTime * 400).toFixed(1)
                                 const strokeFrequency = intermediate["stroke [1/min]"] ? roundToTwoDecimal(intermediate["stroke [1/min]"]).toString() : "-"
                                 const speed = intermediate["speed [m/s]"] ? roundToTwoDecimal(intermediate["speed [m/s]"]): "-"
+                                const propulsion = calculatePropulsion(speed, strokeFrequency)
                            
                                 intermediate_values.push([
                                     `${formatMilliseconds(time)} (${rank})`,
                                     `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                    `${strokeFrequency}spm (${speed}m/s)`]
+                                    `${strokeFrequency} spm`,
+                                    `${propulsion} m/Schlag`,
+                                    `${speed} m/s`
+                                ]
+
                                 )
                             }
                             else {
                                 intermediate_values.push('-')
                             }
+
+                            
                         }
                     }
                     
@@ -342,6 +378,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     tableData.push(rowData);
                 }
             })
+            console.log(state.data.raceData)
             return tableData;
         
 
@@ -632,6 +669,7 @@ export const useRennstrukturAnalyseState = defineStore({
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
                 .then(response => {
                     this.data.analysis = response.data
+                    //this.data.analysis["chartOptions"] = createChartOptions(this.data.analysis)
                     this.data.multiple = null
                     this.loadingState = false
                 }).catch(error => {
@@ -726,9 +764,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     row.push(formatMilliseconds(boat.intermediates[1500]["pace [millis]"]))
                     row.push(formatMilliseconds(boat.intermediates[2000]["pace [millis]"]))
                     csvContent.push(Object.values(row).join(';') + "\n")
-
                 })
-
             });
 
             createCSV(Object.values(csvContent).join(""), this.data.multiple.boat_class);

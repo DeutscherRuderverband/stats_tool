@@ -136,7 +136,9 @@
               <v-table class="tableStyles" density="compact">
                 <thead>
                   <tr>
-                    <th v-for="tableHead in tableData[0]" class="px-2">{{ tableHead }}</th>
+                    <th v-for="tableHead in tableData[0]" class="px-2">
+                      <p>{{ tableHead.text }}<v-tooltip activator="parent" location="bottom" v-if="tableHead.tooltip != null">{{ tableHead.tooltip }}</v-tooltip></p>
+                    </th>
                   </tr>
                 </thead>
                 <tbody class="nth-grey">
@@ -178,6 +180,10 @@
                 </div>
               </v-col>
             </v-col>
+          </v-row>
+
+
+          <v-row>
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
                 <LineChart :data="getGPsData[0]" :chartOptions="gpsChartOptions[0]" class="chart-bg"></LineChart>
@@ -203,6 +209,25 @@
               </v-container>
             </v-col>
           </v-row>
+          <v-row>
+            <h3 class="pl-4 pt-4">Visualisierungsoptionen</h3>
+          </v-row>
+          <v-row>
+            
+            <v-col>
+              <v-select label="Zeige Differenz zu..." class="pt-0" compact :items="getChartOptions.boats" v-model="chartOptions.difference_to"
+                  variant="outlined">
+              </v-select>
+            </v-col>
+            <v-col>
+              <v-select label="Boote in Visualisierungen" class="pt-0" compact multiple :items="getChartOptions.boats" v-model="chartOptions.boats_in_chart"
+                  variant="outlined">
+              </v-select>
+
+            </v-col>
+            
+          </v-row>
+          
         </v-container>
 
         <!-- TODO Navigation checken!!!-->
@@ -362,7 +387,10 @@ export default {
     }),
     ...mapState(useRennstrukturAnalyseState, {
       getPacingProfileChartOptions: "getPacingProfileChartOptions"
-    })
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getChartOptions: "getChartOptions"
+    }),
 
   },
   data() {
@@ -382,6 +410,11 @@ export default {
       races: {},
       lastCompId: null,
       lastEventId: null,
+      chartOptions: {
+        difference_to: "",
+        boats_in_chart: []
+      },
+      //difference: "GER",
       config : {
         responsive: true,
         maintainAspectRatio: false,
@@ -564,9 +597,14 @@ export default {
       const newPath = `/rennstrukturanalyse/${this.lastCompId}/${this.lastEventId}?race_id=${raceId}`
       router.push(newPath)
       this.displayRaceDataAnalysis = true
+      //this.chartOptions.boats = store.getChartOptions().boats
+      this.chartOptions.difference_to = this.getChartOptions.difference_to
+      //this.chartOptions.boats_in_chart = store.getChartOptions().boats
+      this.boats_in_chart = this.getChartOptions.boats
       const subject = "Wettkampfergebnisse"
       const body = `Sieh dir diese Wettkampfergebnisse an: http://${window.location.host + newPath}`
       this.emailLink = `mailto:?subject=${subject}&body=${body}`
+      
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
@@ -584,6 +622,10 @@ export default {
         const store = useRennstrukturAnalyseState()
         store.setFilterState(oldVal)
       }
+    },
+    getChartOptions(value) {
+      this.chartOptions.boats_in_chart = value.boats
+      this.chartOptions.difference_to = value.difference_to
     },
     loading() {
       router.push('/rennstrukturanalyse')
@@ -664,6 +706,8 @@ export default {
     }
   }
 }
+
+
 </script>
 
 <style lang="scss" scoped>
