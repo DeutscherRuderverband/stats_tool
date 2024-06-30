@@ -304,24 +304,22 @@
             </v-col>
           </v-row>
 
-          <!--
           <v-row>
             <h3 class="pl-4 pt-4">Visualisierungsoptionen</h3>
           </v-row>
 
           <v-row>
             <v-col>
-              <v-select label="95% Konfidenzintervall" class="pt-0" compact :items="['Anzeigen', 'Verbergen']"
-                v-model="hi" variant="outlined">
+              <v-select label="95% Konfidenzintervall" class="pt-0" compact :items="getMultipleChartOptions.confidenceIntervalOptions"
+                v-model="getMultipleChartOptions.showConfidenceInterval" variant="outlined">
               </v-select>
             </v-col>
             <v-col>
-              <v-select label="Gruppen in Visualisierungen" class="pt-0" compact multiple :items="getChartOptions.boats"
-                v-model="getChartOptions.boats_in_chart" variant="outlined">
+              <v-select label="Gruppen in Visualisierungen" class="pt-0" compact multiple :items="getMultipleChartOptions.groups"
+                v-model="getMultipleChartOptions.groups_in_chart" variant="outlined">
               </v-select>
             </v-col>
           </v-row>
-          -->
           
 
 
@@ -417,6 +415,9 @@ export default {
       getChartOptions: "getChartOptions"
     }),
     ...mapState(useRennstrukturAnalyseState, {
+      getMultipleChartOptions: "getMultipleChartOptions"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
       deficitChartOptions: "getDeficitChartOptions"
     }),
     ...mapState(useRennstrukturAnalyseState, {
@@ -443,21 +444,6 @@ export default {
       lastCompId: null,
       lastEventId: null,
       difference_to: "",
-      config: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: "Anzahl Boote"
-          }
-        }
-      },
     }
   },
   created() {

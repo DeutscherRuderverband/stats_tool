@@ -48,6 +48,15 @@ function createChartOptions(boats) {
     }
 }
 
+function createMultipleChartOptions(groups) {
+    return {
+        groups: groups.map(group => group.name),
+        showConfidenceInterval: "Anzeigen",
+        confidenceIntervalOptions: ["Anzeigen", "Verbergen"],
+        groups_in_chart: groups.map(group => group.name),
+    }
+}
+
 
 function intermediateChartOptions(state, number_of_boats, max_val) {
     return [{
@@ -80,11 +89,15 @@ function intermediateChartOptions(state, number_of_boats, max_val) {
             },
             legend: {
                 onClick: (evt, legendItem, legend) => {
-                   //Update boats_in_chart
-                   const hidden = !legendItem.hidden;
-                   state.setChartOptionBoats(hidden, legendItem.text)
+                    //Update multiple.groups_in_chart
+                    const hidden = !legendItem.hidden;
+                    if (legendItem.text.includes("Gruppe")) {
+                        state.setMultipleChartOptionsGroups(hidden, legendItem.text)
+                    }
+                    else {
+                        state.setChartOptionBoats(hidden, legendItem.text)
+                    }
                 },
-               
             },
         }
     },
@@ -304,6 +317,9 @@ export const useRennstrukturAnalyseState = defineStore({
         getChartOptions(state) {
             return state.data.raceData[0].chartOptions
         },
+        getMultipleChartOptions(state) {
+            return state.data.multiple.chartOptions
+        },
         getTableData(state) {
             
             const tableData = [];
@@ -498,7 +514,11 @@ export const useRennstrukturAnalyseState = defineStore({
                     const borderColor = COLORS[colorIndex % 6]
                     const data = Object.values(dataObj.stats_race_data).map(obj => obj[key]["mean"])
                     data.splice(0,0,null)           //No value at 0
-                    datasets.push({label, backgroundColor, borderColor, data})
+                    var hidden = true
+                    if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
+                        hidden = false
+                    }
+                    datasets.push({label, backgroundColor, borderColor, data, hidden})
                     colorIndex++
                 });
                 return {
@@ -548,7 +568,11 @@ export const useRennstrukturAnalyseState = defineStore({
                     const borderColor = COLORS[colorIndex % 6];
                     let data = Object.values(dataObj.stats).map(distanceObj => distanceObj[key]["mean"]);
                     data.splice(0,0,1)
-                    datasets.push({label, backgroundColor, borderColor, data});
+                    var hidden = true
+                    if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
+                        hidden = false
+                    }
+                    datasets.push({label, backgroundColor, borderColor, data, hidden});
                     colorIndex++;
                 });
                 const chartLabels = [0, ...Object.keys(state.data.multiple.groups[0].stats)]
@@ -615,10 +639,14 @@ export const useRennstrukturAnalyseState = defineStore({
                     let backgroundColor
                     let borderColor
                     const data = Object.values(group.stats).map(obj => obj["rel_speed [%]"][key])
+                    var hidden = true
+                    if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
+                        hidden = false
+                    }
                     if (key == "mean") {
                         backgroundColor = COLORS[colorIndex % 6];
                         borderColor = COLORS[colorIndex % 6];
-                        datasets.push({ label, backgroundColor, borderColor, data });
+                        datasets.push({ label, backgroundColor, borderColor, data, hidden });
                     }
                     else {
                         backgroundColor = COLORS[colorIndex % 6].concat("15");
@@ -630,7 +658,7 @@ export const useRennstrukturAnalyseState = defineStore({
                             fill = "-1"
                         }
                         //const legend = { display: false }
-                        datasets.push({ label, backgroundColor, borderColor, data, pointRadius, fill});
+                        datasets.push({ label, backgroundColor, borderColor, data, pointRadius, fill, hidden});
                     }
                 })
 
@@ -679,7 +707,8 @@ export const useRennstrukturAnalyseState = defineStore({
                                     dataset.hidden = newVal
                                 }
                             });
-                            legend.chart.update();
+                            legend.chart.update()
+                            state.setMultipleChartOptionsGroups(newVal, legendItem.text)
                         },
                     }
                 }
@@ -744,9 +773,14 @@ export const useRennstrukturAnalyseState = defineStore({
                   },
                   legend: {
                     onClick: (evt, legendItem, legend) => {
-                       //Update boats_in_chart
-                       const hidden = !legendItem.hidden;
-                       state.setChartOptionBoats(hidden, legendItem.text)
+                        //Update multiple.groups_in_chart
+                        const hidden = !legendItem.hidden;
+                        if (legendItem.text.includes("Gruppe")) {
+                            state.setMultipleChartOptionsGroups(hidden, legendItem.text)
+                        }
+                        else {
+                            state.setChartOptionBoats(hidden, legendItem.text)
+                        }
                     },
                    
                 },
@@ -775,10 +809,16 @@ export const useRennstrukturAnalyseState = defineStore({
                     text: "Schlagfrequenz"
                   },
                   legend: {
-                    onClick: (evt, legendItem, legend) => {
-                       //Update boats_in_chart
-                       const hidden = !legendItem.hidden;
-                       state.setChartOptionBoats(hidden, legendItem.text)
+                      onClick: (evt, legendItem, legend) => {
+                          //Update multiple.groups_in_chart
+                          const hidden = !legendItem.hidden;
+                          if (legendItem.text.includes("Gruppe")) {
+                              state.setMultipleChartOptionsGroups(hidden, legendItem.text)
+                          }
+                          else {
+                              state.setChartOptionBoats(hidden, legendItem.text)
+                          }
+                       
                     },
                    
                 },
@@ -807,10 +847,15 @@ export const useRennstrukturAnalyseState = defineStore({
                   },
                   legend: {
                     onClick: (evt, legendItem, legend) => {
-                       //Update boats_in_chart
-                       const hidden = !legendItem.hidden;
-                       state.setChartOptionBoats(hidden, legendItem.text)
-                    },
+                        //Update multiple.groups_in_chart
+                        const hidden = !legendItem.hidden;
+                        if (legendItem.text.includes("Gruppe")) {
+                            state.setMultipleChartOptionsGroups(hidden, legendItem.text)
+                        }
+                        else {
+                            state.setChartOptionBoats(hidden, legendItem.text)
+                        }
+                    }
                    
                 },
                 }
@@ -842,6 +887,7 @@ export const useRennstrukturAnalyseState = defineStore({
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_race_boat_groups`, {data})
                 .then(response => {
                     this.data.multiple = response.data
+                    this.data.multiple.chartOptions = createMultipleChartOptions(response.data.groups)
                     this.data.analysis = null
                     this.loadingState = false
                 }).catch(error => {
@@ -892,6 +938,17 @@ export const useRennstrukturAnalyseState = defineStore({
             }
             else if (hidden == false && !boats_in_chart.includes(boat)) {
                 boats_in_chart.push(boat)
+            }
+        },
+        setMultipleChartOptionsGroups(hidden, group) {
+            let groups_in_chart = this.data.multiple.chartOptions.groups_in_chart
+            console.log("MultipleChartOptions")
+            if (hidden == true && groups_in_chart.includes(group)) {
+                console.log("HIDE")
+                this.data.multiple.chartOptions.groups_in_chart = groups_in_chart.filter(item => item !== group)
+            }
+            else if (hidden == false && !groups_in_chart.includes(group)) {
+                groups_in_chart.push(group)
             }
         },
         exportTableData() {
