@@ -39,17 +39,17 @@ function createCSV(content, title) {
     link.click(); 
 }
 
-/*
-function createChartOptions(analysis) {
-    result = {
-        boats: analysis.race_boats.map(boat => `${boat.name} (${boat.rank})`),
-        difference_to: "boat_name",
-        boats_in_chart: analysis.race_boats.map(boat => `${boat.name} (${boat.rank})`)
+function createChartOptions(boats) {
+    const firstBoat = boats.find(boat => boat.rank == 1)
+    return {
+        boats: boats.map(boat => boat.name),
+        difference_to: firstBoat.name,
+        boats_in_chart: boats.map(boat => boat.name)
     }
 }
-*/
 
-function intermediateChartOptions(number_of_boats, max_val) {
+
+function intermediateChartOptions(state, number_of_boats, max_val) {
     return [{
         responsive: true,
         maintainAspectRatio: false,
@@ -77,6 +77,14 @@ function intermediateChartOptions(number_of_boats, max_val) {
             title: {
                 display: true,
                 text: "Platzierung"
+            },
+            legend: {
+                onClick: (evt, legendItem, legend) => {
+                   //Update boats_in_chart
+                   const hidden = !legendItem.hidden;
+                   state.setChartOptionBoats(hidden, legendItem.text)
+                },
+               
             },
         }
     },
@@ -112,7 +120,15 @@ function intermediateChartOptions(number_of_boats, max_val) {
             title: {
                 display: true,
                 text: "Rückstand zum Führenden [sek]"
-            }
+            },
+            legend: {
+                onClick: (evt, legendItem, legend) => {
+                   //Update boats_in_chart
+                   const hidden = !legendItem.hidden;
+                   state.setChartOptionBoats(hidden, legendItem.text)
+                },
+               
+            },
         }
     }
     ]
@@ -143,7 +159,11 @@ export const useRennstrukturAnalyseState = defineStore({
                 "result_time_world_best": 0,
                 "result_time_best_of_current_olympia_cycle": 0,
                 "progression_code": "",
-                "chartOptions": {},
+                "chartOptions": {
+                    boats: [],
+                    difference_to: "",
+                    boats_in_chart: []
+                },
                 "pdf_urls": {
                     "result": "",
                     "race_data": ""
@@ -282,11 +302,7 @@ export const useRennstrukturAnalyseState = defineStore({
             return tableData
         },
         getChartOptions(state) {
-            const firstBoat = state.data.raceData[0].race_boats.find(boat => boat.rank == 1)
-            return {
-                boats: state.data.raceData[0].race_boats.map(boat => boat.name),
-                difference_to: firstBoat.name
-            }
+            return state.data.raceData[0].chartOptions
         },
         getTableData(state) {
             
@@ -385,13 +401,13 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getDeficitInMeters(state) {
             const raceBoats = state.data.raceData[0].race_boats;
-            // determine winner
-            const winnerIdx = raceBoats.findIndex(team => team.rank === 1);
+            const referenceBoat = state.data.raceData[0].chartOptions.difference_to
+            // get reference boat to calculate difference
+            const winnerIdx = raceBoats.findIndex(team => team.name === referenceBoat);
             const winnerData = raceBoats.map(dataObj => dataObj.race_data)[winnerIdx];
             const winnerTeamSpeeds = Object.fromEntries(Object.entries(winnerData).map(
                 ([key, val]) => [key, val["speed [m/s]"]]
             ));
-            // calculate difference to winner based on speed
             let speedPerTeam = {};
             let countries = [];
             for (let i = 0; i < raceBoats.length; i++) {
@@ -431,7 +447,11 @@ export const useRennstrukturAnalyseState = defineStore({
                 const borderColor = COLORS[colorIndex % 6]
                 const data = Object.values(value)
                 data.splice(0,0,0)           //add data at position 0
-                datasets.push({label, backgroundColor, borderColor, data})
+                var hidden = true
+                if (state.data.raceData[0].chartOptions.boats_in_chart.includes(label)) {
+                     hidden = false
+                }
+                datasets.push({label, backgroundColor, borderColor, data, hidden})
                 colorIndex++;
             });
             const allKeys = Object.values(speedPerTeam).map(obj => Object.keys(obj))
@@ -451,8 +471,13 @@ export const useRennstrukturAnalyseState = defineStore({
                     const backgroundColor = COLORS[colorIndex % 6]
                     const borderColor = COLORS[colorIndex % 6]
                     const data = Object.values(dataObj.race_data).map(obj => obj[key])
+                    var hidden = true
+                    if (state.data.raceData[0].chartOptions.boats_in_chart.includes(label)) {
+                        hidden = false
+                    }
+
                     data.splice(0,0,null)           //No value at 0
-                    datasets.push({label, backgroundColor, borderColor, data})
+                    datasets.push({label, backgroundColor, borderColor, data, hidden})
                     colorIndex++
                 });
                 return {
@@ -483,6 +508,7 @@ export const useRennstrukturAnalyseState = defineStore({
             })
         },
         getIntermediateChartData(state) {
+        
             const intermediateDataKeys = ["rank", "deficit [millis]"];
             return intermediateDataKeys.map(key => {
                 const datasets = [];
@@ -494,10 +520,14 @@ export const useRennstrukturAnalyseState = defineStore({
                     // add zero values as start point
                     dataObj.intermediates["0"] = {"rank": 1, "deficit [millis]": 0}
                     let data = Object.values(dataObj.intermediates).map(distanceObj => distanceObj[key]);
-                    if (key === "deficit [millis]") {
+                    if (key == "deficit [millis]") {
                         data = data.map(x => formatMilliseconds(x))
                     }
-                    datasets.push({label, backgroundColor, borderColor, data});
+                    var hidden = true
+                    if (state.data.raceData[0].chartOptions.boats_in_chart.includes(label)) {
+                        hidden = false
+                    }
+                    datasets.push({label, backgroundColor, borderColor, data, hidden});
                     colorIndex++;
                 });
                 const chartLabels = Object.keys(state.data.raceData[0].race_boats[0].intermediates)
@@ -564,7 +594,7 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getMeanIntermediateChartOptions(state) {
             const number_of_boats = state.data.multiple.groups.length
-            return intermediateChartOptions(6, 0)
+            return intermediateChartOptions(state, 6, 0)
 
         },
         getIntermediateChartOptions(state) {
@@ -572,7 +602,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 Math.max(...Object.values(obj.intermediates).map(el => el["deficit [millis]"]))
             ));
             const number_of_boats = state.data.raceData[0].race_boats.length
-            return intermediateChartOptions(number_of_boats, max_val)
+            return intermediateChartOptions(state, number_of_boats, max_val)
         },
         getPacingProfiles(state) {
             const labels = Object.keys(state.data.multiple.groups[0].stats)
@@ -654,7 +684,140 @@ export const useRennstrukturAnalyseState = defineStore({
                     }
                 }
             }
+        },
+        getDeficitChartOptions(state) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Strecke [m]'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Differenz [m]'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Differenz [m]"
+                    },
+                    legend: {
+                        onClick: (evt, legendItem, legend) => {
+                           //Update boats_in_chart
+                           const hidden = !legendItem.hidden;
+                           state.setChartOptionBoats(hidden, legendItem.text)
+                        },
+                       
+                    },
+                }
+            }
+        },
+        getGpsChartOptions(state) {
+            return [{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Strecke [m]'
+                    }
+                  },
+                  y: {
+                    title: {
+                      display: true,
+                      text: 'Geschwindigkeit [m/sek]'
+                    }
+                  }
+                },
+                plugins: {
+                  title: {
+                    display: true,
+                    text: "Geschwindigkeit"
+                  },
+                  legend: {
+                    onClick: (evt, legendItem, legend) => {
+                       //Update boats_in_chart
+                       const hidden = !legendItem.hidden;
+                       state.setChartOptionBoats(hidden, legendItem.text)
+                    },
+                   
+                },
+                }
+              },
+              {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Strecke [m]'
+                    }
+                  },
+                  y: {
+                    title: {
+                      display: true,
+                      text: 'Schlagfrequenz [1/min]'
+                    }
+                  }
+                },
+                plugins: {
+                  title: {
+                    display: true,
+                    text: "Schlagfrequenz"
+                  },
+                  legend: {
+                    onClick: (evt, legendItem, legend) => {
+                       //Update boats_in_chart
+                       const hidden = !legendItem.hidden;
+                       state.setChartOptionBoats(hidden, legendItem.text)
+                    },
+                   
+                },
+                }
+              }, {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Strecke [m]'
+                    }
+                  },
+                  y: {
+                    title: {
+                      display: true,
+                      text: 'Vortrieb [m/Schlag]'
+                    }
+                  }
+                },
+                plugins: {
+                  title: {
+                    display: true,
+                    text: "Vortrieb"
+                  },
+                  legend: {
+                    onClick: (evt, legendItem, legend) => {
+                       //Update boats_in_chart
+                       const hidden = !legendItem.hidden;
+                       state.setChartOptionBoats(hidden, legendItem.text)
+                    },
+                   
+                },
+                }
+              }
+            ]
         }
+        
     },
     actions: {
         async getFilterOptions() {
@@ -669,7 +832,6 @@ export const useRennstrukturAnalyseState = defineStore({
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
                 .then(response => {
                     this.data.analysis = response.data
-                    //this.data.analysis["chartOptions"] = createChartOptions(this.data.analysis)
                     this.data.multiple = null
                     this.loadingState = false
                 }).catch(error => {
@@ -690,6 +852,7 @@ export const useRennstrukturAnalyseState = defineStore({
             await axios.get(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_race/${raceId}/`)
                 .then(response => {
                     this.data.raceData[0] = response.data
+                    this.data.raceData[0].chartOptions = createChartOptions(response.data.race_boats)
                     this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
@@ -713,6 +876,23 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         resetMultiple() {
             this.data.multiple = null
+        },
+        setChartOptions(difference, boats) {
+            if (difference != null) {
+                this.data.raceData[0].chartOptions.difference_to = difference
+            }
+            if (boats != null) {
+                 this.data.raceData[0].chartOptions.boats_in_chart = boats
+            }
+        },
+        setChartOptionBoats(hidden, boat) {
+            let boats_in_chart = this.data.raceData[0].chartOptions.boats_in_chart
+            if (hidden == true && boats_in_chart.includes(boat)) {
+                this.data.raceData[0].chartOptions.boats_in_chart = boats_in_chart.filter(item => item !== boat)
+            }
+            else if (hidden == false && !boats_in_chart.includes(boat)) {
+                boats_in_chart.push(boat)
+            }
         },
         exportTableData() {
             
