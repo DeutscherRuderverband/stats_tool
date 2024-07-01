@@ -267,27 +267,33 @@ def calculateIntermediateTimes(intermediates):
 
     return intermediates
 
-#Calculate the 95% confidence intervall of sample data
-#Assume n < 30, t-distribution
+#Calculate the 95% confidence interval for population mean
+#n <= 30, t-distribution, n>30 z-distribution
+#return mean, lower, upper
 def calculateConfidenceIntervall(sample_data):
-    #return mean, lower, upper
-    if len(sample_data) == 1:
+    sample_data = list(filter(lambda x: x is not None and x != 0, sample_data)) #Filter none and 0 values
+    n = len(sample_data)
+    if n == 0:
+        return 0, 0, 0
+    elif n == 1:
         return sample_data[0], sample_data[0], sample_data[0]
-    mean, lower, upper = 0, 0, 0
-    filtered_sample_data = list(filter(None, sample_data))
-    if len(filtered_sample_data) >= 1:
-        mean = np.mean(filtered_sample_data)
-        std_dev = np.std(filtered_sample_data, ddof=1)  # ddof=1 for sample standard deviation
-        n = len(filtered_sample_data)
+    else:
+        mean = np.mean(sample_data)
+        std_dev = np.std(sample_data, ddof=1)  # ddof=1 for sample standard deviation
         std_error = std_dev / math.sqrt(n)
-        critical_value = stats.t.ppf(1 - 0.05/2, n - 1) #t-value for 95% confidence
+        
+        if n<= 30: 
+            critical_value = stats.t.ppf(1 - 0.05/2, n - 1) #t-value for 95% confidence
+        else:
+            critical_value = 1.96  #z-value for large sample sizes
+
         margin_of_error = critical_value * std_error
 
         #Calculate confidence Intervall
         lower = mean - margin_of_error
         upper = mean + margin_of_error
 
-    return mean, lower, upper
+        return mean, lower, upper
 
 #Possible pacing profiles are: Even, J-shape, Reverse J-shape, negativ, positiv, other
 def getPacingProfile(t1, t2, t3, t4):

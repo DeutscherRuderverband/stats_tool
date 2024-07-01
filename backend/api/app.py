@@ -137,10 +137,10 @@ def get_race_analysis_filter_results() -> dict:
     import logging
 
     year = request.json["data"].get('year', None)
-    competition_type_id = request.json["data"].get('competition_type', None) 
+    competition_type = request.json["data"].get('competition_type', None) 
     competition_id = request.json["data"].get('competition_id', None) 
 
-    logging.info(f"Year: {year}, comp cat: {competition_type_id}, comp id: {competition_id}")
+    logging.info(f"Year: {year}, comp cat: {competition_type}, comp id: {competition_id}")
 
     session = Scoped_Session()
 
@@ -162,7 +162,7 @@ def get_race_analysis_filter_results() -> dict:
             .join(model.Competition_Type.competition_category)
             .where(
                 and_(
-                    model.Competition_Type.additional_id_ == competition_type_id,
+                    model.Competition_Type.abbreviation == competition_type,
                     model.Competition.year == year,
                 )
             )

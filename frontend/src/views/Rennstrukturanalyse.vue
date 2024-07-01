@@ -217,7 +217,7 @@
 
             <v-col>
               <v-select label="Zeige Differenz zu..." class="pt-0" compact :items="getChartOptions.boats"
-                v-model="difference_to" variant="outlined">
+                v-model="getChartOptions.difference_to" variant="outlined">
               </v-select>
             </v-col>
             <v-col>
@@ -333,9 +333,8 @@
 </template>
 
 <script setup>
-import RennstrukturFilter from "@/components/filters/rennstrukturFilter2.vue";
+import RennstrukturFilter from "@/components/filters/rennstrukturFilter.vue";
 import LineChart from "@/components/charts/LineChart.vue";
-import BarChart from "@/components/charts/BarChart.vue";
 import '@/assets/base.css';
 import 'chartjs-adapter-moment';
 import { Chart as ChartJS, Tooltip, Legend, TimeScale } from "chart.js";
