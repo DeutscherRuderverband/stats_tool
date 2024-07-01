@@ -3,16 +3,12 @@ import {defineStore} from "pinia";
 
 // function to convert milliseconds to min:sec:ms
 const formatMilliseconds = ms => {
-    if (!ms) {
-        return '00:00.00';
+    if (typeof ms === 'number' && ms != -Infinity) {
+        return new Date(ms).toISOString().slice(14, -2);
     }
-
-    const is_string = typeof ms === 'string' || ms instanceof String;
-    if (is_string) {
-        return ms;
-    }
-
-    return new Date(ms).toISOString().slice(14, -2);
+    else {
+        return '00:00.00'
+    }   
 };
 
 function roundToTwoDecimal(num) {
@@ -57,109 +53,85 @@ function createMultipleChartOptions(groups) {
     }
 }
 
-
-function intermediateChartOptions(state, number_of_boats, max_val) {
-    return [{
+function getChartOptions(state, title, x_title, y_title, y_reverse = false, y_type_time=false, y_stepsize, y_min, y_max, boat_chart) {
+    //Returns options object
+    const options = {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
             x: {
                 title: {
                     display: true,
-                    text: 'Strecke [m]'
+                    text: x_title
                 }
             },
             y: {
-                reverse: true,
                 title: {
                     display: true,
-                    text: 'Platzierung'
+                    text: y_title
                 },
+                reverse: y_reverse,
                 ticks: {
-                    stepSize: 1
+                    stepSize: y_stepsize
                 },
-                min: 1,
-                max: number_of_boats
+                min: y_min,
+                max: y_max
             }
         },
         plugins: {
             title: {
                 display: true,
-                text: "Platzierung"
-            },
-            legend: {
-                labels: {
-                    filter: function (item, chart) {
-                        // Show legend only for 'Dataset 1'
-                        if (item.text.includes("Gruppe")) {
-                            return item.datasetIndex  % 3 == 0;
-                        }
-                        return true 
-                    }
-                },
-                onClick: (evt, legendItem, legend) => {
-                    //Update multiple.groups_in_chart
-                    const hidden = !legendItem.hidden;
-                    legend.chart.data.datasets.forEach(dataset => {
-                        if (dataset.label === legendItem.text) {
-                            dataset.hidden = hidden
-                        }
-                    });
-                    legend.chart.update()
-                    if (legendItem.text.includes("Gruppe")) {
-                        state.setMultipleChartOptionsGroups(hidden, legendItem.text)
-                    }
-                    else {
-                        state.setChartOptionBoats(hidden, legendItem.text)
-                    }
-                },
-            },
-        }
-    },
-    {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            x: {
-                title: {
-                    display: true,
-                    text: 'Strecke [m]'
-                }
-            },
-            y: {
-                type: 'time',
-                time: {
-                    parser: 'mm:ss.SS',
-                    unit: 'second',
-                    displayFormats: {
-                        second: 'mm:ss.SS',
-                        tooltip: 'mm:ss.SS'
-                    }
-                },
-                min: '00:00.00',
-                max: formatMilliseconds(max_val + 100),
-                title: {
-                    display: true,
-                    text: 'Rückstand [mm:ss.ms]'
-                }
-            }
-        },
-        plugins: {
-            title: {
-                display: true,
-                text: "Rückstand zum Führenden [sek]"
-            },
-            legend: {
-                onClick: (evt, legendItem, legend) => {
-                   //Update boats_in_chart
-                   const hidden = !legendItem.hidden;
-                   state.setChartOptionBoats(hidden, legendItem.text)
-                },
-               
+                text: title
             },
         }
     }
-    ]
+
+    if (y_type_time) {
+        options.scales.y.type = 'time'
+        options.scales.y.time = {
+            parser: 'mm:ss.SS',
+            unit: 'second',
+            displayFormats: {
+                second: 'mm:ss.SS',
+                tooltip: 'mm:ss.SS'
+            }
+        }
+    }
+
+    if (boat_chart) {
+        options.plugins.legend = {
+            onClick: (evt, legendItem, legend) => {
+                //Update multiple.groups_in_chart
+                const hidden = !legendItem.hidden;
+                state.setChartOptionBoats(hidden, legendItem.text)
+            }
+        }
+    }
+    else if (!boat_chart) {
+        options.plugins.legend = {
+            labels: {
+                filter: function (item, chart) {
+                    // Show legend only for 'Dataset 1'
+                    if (item.text.includes("Gruppe")) {
+                        return item.datasetIndex % 3 == 0;
+                    }
+                    return true
+                }
+            },
+            onClick: (evt, legendItem, legend) => {
+                const hidden = !legendItem.hidden;
+                legend.chart.data.datasets.forEach(dataset => {
+                    if (dataset.label === legendItem.text) {
+                        dataset.hidden = hidden
+                    }
+                });
+                legend.chart.update()
+                //Update multiple.groups_in_chart
+                state.setMultipleChartOptionsGroups(hidden, legendItem.text)
+            }
+        }
+    }
+    return options
 }
 
 
@@ -217,12 +189,18 @@ export const useRennstrukturAnalyseState = defineStore({
         getFilterState(state) {
             return state.filterOpen
         },
+        getRaceAnalysisFilterOptions(state) {
+            return state.data.filterOptions
+        },
+
         getMultiple(state) {
             return state.data.multiple
         },
+        //Competition/Events/Races
         getAnalysisData(state) {
             return state.data.analysis
         },
+        //Used for general Information about Competition
         getCompetitionData(state) {
             const data = state.data.raceData[0]
             data.worldBestTimeBoatClass = formatMilliseconds(data.result_time_world_best);
@@ -230,18 +208,15 @@ export const useRennstrukturAnalyseState = defineStore({
             state.compData = data
             return data
         },
-        getRaceAnalysisFilterOptions(state) {
-            return state.data.filterOptions
-        },
+        
         getOutlierCountries(state) {
             return state.outlierCountries
-        },
-        getOldTableData(state) {
-            return state.data.raceData[0].data
         },
         getLoadingState(state) {
             return state.loadingState
         },
+
+        //Table data
         getMultipleTableData(state) {
             const tableData = []
             const tableHead = [
@@ -325,15 +300,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 tableData.push(rowData)
             }
             console.log(state.data.multiple)
-            
-            
             return tableData
-        },
-        getChartOptions(state) {
-            return state.data.raceData[0].chartOptions
-        },
-        getMultipleChartOptions(state) {
-            return state.data.multiple.chartOptions
         },
         getTableData(state) {
             
@@ -402,14 +369,11 @@ export const useRennstrukturAnalyseState = defineStore({
                                     `${propulsion} m/Schlag`,
                                     `${speed} m/s`
                                 ]
-
                                 )
                             }
                             else {
                                 intermediate_values.push('-')
-                            }
-
-                            
+                            }  
                         }
                     }
                     
@@ -427,9 +391,9 @@ export const useRennstrukturAnalyseState = defineStore({
             })
             console.log(state.data.raceData)
             return tableData;
-        
-
         },
+
+        //Data for Charts
         getDeficitInMeters(state) {
             const raceBoats = state.data.raceData[0].race_boats;
             const referenceBoat = state.data.raceData[0].chartOptions.difference_to
@@ -554,12 +518,6 @@ export const useRennstrukturAnalyseState = defineStore({
                             }
                             datasets.push({ label, backgroundColor, borderColor, data, pointRadius, fill, hidden});
                         }
-                        /*
-                        if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
-                            hidden = false
-                        }
-                        datasets.push({ label, backgroundColor, borderColor, data, hidden })
-                        */
                     })
                     colorIndex++
                 });
@@ -570,7 +528,6 @@ export const useRennstrukturAnalyseState = defineStore({
             })
         },
         getIntermediateChartData(state) {
-        
             const intermediateDataKeys = ["rank", "deficit [millis]"];
             return intermediateDataKeys.map(key => {
                 const datasets = [];
@@ -642,43 +599,6 @@ export const useRennstrukturAnalyseState = defineStore({
                 datasets
             }
 
-            /*
-            const intermediateDataKeys = ["rank"];
-            return intermediateDataKeys.map(key => {
-                const datasets = [];
-                let colorIndex = 0;
-                state.data.multiple.groups.forEach(dataObj => {
-                    const label = dataObj.name;
-                    const backgroundColor = COLORS[colorIndex % 6];
-                    const borderColor = COLORS[colorIndex % 6];
-                    let data = Object.values(dataObj.stats).map(distanceObj => distanceObj[key]["mean"]);
-                    data.splice(0,0,1)
-                    var hidden = true
-                    if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
-                        hidden = false
-                    }
-                    datasets.push({label, backgroundColor, borderColor, data, hidden});
-                    colorIndex++;
-                });
-                const chartLabels = [0, ...Object.keys(state.data.multiple.groups[0].stats)]
-                return {
-                    labels: chartLabels,
-                    datasets
-                };
-            })
-            */
-        },
-
-        getMeanIntermediateChartOptions(state) {
-            return intermediateChartOptions(state, 6, 0)
-
-        },
-        getIntermediateChartOptions(state) {
-            const max_val = Math.max(...state.data.raceData[0].race_boats.map(obj =>
-                Math.max(...Object.values(obj.intermediates).map(el => el["deficit [millis]"]))
-            ));
-            const number_of_boats = state.data.raceData[0].race_boats.length
-            return intermediateChartOptions(state, number_of_boats, max_val)
         },
         getPacingProfiles(state) {
             const labels = Object.keys(state.data.multiple.groups[0].stats)
@@ -723,239 +643,39 @@ export const useRennstrukturAnalyseState = defineStore({
                 datasets
             }
         },
-        getPacingProfileChartOptions(state) {
-            return {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Strecke [m]'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Normalisierte Geschschwindigkeit'
-                        }
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: "Rennstruktur"
-                    },
-                    legend: {
-                        labels: {
-                            filter: function (item, chart) {
-                                // Show legend only for 'Dataset 1'
-                                return item.datasetIndex  % 3 == 0;
-                            }
-                        },
-                        onClick: (evt, legendItem, legend) => {
-                            let newVal = !legendItem.hidden;
-                            legend.chart.data.datasets.forEach(dataset => {
-                                if (dataset.label === legendItem.text) {
-                                    dataset.hidden = newVal
-                                }
-                            });
-                            legend.chart.update()
-                            state.setMultipleChartOptionsGroups(newVal, legendItem.text)
-                        },
-                    }
-                }
-            }
-        },
-        getDeficitChartOptions(state) {
-            return {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Strecke [m]'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Differenz [m]'
-                        }
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: "Differenz [m]"
-                    },
-                    legend: {
-                        onClick: (evt, legendItem, legend) => {
-                           //Update boats_in_chart
-                           const hidden = !legendItem.hidden;
-                           state.setChartOptionBoats(hidden, legendItem.text)
-                        },
-                       
-                    },
-                }
-            }
-        },
-        getGpsChartOptions(state) {
-            return [{
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                  x: {
-                    title: {
-                      display: true,
-                      text: 'Strecke [m]'
-                    }
-                  },
-                  y: {
-                    title: {
-                      display: true,
-                      text: 'Geschwindigkeit [m/sek]'
-                    }
-                  }
-                },
-                plugins: {
-                  title: {
-                    display: true,
-                    text: "Geschwindigkeit"
-                  },
-                  legend: {
-                    labels: {
-                        filter: function (item, chart) {
-                            // Show legend only for 'Dataset 1'
-                            if (item.text.includes("Gruppe")) {
-                                return item.datasetIndex  % 3 == 0;
-                            }
-                            return true 
-                        }
-                    },
-                    onClick: (evt, legendItem, legend) => {
-                        //Update multiple.groups_in_chart
-                        const hidden = !legendItem.hidden;
-                        legend.chart.data.datasets.forEach(dataset => {
-                            if (dataset.label === legendItem.text) {
-                                dataset.hidden = hidden
-                            }
-                        });
-                        legend.chart.update()
-                        if (legendItem.text.includes("Gruppe")) {
-                            state.setMultipleChartOptionsGroups(hidden, legendItem.text)
-                        }
-                        else {
-                            state.setChartOptionBoats(hidden, legendItem.text)
-                        }
-                    },
-                },
-                }
-              },
-              {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                  x: {
-                    title: {
-                      display: true,
-                      text: 'Strecke [m]'
-                    }
-                  },
-                  y: {
-                    title: {
-                      display: true,
-                      text: 'Schlagfrequenz [1/min]'
-                    }
-                  }
-                },
-                plugins: {
-                  title: {
-                    display: true,
-                    text: "Schlagfrequenz"
-                  },
-                  legend: {
-                    labels: {
-                        filter: function (item, chart) {
-                            // Show legend only for 'Dataset 1'
-                            if (item.text.includes("Gruppe")) {
-                                return item.datasetIndex  % 3 == 0;
-                            }
-                            return true 
-                        }
-                    },
-                    onClick: (evt, legendItem, legend) => {
-                        //Update multiple.groups_in_chart
-                        const hidden = !legendItem.hidden;
-                        legend.chart.data.datasets.forEach(dataset => {
-                            if (dataset.label === legendItem.text) {
-                                dataset.hidden = hidden
-                            }
-                        });
-                        legend.chart.update()
-                        if (legendItem.text.includes("Gruppe")) {
-                            state.setMultipleChartOptionsGroups(hidden, legendItem.text)
-                        }
-                        else {
-                            state.setChartOptionBoats(hidden, legendItem.text)
-                        }
-                    },
-                },
-                }
-              }, {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                  x: {
-                    title: {
-                      display: true,
-                      text: 'Strecke [m]'
-                    }
-                  },
-                  y: {
-                    title: {
-                      display: true,
-                      text: 'Vortrieb [m/Schlag]'
-                    }
-                  }
-                },
-                plugins: {
-                  title: {
-                    display: true,
-                    text: "Vortrieb"
-                  },
-                  legend: {
-                labels: {
-                    filter: function (item, chart) {
-                        // Show legend only for 'Dataset 1'
-                        if (item.text.includes("Gruppe")) {
-                            return item.datasetIndex  % 3 == 0;
-                        }
-                        return true 
-                    }
-                },
-                onClick: (evt, legendItem, legend) => {
-                    //Update multiple.groups_in_chart
-                    const hidden = !legendItem.hidden;
-                    legend.chart.data.datasets.forEach(dataset => {
-                        if (dataset.label === legendItem.text) {
-                            dataset.hidden = hidden
-                        }
-                    });
-                    legend.chart.update()
-                    if (legendItem.text.includes("Gruppe")) {
-                        state.setMultipleChartOptionsGroups(hidden, legendItem.text)
-                    }
-                    else {
-                        state.setChartOptionBoats(hidden, legendItem.text)
-                    }
-                },
-            },
-                }
-              }
+
+        //Chart options
+        getSingleChartOptions(state) {
+            let max_val = Math.max(...state.data.raceData[0].race_boats.map(obj =>
+                Math.max(...Object.values(obj.intermediates).map(el => el["deficit [millis]"]))
+            ));
+            const number_of_boats = state.data.raceData[0].race_boats.length;
+            return [
+                getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false,  undefined, undefined, undefined, undefined, true),
+                getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined,  undefined, undefined, undefined, undefined, true),
+                getChartOptions(state, "Rückstand zum Führenden [sek]", 'Strecke [m]', 'Rückstand [mm:ss.ms]', false, true, undefined, '00:00.00', formatMilliseconds(max_val + 100), true ),
+                getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false,  undefined, undefined, undefined, undefined, true),
+                getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true,  undefined, 1, 1, number_of_boats, true),
+                getChartOptions(state, 'Differenz [m]', 'Strecke [m]', 'Differenz [m]', false,  undefined, undefined, undefined, undefined, true )
             ]
-        }
+        },
+        getMultipleChartOptions(state) {
+            return [
+                getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, undefined, undefined, false),
+                getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined, undefined, undefined, undefined, undefined, false),
+                getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true, undefined, 1, 1, 6, false),
+                getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false, undefined, undefined, undefined, undefined, false),
+                getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false, undefined, undefined, undefined, undefined, false),
+            ]
+        },
+
+        //General Chart Options (which boats/ groups are shown, confidence interval, difference_to)
+        getSingleOptions(state) {
+            return state.data.raceData[0].chartOptions
+        },
+        getMultipleOptions(state) {
+            return state.data.multiple.chartOptions
+        },
         
     },
     actions: {
@@ -1100,7 +820,5 @@ export const useRennstrukturAnalyseState = defineStore({
 
             createCSV(Object.values(csvContent).join(""), this.data.multiple.boat_class);
         }
-       
-    
     }
 });

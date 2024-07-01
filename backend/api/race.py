@@ -271,7 +271,7 @@ def calculateIntermediateTimes(intermediates):
 #n <= 30, t-distribution, n>30 z-distribution
 #return mean, lower, upper
 def calculateConfidenceIntervall(sample_data):
-    sample_data = list(filter(lambda x: x is not None and x != 0, sample_data)) #Filter none and 0 values
+    sample_data = list(filter(lambda x: x is not None and x > 0, sample_data)) #Filter none and 0 values
     n = len(sample_data)
     if n == 0:
         return 0, 0, 0

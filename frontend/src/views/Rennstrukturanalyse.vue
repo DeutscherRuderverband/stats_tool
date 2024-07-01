@@ -187,26 +187,26 @@
           <v-row>
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[0]" :chartOptions="gpsChartOptions[0]" class="chart-bg"></LineChart>
+                <LineChart :data="getGPsData[0]" :chartOptions="singleChartOptions[0]" class="chart-bg"></LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[2]" :chartOptions="gpsChartOptions[2]" class="chart-bg"></LineChart>
+                <LineChart :data="getGPsData[2]" :chartOptions="singleChartOptions[1]" class="chart-bg"></LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getIntermediateData[1]" :chartOptions="intermediateChartOptions[1]" class="chart-bg">
+                <LineChart :data="getIntermediateData[1]" :chartOptions="singleChartOptions[2]" class="chart-bg">
                 </LineChart>
               </v-container>
             </v-col>
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[1]" :chartOptions="gpsChartOptions[1]" class="chart-bg"></LineChart>
+                <LineChart :data="getGPsData[1]" :chartOptions="singleChartOptions[3]" class="chart-bg"></LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getIntermediateData[0]" :chartOptions="intermediateChartOptions[0]" class="chart-bg">
+                <LineChart :data="getIntermediateData[0]" :chartOptions="singleChartOptions[4]" class="chart-bg">
                 </LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="deficitMeters" :chartOptions="deficitChartOptions" class="chart-bg"></LineChart>
+                <LineChart :data="deficitMeters" :chartOptions="singleChartOptions[5]" class="chart-bg"></LineChart>
               </v-container>
             </v-col>
           </v-row>
@@ -270,17 +270,17 @@
           <v-row class="padding">
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getPacingProfiles" :chartOptions="getPacingProfileChartOptions" class="chart-bg">
+                <LineChart :data="getPacingProfiles" :chartOptions="multipleChartOptions[0]" class="chart-bg">
                 </LineChart>
               </v-container>
 
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getMeanGPsData[2]" :chartOptions="gpsChartOptions[2]" class="chart-bg"></LineChart>
+                <LineChart :data="getMeanGPsData[2]" :chartOptions="multipleChartOptions[1]" class="chart-bg"></LineChart>
               </v-container>
 
 
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getMeanIntermediateData" :chartOptions="meanIntermediateChartOptions[0]"
+                <LineChart :data="getMeanIntermediateData" :chartOptions="multipleChartOptions[2]"
                   class="chart-bg">
                 </LineChart>
               </v-container>
@@ -288,18 +288,12 @@
 
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getMeanGPsData[0]" :chartOptions="gpsChartOptions[0]" class="chart-bg"></LineChart>
+                <LineChart :data="getMeanGPsData[0]" :chartOptions="multipleChartOptions[3]" class="chart-bg"></LineChart>
               </v-container>
 
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getMeanGPsData[1]" :chartOptions="gpsChartOptions[1]" class="chart-bg"></LineChart>
+                <LineChart :data="getMeanGPsData[1]" :chartOptions="multipleChartOptions[4]" class="chart-bg"></LineChart>
               </v-container>
-
-              <!--
-              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <BarChart :data="getCountData" :chartOptions="config" class="chart-bg"></BarChart>
-              </v-container>
-              -->
 
             </v-col>
           </v-row>
@@ -350,21 +344,38 @@ import { useGlobalState } from "@/stores/globalStore";
 
 export default {
   computed: {
+    ...mapState(useRennstrukturAnalyseState, {
+      loading: "getLoadingState"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      filterState: "getFilterState"
+    }),
     ...mapState(useGlobalState, {
       headerReduced: "getHeaderReducedState"
     }),
+    ...mapState(useRennstrukturAnalyseState, {  //used for navigation, todo redesign Navigation, one variable saving current State?
+      multiple: "getMultiple"
+    }),
+
     ...mapState(useRennstrukturAnalyseState, {
-      getAnalysis: "getAnalysisData"
+      outliers: "getOutlierCountries"           //Check, outlier stay when races change
     }),
     ...mapState(useRennstrukturAnalyseState, {
+      getAnalysis: "getAnalysisData"            
+    }),
+    ...mapState(useRennstrukturAnalyseState, {    //Used for general information about competition, could be less?
       competitionData: 'getCompetitionData'
     }),
-    ...mapState(useRennstrukturAnalyseState, {
-      oldTableData: "getOldTableData"
+
+    //Table data
+    ...mapState(useRennstrukturAnalyseState, {    
+      multipleTableData: "getMultipleTableData"    
     }),
     ...mapState(useRennstrukturAnalyseState, {
       tableData: "getTableData"
     }),
+    
+    //Chart data
     ...mapState(useRennstrukturAnalyseState, {
       getGPsData: "getGPSChartData"
     }),
@@ -378,52 +389,25 @@ export default {
       getMeanIntermediateData: "getMeanIntermediateChartData"
     }),
     ...mapState(useRennstrukturAnalyseState, {
-      getCountData: "getCountData"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      filterState: "getFilterState"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      loading: "getLoadingState"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
       deficitMeters: "getDeficitInMeters"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      intermediateChartOptions: "getIntermediateChartOptions"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      meanIntermediateChartOptions: "getMeanIntermediateChartOptions"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      outliers: "getOutlierCountries"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      multiple: "getMultiple"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      multipleTableData: "getMultipleTableData"
     }),
     ...mapState(useRennstrukturAnalyseState, {
       getPacingProfiles: "getPacingProfiles"
     }),
+    //global chart options
     ...mapState(useRennstrukturAnalyseState, {
-      getPacingProfileChartOptions: "getPacingProfileChartOptions"
+      getChartOptions: "getSingleOptions"
     }),
     ...mapState(useRennstrukturAnalyseState, {
-      getChartOptions: "getChartOptions"
+      getMultipleChartOptions: "getMultipleOptions"
+    }),
+    //chart options for graphs
+    ...mapState(useRennstrukturAnalyseState, {
+      singleChartOptions: "getSingleChartOptions"
     }),
     ...mapState(useRennstrukturAnalyseState, {
-      getMultipleChartOptions: "getMultipleChartOptions"
+      multipleChartOptions: "getMultipleChartOptions"
     }),
-    ...mapState(useRennstrukturAnalyseState, {
-      deficitChartOptions: "getDeficitChartOptions"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      gpsChartOptions: "getGpsChartOptions"
-    }),
-
-
   },
   data() {
     return {
@@ -442,7 +426,6 @@ export default {
       races: {},
       lastCompId: null,
       lastEventId: null,
-      difference_to: "",
     }
   },
   created() {
@@ -534,12 +517,6 @@ export default {
       if (oldVal === true && newVal === false && this.filterState === true) {
         const store = useRennstrukturAnalyseState()
         store.setFilterState(oldVal)
-      }
-    },
-    difference_to: function () {
-      if (this.getChartOptions.difference_to != this.difference_to) {
-        const store = useRennstrukturAnalyseState()
-        store.setChartOptions(this.difference_to, null)
       }
     },
     loading() {
