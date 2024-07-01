@@ -280,7 +280,7 @@
 
 
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getMeanIntermediateData[0]" :chartOptions="meanIntermediateChartOptions[0]"
+                <LineChart :data="getMeanIntermediateData" :chartOptions="meanIntermediateChartOptions[0]"
                   class="chart-bg">
                 </LineChart>
               </v-container>

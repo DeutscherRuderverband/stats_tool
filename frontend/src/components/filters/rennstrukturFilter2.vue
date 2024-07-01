@@ -421,9 +421,8 @@ export default {
 
 .inactive {
   background-color: #EEEEEE;
-  /* Change to your desired active background color */
+  border: none;
   color: #000;
-  /* Change text color if needed */
 }
 
 .padding {

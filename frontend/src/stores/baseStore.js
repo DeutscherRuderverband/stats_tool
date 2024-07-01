@@ -88,9 +88,24 @@ function intermediateChartOptions(state, number_of_boats, max_val) {
                 text: "Platzierung"
             },
             legend: {
+                labels: {
+                    filter: function (item, chart) {
+                        // Show legend only for 'Dataset 1'
+                        if (item.text.includes("Gruppe")) {
+                            return item.datasetIndex  % 3 == 0;
+                        }
+                        return true 
+                    }
+                },
                 onClick: (evt, legendItem, legend) => {
                     //Update multiple.groups_in_chart
                     const hidden = !legendItem.hidden;
+                    legend.chart.data.datasets.forEach(dataset => {
+                        if (dataset.label === legendItem.text) {
+                            dataset.hidden = hidden
+                        }
+                    });
+                    legend.chart.update()
                     if (legendItem.text.includes("Gruppe")) {
                         state.setMultipleChartOptionsGroups(hidden, legendItem.text)
                     }
@@ -504,21 +519,48 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getMeanGPSChartData(state) {
             const chartDataKeys = ['speed [m/s]', 'stroke [1/min]', 'propulsion [m/stroke]']
-            return chartDataKeys.map(key => {
+            const dataKeys = ["mean", "lower_bound", "upper_bound"];
+            return chartDataKeys.map(chartKey => {
                 const datasets = []
                 let colorIndex = 0
 
                 state.data.multiple.groups.forEach(dataObj => {
                     const label = dataObj.name
-                    const backgroundColor = COLORS[colorIndex % 6]
-                    const borderColor = COLORS[colorIndex % 6]
-                    const data = Object.values(dataObj.stats_race_data).map(obj => obj[key]["mean"])
-                    data.splice(0,0,null)           //No value at 0
-                    var hidden = true
-                    if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
-                        hidden = false
-                    }
-                    datasets.push({label, backgroundColor, borderColor, data, hidden})
+
+                    dataKeys.forEach(key => {
+                        let backgroundColor
+                        let borderColor
+                        const data = Object.values(dataObj.stats_race_data).map(obj => obj[chartKey][key])
+                        data.splice(0, 0, null)           //No value at 0
+                        let hidden = true
+                        if (key == "mean") {
+                            if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
+                                hidden = false
+                            }
+                            backgroundColor = COLORS[colorIndex % 6];
+                            borderColor = COLORS[colorIndex % 6];
+                            datasets.push({ label, backgroundColor, borderColor, data, hidden });
+                        }
+                        else {
+                            if (state.data.multiple.chartOptions.groups_in_chart.includes(label) && state.data.multiple.chartOptions.showConfidenceInterval == "Anzeigen") {
+                                hidden = false
+                            }
+                            backgroundColor = COLORS[colorIndex % 6].concat("15");
+                            borderColor = COLORS[colorIndex % 6].concat("15");
+                            const pointRadius = 0
+                            let fill = false
+                            if (key == "upper_bound") {
+                                fill = "-1"
+                            }
+                            datasets.push({ label, backgroundColor, borderColor, data, pointRadius, fill, hidden});
+                        }
+                        /*
+                        if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
+                            hidden = false
+                        }
+                        datasets.push({ label, backgroundColor, borderColor, data, hidden })
+                        */
+                    })
                     colorIndex++
                 });
                 return {
@@ -558,6 +600,49 @@ export const useRennstrukturAnalyseState = defineStore({
             })
         },
         getMeanIntermediateChartData(state) {
+            const labels = Object.keys(state.data.multiple.groups[0].stats)
+            const datasets = [];
+            let colorIndex = 0;
+            const dataKeys = ["mean", "lower_bound", "upper_bound"];
+            state.data.multiple.groups.forEach(group => {
+                const label = group.name;
+                dataKeys.forEach(key => {
+                    let backgroundColor
+                    let borderColor
+                    const data = Object.values(group.stats).map(obj => obj["rank"][key])
+                    let hidden = true
+                    if (key == "mean") {
+                        if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
+                            hidden = false
+                        }
+                        backgroundColor = COLORS[colorIndex % 6];
+                        borderColor = COLORS[colorIndex % 6];
+                        datasets.push({ label, backgroundColor, borderColor, data, hidden });
+                    }
+                    else {
+                        if (state.data.multiple.chartOptions.groups_in_chart.includes(label) && state.data.multiple.chartOptions.showConfidenceInterval == "Anzeigen") {
+                            hidden = false
+                        }
+                        backgroundColor = COLORS[colorIndex % 6].concat("15");
+                        borderColor = COLORS[colorIndex % 6].concat("15");
+                        const pointRadius = 0
+                        let fill = false
+                        if (key == "upper_bound") {
+                            fill = "-1"
+                        }
+                        datasets.push({ label, backgroundColor, borderColor, data, pointRadius, fill, hidden});
+                    }
+                })
+
+                colorIndex++;
+
+            })
+            return {
+                labels: labels,
+                datasets
+            }
+
+            /*
             const intermediateDataKeys = ["rank"];
             return intermediateDataKeys.map(key => {
                 const datasets = [];
@@ -581,43 +666,10 @@ export const useRennstrukturAnalyseState = defineStore({
                     datasets
                 };
             })
+            */
         },
-        getCountData(state) {
-            let datasets = []
-            let datas = []
-            const labels = []
-            let barColors = []
-            let colorIndex = 0
-            state.data.multiple.groups.forEach(dataObj => {
-                const label = dataObj.name;
-                const backgroundColor = COLORS[colorIndex % 6];
-                const borderColor = COLORS[colorIndex % 6];
-                barColors.push(COLORS[colorIndex % 6])
-                //let data = dataObj.count
-                datas.push(dataObj.count)
-                //datasets.push({label, backgroundColor, borderColor, data});
-                labels.push(label)
-                colorIndex++;
-            });
-            datasets.push({datas})
-            return {
-                labels: labels,
-                datasets: [{
-                    barPercentage: 0.8,
-                    barThickness: 18,
-                    maxBarThickness: 18,
-                    minBarLength: 2,
-                    backgroundColor: barColors,
-                    borderColor: barColors,
 
-                    data: datas, 
-                    label: "Alle Gruppen"
-                }]
-            };
-            
-        },
         getMeanIntermediateChartOptions(state) {
-            const number_of_boats = state.data.multiple.groups.length
             return intermediateChartOptions(state, 6, 0)
 
         },
@@ -640,24 +692,25 @@ export const useRennstrukturAnalyseState = defineStore({
                     let borderColor
                     const data = Object.values(group.stats).map(obj => obj["rel_speed [%]"][key])
                     var hidden = true
-                    if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
-                        hidden = false
-                    }
                     if (key == "mean") {
+                        if (state.data.multiple.chartOptions.groups_in_chart.includes(label)) {
+                            hidden = false
+                        }
                         backgroundColor = COLORS[colorIndex % 6];
                         borderColor = COLORS[colorIndex % 6];
                         datasets.push({ label, backgroundColor, borderColor, data, hidden });
                     }
                     else {
+                        if (state.data.multiple.chartOptions.groups_in_chart.includes(label) && state.data.multiple.chartOptions.showConfidenceInterval == "Anzeigen") {
+                            hidden = false
+                        }
                         backgroundColor = COLORS[colorIndex % 6].concat("15");
                         borderColor = COLORS[colorIndex % 6].concat("15");
                         const pointRadius = 0
-                        //const borderWidth = 0
                         let fill = false
                         if (key == "upper_bound") {
                             fill = "-1"
                         }
-                        //const legend = { display: false }
                         datasets.push({ label, backgroundColor, borderColor, data, pointRadius, fill, hidden});
                     }
                 })
@@ -772,9 +825,24 @@ export const useRennstrukturAnalyseState = defineStore({
                     text: "Geschwindigkeit"
                   },
                   legend: {
+                    labels: {
+                        filter: function (item, chart) {
+                            // Show legend only for 'Dataset 1'
+                            if (item.text.includes("Gruppe")) {
+                                return item.datasetIndex  % 3 == 0;
+                            }
+                            return true 
+                        }
+                    },
                     onClick: (evt, legendItem, legend) => {
                         //Update multiple.groups_in_chart
                         const hidden = !legendItem.hidden;
+                        legend.chart.data.datasets.forEach(dataset => {
+                            if (dataset.label === legendItem.text) {
+                                dataset.hidden = hidden
+                            }
+                        });
+                        legend.chart.update()
                         if (legendItem.text.includes("Gruppe")) {
                             state.setMultipleChartOptionsGroups(hidden, legendItem.text)
                         }
@@ -782,7 +850,6 @@ export const useRennstrukturAnalyseState = defineStore({
                             state.setChartOptionBoats(hidden, legendItem.text)
                         }
                     },
-                   
                 },
                 }
               },
@@ -809,18 +876,31 @@ export const useRennstrukturAnalyseState = defineStore({
                     text: "Schlagfrequenz"
                   },
                   legend: {
-                      onClick: (evt, legendItem, legend) => {
-                          //Update multiple.groups_in_chart
-                          const hidden = !legendItem.hidden;
-                          if (legendItem.text.includes("Gruppe")) {
-                              state.setMultipleChartOptionsGroups(hidden, legendItem.text)
-                          }
-                          else {
-                              state.setChartOptionBoats(hidden, legendItem.text)
-                          }
-                       
+                    labels: {
+                        filter: function (item, chart) {
+                            // Show legend only for 'Dataset 1'
+                            if (item.text.includes("Gruppe")) {
+                                return item.datasetIndex  % 3 == 0;
+                            }
+                            return true 
+                        }
                     },
-                   
+                    onClick: (evt, legendItem, legend) => {
+                        //Update multiple.groups_in_chart
+                        const hidden = !legendItem.hidden;
+                        legend.chart.data.datasets.forEach(dataset => {
+                            if (dataset.label === legendItem.text) {
+                                dataset.hidden = hidden
+                            }
+                        });
+                        legend.chart.update()
+                        if (legendItem.text.includes("Gruppe")) {
+                            state.setMultipleChartOptionsGroups(hidden, legendItem.text)
+                        }
+                        else {
+                            state.setChartOptionBoats(hidden, legendItem.text)
+                        }
+                    },
                 },
                 }
               }, {
@@ -846,18 +926,32 @@ export const useRennstrukturAnalyseState = defineStore({
                     text: "Vortrieb"
                   },
                   legend: {
-                    onClick: (evt, legendItem, legend) => {
-                        //Update multiple.groups_in_chart
-                        const hidden = !legendItem.hidden;
-                        if (legendItem.text.includes("Gruppe")) {
-                            state.setMultipleChartOptionsGroups(hidden, legendItem.text)
+                labels: {
+                    filter: function (item, chart) {
+                        // Show legend only for 'Dataset 1'
+                        if (item.text.includes("Gruppe")) {
+                            return item.datasetIndex  % 3 == 0;
                         }
-                        else {
-                            state.setChartOptionBoats(hidden, legendItem.text)
-                        }
+                        return true 
                     }
-                   
                 },
+                onClick: (evt, legendItem, legend) => {
+                    //Update multiple.groups_in_chart
+                    const hidden = !legendItem.hidden;
+                    legend.chart.data.datasets.forEach(dataset => {
+                        if (dataset.label === legendItem.text) {
+                            dataset.hidden = hidden
+                        }
+                    });
+                    legend.chart.update()
+                    if (legendItem.text.includes("Gruppe")) {
+                        state.setMultipleChartOptionsGroups(hidden, legendItem.text)
+                    }
+                    else {
+                        state.setChartOptionBoats(hidden, legendItem.text)
+                    }
+                },
+            },
                 }
               }
             ]
