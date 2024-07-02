@@ -142,6 +142,7 @@ export const useRennstrukturAnalyseState = defineStore({
     state: () => ({
         filterOpen: false,
         loadingState: false,
+        display: "EMPTY",
         compData: [],
         tableExport: [],
         outlierCountries: new Set(),
@@ -192,7 +193,9 @@ export const useRennstrukturAnalyseState = defineStore({
         getRaceAnalysisFilterOptions(state) {
             return state.data.filterOptions
         },
-
+        getDisplay(state) {
+            return state.display
+        },
         getMultiple(state) {
             return state.data.multiple
         },
@@ -234,6 +237,8 @@ export const useRennstrukturAnalyseState = defineStore({
                 {text: 'Rennstruktur', tooltip: null}
             ]
             tableData.push(tableHead)
+
+            state.outlierCountries.clear()
             
             for (const group of state.data.multiple.groups) {
                 const time_period = `${group.min_year} - ${group.max_year}`
@@ -250,9 +255,6 @@ export const useRennstrukturAnalyseState = defineStore({
 
                 for (const [index, [key, intermediate]] of Object.entries(group.stats).entries()) {
                     if (key !== '0') {
-                        if (intermediate["is_outlier"]) {
-                            state.outlierCountries.add(countryIdx)
-                        }
                         if(totalTime != 'DNS' && totalTime != 0) {
                             const time = intermediate["time [millis]"]["mean"]
                             const rank = intermediate["rank"]["mean"]
@@ -319,6 +321,8 @@ export const useRennstrukturAnalyseState = defineStore({
             ]
             tableData.push(tableHead)
 
+            state.outlierCountries.clear()
+
             //Iterate over participating race boats
             state.data.raceData[0].race_boats.forEach((dataObj, countryIdx) => {
                 if (dataObj.intermediates !== '0') {
@@ -332,14 +336,14 @@ export const useRennstrukturAnalyseState = defineStore({
                     //Mannschaft
                     rowData.push(athleteNames);
                     
-                    var totalTime = 0
-                    var averageSpeed = 0
+                    let totalTime = 0
+                    let averageSpeed = 0
                     if (dataObj.intermediates && dataObj.intermediates[2000] && dataObj.intermediates[2000]["time [millis]"]) {
                         totalTime = dataObj.intermediates[2000]["time [millis]"]
                         averageSpeed = 2000 * 1000 / totalTime
                         if(totalTime == 'NaN') {        //TODO: Mehrere Aunahmen, nicht nur DNS!
-                            totalTime = 'DNS'
-                            averageSpeed = '-'
+                            totalTime = 0
+                            averageSpeed = 0
                         }
                     }
                     //Zeit
@@ -353,7 +357,7 @@ export const useRennstrukturAnalyseState = defineStore({
                             if (intermediate["is_outlier"]) {
                                 state.outlierCountries.add(countryIdx)
                             }
-                            if(totalTime != 'DNS' || totalTime == 0) {
+                            if(totalTime != 0) {
                                 const time = intermediate["time [millis]"]
                                 const rank = intermediate["rank"]
                                 const pace = intermediate["pace [millis]"]
@@ -383,9 +387,14 @@ export const useRennstrukturAnalyseState = defineStore({
                     })
 
                     //Relationszeit
-                    const relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
-                    rowData.push(`${relationsZeit}%`)
-                    
+                    if (totalTime != 0) {
+                        const relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
+                        rowData.push(`${relationsZeit}%`)
+                    }
+                    else {
+                        rowData.push('-')
+                    }
+                
                     tableData.push(rowData);
                 }
             })
@@ -691,7 +700,8 @@ export const useRennstrukturAnalyseState = defineStore({
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
                 .then(response => {
                     this.data.analysis = response.data
-                    this.data.multiple = null
+                    this.display = "SINGLE"
+                    //this.data.multiple = null
                     this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
@@ -702,7 +712,8 @@ export const useRennstrukturAnalyseState = defineStore({
                 .then(response => {
                     this.data.multiple = response.data
                     this.data.multiple.chartOptions = createMultipleChartOptions(response.data.groups)
-                    this.data.analysis = null
+                    this.display = "MULTIPLE"
+                    //this.data.analysis = null
                     this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
@@ -718,12 +729,13 @@ export const useRennstrukturAnalyseState = defineStore({
                     console.error(`Request failed: ${error}`)
                 })
         },
-        async fetchCompetitionData(data) {
+        async fetchCompetitionData(data) {          //Difference to postFormData?
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
                 .then(response => {
                     this.data.analysis = response.data
                     this.loadingState = false
-                    this.data.multiple = null
+                    this.display = "SINGLE"
+                    //this.data.multiple = null
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
@@ -734,16 +746,12 @@ export const useRennstrukturAnalyseState = defineStore({
         setToLoadingState() {
             this.loadingState = true
         },
+        setDisplay(view) {
+            //EMPTY, SINGLE, MULTIPLE
+            this.display = view
+        },
         resetMultiple() {
             this.data.multiple = null
-        },
-        setChartOptions(difference, boats) {
-            if (difference != null) {
-                this.data.raceData[0].chartOptions.difference_to = difference
-            }
-            if (boats != null) {
-                 this.data.raceData[0].chartOptions.boats_in_chart = boats
-            }
         },
         setChartOptionBoats(hidden, boat) {
             let boats_in_chart = this.data.raceData[0].chartOptions.boats_in_chart
@@ -756,9 +764,7 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         setMultipleChartOptionsGroups(hidden, group) {
             let groups_in_chart = this.data.multiple.chartOptions.groups_in_chart
-            console.log("MultipleChartOptions")
             if (hidden == true && groups_in_chart.includes(group)) {
-                console.log("HIDE")
                 this.data.multiple.chartOptions.groups_in_chart = groups_in_chart.filter(item => item !== group)
             }
             else if (hidden == false && !groups_in_chart.includes(group)) {

@@ -26,7 +26,7 @@
             v-model="selectedYear" variant="outlined" :rules="[v => !!v || 'Wähle ein Jahr']"></v-select>
           <!-- Competitions -->
           <v-select class="pt-3" density="comfortable" label="Event" :items="optionsCompetitions"
-            v-model="selectedCompetitions" variant="outlined"></v-select>
+            v-model="selectedCompetition" variant="outlined"></v-select>
           <v-container class="pa-0 pt-6 text-right">
             <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
           </v-container>
@@ -200,7 +200,7 @@ export default {
       optionsCountry: [],
 
       //Competition
-      selectedCompetitions: ["WCH"], //For single filter
+      selectedCompetition: "WCH", //For single filter
       optionsCompetitions: [],
       
       //Phase
@@ -298,8 +298,9 @@ export default {
       store.setToLoadingState()
       const data = {
         "year": this.selectedYear,
-        "competition_type": this.selectedCompetitions[0]
+        "competition_type": this.selectedCompetition
       }
+      console.log(data)
       return store.postFormData(data).then(() => {
         console.log("Form data sent...")
       }).catch(error => {
