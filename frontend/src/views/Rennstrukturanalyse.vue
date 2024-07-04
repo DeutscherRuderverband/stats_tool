@@ -248,7 +248,7 @@
         </v-container>
 
         <!-- MULTIPLE -->
-        <v-container v-if="display == 'MULTIPLE'" class="px-0 pt-4">
+        <v-container v-if="display == 'MULTIPLE' && !loading" class="px-0 pt-4">
           <h2>Vergleich Rennstruktur {{ multiple.boat_class }}</h2>
           <v-table class="tableStyles" density="compact">
             <thead>
