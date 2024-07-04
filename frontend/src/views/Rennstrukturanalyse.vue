@@ -250,7 +250,6 @@
         <!-- MULTIPLE -->
         <v-container v-if="display == 'MULTIPLE'" class="px-0 pt-4">
           <h2>Vergleich Rennstruktur {{ multiple.boat_class }}</h2>
-          <!--<div v-for="race in multiple">{{race["name"]}}</div> -->
           <v-table class="tableStyles" density="compact">
             <thead>
               <tr>
