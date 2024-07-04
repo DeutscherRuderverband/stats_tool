@@ -735,7 +735,6 @@ export const useRennstrukturAnalyseState = defineStore({
                     this.data.analysis = response.data
                     this.loadingState = false
                     this.display = "SINGLE"
-                    //this.data.multiple = null
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
@@ -749,9 +748,6 @@ export const useRennstrukturAnalyseState = defineStore({
         setDisplay(view) {
             //EMPTY, SINGLE, MULTIPLE
             this.display = view
-        },
-        resetMultiple() {
-            this.data.multiple = null
         },
         setChartOptionBoats(hidden, boat) {
             let boats_in_chart = this.data.raceData[0].chartOptions.boats_in_chart
