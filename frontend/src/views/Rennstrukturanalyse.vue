@@ -1,35 +1,34 @@
 <template>
-  <v-btn color="blue"
-         @click="setFilterState()" v-show="!filterOpen"
-         :class="mobile ? 'filterToggleButtonMobile mt-6 pa-0 ma-0' : 'filterToggleButton mt-6 pa-0 ma-0'"
-         :height="mobile ? 100: 180"
-         size="x-small"
-  >
+  <!-- Filter Button-->
+  <v-btn color="blue" @click="setFilterState()" v-show="!filterOpen"
+    :class="mobile ? 'filterToggleButtonMobile mt-6 pa-0 ma-0' : 'filterToggleButton mt-6 pa-0 ma-0'"
+    :height="mobile ? 100 : 180" size="x-small">
     <p style="writing-mode: vertical-rl; font-size: 16px; transform: rotate(180deg);">
       <v-icon style="transform: rotate(180deg); font-size: 14px; padding-left: 6px; padding-top: 10px;">mdi-filter
       </v-icon>
       FILTER
     </p>
   </v-btn>
+
+
   <v-card style="box-shadow: none; z-index: 1">
     <v-layout>
-      <v-navigation-drawer
-          v-model="filterOpen"
-          temporary
-          v-bind:style='{"margin-top": (mobile ? "71.25px" : (headerReduced ? "81px" : "159px"))}'
-          width="500">
-        <rennstruktur-filter/>
+      <!-- Open Filter Menu-->
+      <v-navigation-drawer v-model="filterOpen" temporary
+        v-bind:style='{ "margin-top": (mobile ? "71.25px" : (headerReduced ? "81px" : "159px")) }' width="500">
+        <rennstruktur-filter />
       </v-navigation-drawer>
+
+      <!-- Main Content-->
       <v-container :class="mobile ? 'px-5 py-2 main-container' : 'px-10 pt-0 main-container'">
-        <v-col cols="6" class="d-flex flex-row px-0" style="align-items: center" v-bind:style='{"padding-top": windowWidth < 450 ? "18px" : "12px"}, {"padding-bottom": (windowWidth < 450 ? "18px" : "12px")}'>
-          <h1 v-bind:style='{"font-size": (windowWidth < 450 ? "22px" : "30px")}'>Rennstrukturanalyse</h1>
+        <!-- Heading "Rennstrukturanalyse" + icon options -->
+        <v-col cols="6" class="d-flex flex-row px-0" style="align-items: center"
+          v-bind:style='{ "padding-top": windowWidth < 400 ? "18px" : "12px" }, { "padding-bottom": (windowWidth < 400 ? "18px" : "12px") }'>
+          <h1 v-bind:style='{ "font-size": (windowWidth < 400 ? "22px" : "30px") }'>Rennstrukturanalyse</h1>
           <v-icon id="tooltip-analysis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
           </v-icon>
-          <v-tooltip
-              activator="#tooltip-analysis-icon"
-              location="end"
-              open-on-hover
-          >Die Rennstrukturanalyse erlaubt die gezielte Betrachtung des Rennverlaufs auf Basis von Ergebnis- und GPS
+          <v-tooltip activator="#tooltip-analysis-icon" location="end" open-on-hover>Die Rennstrukturanalyse erlaubt die
+            gezielte Betrachtung des Rennverlaufs auf Basis von Ergebnis- und GPS
             Daten.
           </v-tooltip>
           <a :href="emailLink" v-show="showEmailIcon">
@@ -38,191 +37,301 @@
           </a>
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
           <v-icon @click="exportTableData()" color="grey" class="ml-2 v-icon--size-large"
-                  v-if="displayRaceDataAnalysis">mdi-table-arrow-right
+            v-if="displayRaceDataAnalysis">mdi-table-arrow-right
+          </v-icon>
+          <v-icon @click="exportRaces()" color="grey" class="ml-2 v-icon--size-large"
+            v-if="multiple">mdi-table-arrow-right
           </v-icon>
         </v-col>
         <v-divider></v-divider>
-        <v-breadcrumbs v-if="getAnalysis" style="color: grey; height: 22px" class="pa-0 my-2" :items="breadCrumbs"></v-breadcrumbs>
-        <v-container class="pa-0" v-if="!displayRaceDataAnalysis">
-          <v-row>
-            <v-col cols="12">
-              <h2 v-if="getAnalysis && !loading">Suchergebnisse</h2>
-              <v-container class="pa-0 mt-3">
-                <v-col cols="12" class="pa-0">
-                  <v-alert type="info" variant="tonal" v-if="!getAnalysis && !loading" :width="mobile ? '100%':'50%'">
-                    Bitte wähle ein Jahr und ein Event in dem Filter auf der linken Seite.
-                  </v-alert>
-                  <v-progress-circular v-if="loading" indeterminate color="blue" size="40"></v-progress-circular>
 
-                  <v-col :cols="mobile ? 12 : 6" class="pa-0">
-                    <v-alert type="error" variant="tonal" class="my-2" v-if="getAnalysis && !getAnalysis.length > 0">
-                      <v-row>
-                        <v-col cols="12">
-                          <p>Leider keine Ergebnisse gefunden.</p>
-                        </v-col>
-                      </v-row>
-                    </v-alert>
-                    <v-alert type="info" variant="tonal" class="my-2" v-if="noFurtherEntries">
-                      <v-row>
-                        <v-col cols="12">
-                          <p>Hierzu liegen leider keine weiteren Einträge vor.</p>
-                        </v-col>
-                      </v-row>
-                    </v-alert>
-                  </v-col>
+        <!--LOADING-->
+        <v-progress-circular v-if="loading" class="pa-0 mt-3" indeterminate color="blue"
+          size="40"></v-progress-circular>
 
-                  <!-- competition list -->
-                  <v-list density="compact" v-show="displayCompetitions && !loading">
-                    <div
-                        :style="{'display': 'grid', 'grid-template-columns': (mobile ? '1fr' : 'repeat(2, 1fr)'), 'grid-gap': '0.5rem'}">
-                      <v-list-item
-                          min-height="80"
-                          style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
-                          class="pa-2 mx-1"
-                          v-for="competition in getAnalysis"
-                          :key="competition"
-                          :title="competition.name"
-                          :subtitle="competition.start+' | '+competition.venue"
-                          @click="getEvents(competition.events, competition.name, competition.id)"
-                      ></v-list-item>
-                    </div>
-                  </v-list>
-
-                  <!-- events list -->
-                  <v-list density="compact" v-show="displayEvents && !loading">
-                    <div
-                        :style="{'display': 'grid', 'grid-template-columns': (mobile ? '1fr' : 'repeat(2, 1fr)'), 'grid-gap': '0.5rem'}">
-                      <v-list-item
-                          min-height="50"
-                          style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
-                          class="pa-1 mx-1"
-                          v-for="event in events"
-                          :key="event"
-                          :title="event.name"
-                          @click="getRaces(event.races, event.name, event.id)"
-                      ></v-list-item>
-                    </div>
-                  </v-list>
-
-
-                  <!-- races list -->
-                  <v-list density="compact" v-show="displayRaces && !loading">
-                    <div
-                        :style="{'display': 'grid', 'grid-template-columns': (mobile ? '1fr' : 'repeat(2, 1fr)'), 'grid-gap': '0.5rem'}">
-                      <v-list-item
-                          min-height="50"
-                          style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
-                          class="pa-2 mx-1"
-                          v-for="race in races"
-                          :key="race"
-                          :title="race.name"
-                          @click="loadRaceAnalysis(race.name, race.id)"
-                      ></v-list-item>
-                    </div>
-                  </v-list>
-                </v-col>
-              </v-container>
-            </v-col>
-          </v-row>
+        <!--EMPTY-->
+        <v-container class="pa-0 mt-3" v-if="display == 'EMPTY' && !loading">
+          <v-alert type="info" variant="tonal" :width="mobile ? '100%' : '50%'">
+            Bitte wähle ein Jahr und ein Event in dem Filter auf der linken Seite.
+          </v-alert>
         </v-container>
 
-        <v-container v-if="displayRaceDataAnalysis && !loading" class="px-0 py-2">
+        <!-- SINGLE -->
+        <v-container v-if="display=='SINGLE' && !loading" class="pa-0">
+          <v-breadcrumbs v-if="getAnalysis" style="color: grey; height: 22px" class="pa-0 my-2"
+            :items="breadCrumbs"></v-breadcrumbs>
+          <!-- competition/ event/ races lists -->
+          <v-container class="pa-0" v-if="!displayRaceDataAnalysis">
+            <v-row>
+              <v-col cols="12">
+                <h2 v-if="getAnalysis">Suchergebnisse</h2>
+                <v-container class="pa-0 mt-3">
+                  <v-col cols="12" class="pa-0">
+                    <v-col :cols="mobile ? 12 : 6" class="pa-0">
+                      <v-alert type="error" variant="tonal" class="my-2" v-if="getAnalysis && !getAnalysis.length > 0">
+                        <v-row>
+                          <v-col cols="12">
+                            <p>Leider keine Ergebnisse gefunden.</p>
+                          </v-col>
+                        </v-row>
+                      </v-alert>
+                      <v-alert type="info" variant="tonal" class="my-2" v-if="noFurtherEntries">
+                        <v-row>
+                          <v-col cols="12">
+                            <p>Hierzu liegen leider keine weiteren Einträge vor.</p>
+                          </v-col>
+                        </v-row>
+                      </v-alert>
+                    </v-col>
 
-          <v-row no-gutters>
-            <v-col cols="6">
-              <h2>{{ `${competitionData.display_name} (${competitionData.boat_class})` }}</h2>
-            </v-col>
-            <v-col cols="6" class="text-right">
-              <p style="color: grey">Bestzeiten: {{ formatMilliseconds(competitionData.result_time_world_best) }} (WB) |
-                {{ formatMilliseconds(competitionData.result_time_best_of_current_olympia_cycle) }} (OZ/Jahr)</p>
-              <p><b>{{ competitionData.venue }} | {{ competitionData.start_date }}</b></p>
-            </v-col>
-          </v-row>
+                    <!-- competition list -->
+                    <v-list density="compact" v-show="displayCompetitions">
+                      <div
+                        :style="{ 'display': 'grid', 'grid-template-columns': (mobile ? '1fr' : 'repeat(2, 1fr)'), 'grid-gap': '0.5rem' }">
+                        <v-list-item min-height="80"
+                          style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
+                          class="pa-2 mx-1" v-for="competition in getAnalysis" :key="competition"
+                          :title="competition.name" :subtitle="competition.start + ' | ' + competition.venue"
+                          @click="getEvents(competition.events, competition.name, competition.id)"></v-list-item>
+                      </div>
+                    </v-list>
 
-          <v-container class="pa-0 d-flex">
-            <v-col cols="6" class="pa-0">
-            </v-col>
-            <v-col cols="6" class="pa-0 text-right">
-            </v-col>
+                    <!-- events list -->
+                    <v-list density="compact" v-show="displayEvents">
+                      <div
+                        :style="{ 'display': 'grid', 'grid-template-columns': (mobile ? '1fr' : 'repeat(2, 1fr)'), 'grid-gap': '0.5rem' }">
+                        <v-list-item min-height="50"
+                          style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
+                          class="pa-1 mx-1" v-for="event in events" :key="event" :title="event.name"
+                          @click="getRaces(event.races, event.name, event.id)"></v-list-item>
+                      </div>
+                    </v-list>
+
+                    <!-- races list -->
+                    <v-list density="compact" v-show="displayRaces">
+                      <div
+                        :style="{ 'display': 'grid', 'grid-template-columns': (mobile ? '1fr' : 'repeat(2, 1fr)'), 'grid-gap': '0.5rem' }">
+                        <v-list-item min-height="50"
+                          style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
+                          class="pa-2 mx-1" v-for="race in races" :key="race" :title="race.name"
+                          @click="loadRaceAnalysis(race.name, race.id)"></v-list-item>
+                      </div>
+                    </v-list>
+                  </v-col>
+                </v-container>
+              </v-col>
+            </v-row>
           </v-container>
 
-          <v-row>
-            <v-col cols="12">
-              <p v-show="outliers.size > 0" style="color: orange">
-                <v-icon color="orange">mdi-information</v-icon>
-                <b>Diese Tabelle enthält Ausreißerwerte.</b>
-              </p>
-              <v-table class="tableStyles" density="compact">
-                <thead>
-                <tr>
-                  <th v-for="tableHead in tableData[0]" class="px-2">{{ tableHead }}</th>
-                </tr>
-                </thead>
-                <tbody class="nth-grey">
-                <tr v-for="(country, idx) in tableData.slice(1)">
-                    <td v-for="item in country" :key="item" class="px-2" :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
-                    <template v-if="Array.isArray(item)">
-                      <template v-for="element in item">
-                        <a v-if="element && typeof element === 'object'
-                        && element.hasOwnProperty('link') && element.hasOwnProperty('name')"
-                           :href="element.link"
-                           class="link-underline">
-                          {{ element.name }}<br/>
-                        </a>
-                        <p v-else-if="element">{{ element }}</p>
-                      </template>
-                    </template>
-                    <template v-else>
-                      <p>
-                        {{ item }}
-                      </p>
-                    </template>
-                  </td>
-                </tr>
-                </tbody>
-              </v-table>
-              <v-col class="d-flex align-center justify-space-between font-weight-black px-0" style="font-size: 0.9em">
-                <p class="mr-2"><b>Progression:</b> {{ competitionData.progression_code || '–' }}</p>
-                <div class="text-right">
-                  <a v-if="competitionData.pdf_urls.result" :href=competitionData.pdf_urls.result target="_blank"
-                     class="mr-2" style="color: black">
-                    Ergebnisse
-                    <v-icon color="grey">mdi-open-in-new</v-icon>
-                  </a>
-                  <a v-if="competitionData.pdf_urls.race_data" :href=competitionData.pdf_urls.race_data target="_blank"
-                     class="ml-2" style="color: black">
-                    GPS-Daten
-                    <v-icon color="grey">mdi-open-in-new</v-icon>
-                  </a>
-                </div>
+          <!-- Single Rennstrukturanalyse -->
+          <v-container v-if="displayRaceDataAnalysis" class="px-0 py-2">
+            <v-row no-gutters>
+              <v-col cols="6">
+                <h2>{{ `${competitionData.display_name} (${competitionData.boat_class})` }}</h2>
               </v-col>
-            </v-col>
+              <v-col cols="6" class="text-right">
+                <p style="color: grey">Bestzeiten: {{ formatMilliseconds(competitionData.result_time_world_best) }} (WB)
+                  |
+                  {{ formatMilliseconds(competitionData.result_time_best_of_current_olympia_cycle) }} (OZ/Jahr)</p>
+                <p><b>{{ competitionData.venue }} | {{ competitionData.start_date }}</b></p>
+              </v-col>
+            </v-row>
+
+            <v-container class="pa-0 d-flex">
+              <v-col cols="6" class="pa-0">
+              </v-col>
+              <v-col cols="6" class="pa-0 text-right">
+              </v-col>
+            </v-container>
+
+            <v-row>
+              <v-col cols="12">
+                <p v-show="outliers.size > 0" style="color: orange">
+                  <v-icon color="orange">mdi-information</v-icon>
+                  <b>Diese Tabelle enthält Ausreißerwerte.</b>
+                </p>
+                <v-table class="tableStyles" density="compact">
+                  <thead>
+                    <tr>
+                      <th v-for="tableHead in tableData[0]" class="px-2">
+                        <p>{{ tableHead.text }}<v-tooltip activator="parent" location="bottom"
+                            v-if="tableHead.tooltip != null">{{ tableHead.tooltip }}</v-tooltip></p>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="nth-grey">
+                    <tr v-for="(country, idx) in tableData.slice(1)">
+                      <td v-for="item in country" :key="item" class="px-2"
+                        :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
+                        <template v-if="Array.isArray(item)">
+                          <template v-for="element in item">
+                            <a v-if="element && typeof element === 'object'
+                              && element.hasOwnProperty('link') && element.hasOwnProperty('name')" :href="element.link"
+                              class="link-underline">
+                              {{ element.name }}<br />
+                            </a>
+                            <p v-else-if="element">{{ element }}</p>
+                          </template>
+                        </template>
+                        <template v-else>
+                          <p>
+                            {{ item }}
+                          </p>
+                        </template>
+                      </td>
+                    </tr>
+                  </tbody>
+                </v-table>
+                <v-col class="d-flex align-center justify-space-between font-weight-black px-0"
+                  style="font-size: 0.9em">
+                  <p class="mr-2"><b>Progression:</b> {{ competitionData.progression_code || '–' }}</p>
+                  <div class="text-right">
+                    <a v-if="competitionData.pdf_urls.result" :href=competitionData.pdf_urls.result target="_blank"
+                      class="mr-2" style="color: black">
+                      Ergebnisse
+                      <v-icon color="grey">mdi-open-in-new</v-icon>
+                    </a>
+                    <a v-if="competitionData.pdf_urls.race_data" :href=competitionData.pdf_urls.race_data
+                      target="_blank" class="ml-2" style="color: black">
+                      GPS-Daten
+                      <v-icon color="grey">mdi-open-in-new</v-icon>
+                    </a>
+                  </div>
+                </v-col>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col :cols="mobile ? 12 : 6" class="pa-0">
+                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                  <LineChart :data="getGPsData[0]" :chartOptions="singleChartOptions[0]" class="chart-bg"></LineChart>
+                </v-container>
+                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                  <LineChart :data="getGPsData[2]" :chartOptions="singleChartOptions[1]" class="chart-bg"></LineChart>
+                </v-container>
+                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                  <LineChart :data="getIntermediateData[1]" :chartOptions="singleChartOptions[2]" class="chart-bg">
+                  </LineChart>
+                </v-container>
+              </v-col>
+              <v-col :cols="mobile ? 12 : 6" class="pa-0">
+                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                  <LineChart :data="getGPsData[1]" :chartOptions="singleChartOptions[3]" class="chart-bg"></LineChart>
+                </v-container>
+                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                  <LineChart :data="getIntermediateData[0]" :chartOptions="singleChartOptions[4]" class="chart-bg">
+                  </LineChart>
+                </v-container>
+                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                  <LineChart :data="deficitMeters" :chartOptions="singleChartOptions[5]" class="chart-bg"></LineChart>
+                </v-container>
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <h3 class="pl-4 pt-4">Visualisierungsoptionen</h3>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-select label="Zeige Differenz zu..." class="pt-0" compact :items="getChartOptions.boats"
+                  v-model="getChartOptions.difference_to" variant="outlined">
+                </v-select>
+              </v-col>
+              <v-col>
+                <v-select label="Boote in Visualisierungen" class="pt-0" compact multiple :items="getChartOptions.boats"
+                  v-model="getChartOptions.boats_in_chart" variant="outlined">
+                </v-select>
+              </v-col>
+            </v-row>
+
+          </v-container>
+        </v-container>
+
+        <!-- MULTIPLE -->
+        <v-container v-if="display == 'MULTIPLE' && !loading" class="px-0 pt-4">
+          <h2>Vergleich Rennstruktur {{ multiple.boat_class }}</h2>
+          <v-table class="tableStyles" density="compact">
+            <thead>
+              <tr>
+                <th v-for="tableHead in multipleTableData[0]" class="px-2">
+                  <p>{{ tableHead.text }}<v-tooltip activator="parent" location="bottom"
+                      v-if="tableHead.tooltip != null">{{
+                        tableHead.tooltip }}</v-tooltip></p>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(country, idx) in multipleTableData.slice(1)">
+                <td v-for="item in country" :key="item" class="px-2"
+                  :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
+                  <template v-if="Array.isArray(item)">
+                    <template v-for="element in item">
+                      <p>{{ element }}</p>
+                    </template>
+                  </template>
+                  <template v-else>
+                    <p>
+                      {{ item }}
+                    </p>
+                  </template>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+          <p>Die Tabelle zeigt für jede Gruppe die durchschnittlichen Werte über alle Rennen</p>
+
+          <!-- Graphen -->
+          <v-row class="padding">
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[0]" :chartOptions="gpsChartOptions[0]" class="chart-bg"></LineChart>
+                <LineChart :data="getPacingProfiles" :chartOptions="multipleChartOptions[0]" class="chart-bg">
+                </LineChart>
               </v-container>
+
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[2]" :chartOptions="gpsChartOptions[2]" class="chart-bg"></LineChart>
+                <LineChart :data="getMeanGPsData[2]" :chartOptions="multipleChartOptions[1]" class="chart-bg">
+                </LineChart>
               </v-container>
+
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getIntermediateData[1]" :chartOptions="intermediateChartOptions[1]"
-                           class="chart-bg"></LineChart>
+                <LineChart :data="getMeanIntermediateData" :chartOptions="multipleChartOptions[2]" class="chart-bg">
+                </LineChart>
               </v-container>
             </v-col>
+
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[1]" :chartOptions="gpsChartOptions[1]" class="chart-bg"></LineChart>
+                <LineChart :data="getMeanGPsData[0]" :chartOptions="multipleChartOptions[3]" class="chart-bg">
+                </LineChart>
               </v-container>
+
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getIntermediateData[0]" :chartOptions="intermediateChartOptions[0]"
-                           class="chart-bg"></LineChart>
+                <LineChart :data="getMeanGPsData[1]" :chartOptions="multipleChartOptions[4]" class="chart-bg">
+                </LineChart>
               </v-container>
-              <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="deficitMeters" :chartOptions="deficitChartOptions" class="chart-bg"></LineChart>
-              </v-container>
+
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <h3 class="pl-4 pt-4">Visualisierungsoptionen</h3>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-select label="95% Konfidenzintervall" class="pt-0" compact
+                :items="getMultipleChartOptions.confidenceIntervalOptions"
+                v-model="getMultipleChartOptions.showConfidenceInterval" variant="outlined">
+              </v-select>
+            </v-col>
+            <v-col>
+              <v-select label="Gruppen in Visualisierungen" class="pt-0" compact multiple
+                :items="getMultipleChartOptions.groups" v-model="getMultipleChartOptions.groups_in_chart"
+                variant="outlined">
+              </v-select>
             </v-col>
           </v-row>
         </v-container>
+
       </v-container>
     </v-layout>
   </v-card>
@@ -233,56 +342,87 @@ import RennstrukturFilter from "@/components/filters/rennstrukturFilter.vue";
 import LineChart from "@/components/charts/LineChart.vue";
 import '@/assets/base.css';
 import 'chartjs-adapter-moment';
-import {Chart as ChartJS, Tooltip, Legend, TimeScale} from "chart.js";
+import { Chart as ChartJS, Tooltip, Legend, TimeScale } from "chart.js";
 
 ChartJS.register(Tooltip, Legend, TimeScale);
 </script>
 
 <script>
-import {useRennstrukturAnalyseState} from "@/stores/baseStore";
-import {mapState} from "pinia";
+import { useRennstrukturAnalyseState } from "@/stores/baseStore";
+import { mapState } from "pinia";
 import router from "@/router";
-import {useGlobalState} from "@/stores/globalStore";
+import { useGlobalState } from "@/stores/globalStore";
 
 export default {
   computed: {
     ...mapState(useGlobalState, {
       headerReduced: "getHeaderReducedState"
     }),
+
     ...mapState(useRennstrukturAnalyseState, {
-      getAnalysis: "getAnalysisData"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      competitionData: 'getCompetitionData'
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      oldTableData: "getOldTableData"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      tableData: "getTableData"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      getGPsData: "getGPSChartData"
-    }),
-    ...mapState(useRennstrukturAnalyseState, {
-      getIntermediateData: "getIntermediateChartData"
+      loading: "getLoadingState"
     }),
     ...mapState(useRennstrukturAnalyseState, {
       filterState: "getFilterState"
     }),
     ...mapState(useRennstrukturAnalyseState, {
-      loading: "getLoadingState"
+      display: "getDisplay"
+    }),
+
+    ...mapState(useRennstrukturAnalyseState, {
+      outliers: "getOutlierCountries" 
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getAnalysis: "getAnalysisData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {    //Used for general information about competition, could be less?
+      competitionData: 'getCompetitionData'
+    }),
+    ...mapState(useRennstrukturAnalyseState, { 
+      multiple: "getMultiple"
+    }),
+
+    //Table data
+    ...mapState(useRennstrukturAnalyseState, {
+      multipleTableData: "getMultipleTableData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      tableData: "getTableData"
+    }),
+
+    //Chart data
+    ...mapState(useRennstrukturAnalyseState, {
+      getGPsData: "getGPSChartData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getMeanGPsData: "getMeanGPSChartData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getIntermediateData: "getIntermediateChartData"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      getMeanIntermediateData: "getMeanIntermediateChartData"
     }),
     ...mapState(useRennstrukturAnalyseState, {
       deficitMeters: "getDeficitInMeters"
     }),
     ...mapState(useRennstrukturAnalyseState, {
-      intermediateChartOptions: "getIntermediateChartOptions"
+      getPacingProfiles: "getPacingProfiles"
+    }),
+    //global chart options
+    ...mapState(useRennstrukturAnalyseState, {
+      getChartOptions: "getSingleOptions"
     }),
     ...mapState(useRennstrukturAnalyseState, {
-      outliers: "getOutlierCountries"
+      getMultipleChartOptions: "getMultipleOptions"
     }),
-
+    //chart options for graphs
+    ...mapState(useRennstrukturAnalyseState, {
+      singleChartOptions: "getSingleChartOptions"
+    }),
+    ...mapState(useRennstrukturAnalyseState, {
+      multipleChartOptions: "getMultipleChartOptions"
+    }),
   },
   data() {
     return {
@@ -301,102 +441,6 @@ export default {
       races: {},
       lastCompId: null,
       lastEventId: null,
-      gpsChartOptions: [{
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: 'Strecke [m]'
-            }
-          },
-          y: {
-            title: {
-              display: true,
-              text: 'Geschwindigkeit [m/sek]'
-            }
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: "Geschwindigkeit"
-          }
-        }
-      },
-        {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'Strecke [m]'
-              }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Schlagfrequenz [1/min]'
-              }
-            }
-          },
-          plugins: {
-            title: {
-              display: true,
-              text: "Schlagfrequenz"
-            }
-          }
-        }, {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'Strecke [m]'
-              }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Vortrieb [m/Schlag]'
-              }
-            }
-          },
-          plugins: {
-            title: {
-              display: true,
-              text: "Vortrieb"
-            }
-          }
-        }
-      ],
-      deficitChartOptions: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: 'Strecke [m]'
-            }
-          },
-          y: {
-            title: {
-              display: true,
-              text: 'Rückstand [m]'
-            }
-          }
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: "Rückstand zum Führenden [m]"
-          }
-        }
-      },
     }
   },
   created() {
@@ -428,6 +472,10 @@ export default {
       const store = useRennstrukturAnalyseState()
       store.exportTableData()
     },
+    exportRaces() {
+      const store = useRennstrukturAnalyseState()
+      store.exportRaces()
+    },
     setFilterState() {
       this.filterOpen = !this.filterOpen;
       const store = useRennstrukturAnalyseState()
@@ -439,8 +487,9 @@ export default {
       }
       router.push("/rennstrukturanalyse/" + compId)
       this.lastCompId = compId
+      competition.sort((a, b) => a.boat_class.localeCompare(b.boat_class))
       this.events = competition
-      this.breadCrumbs.push({title: displayName})
+      this.breadCrumbs.push({ title: displayName })
       this.displayCompetitions = false
       this.displayEvents = true
     },
@@ -451,7 +500,7 @@ export default {
       router.push(this.$route.fullPath + "/" + eventId)
       this.lastEventId = eventId
       this.races = events
-      this.breadCrumbs.push({title: displayName})
+      this.breadCrumbs.push({ title: displayName })
       this.displayEvents = false
       this.displayRaces = true
     },
@@ -465,6 +514,7 @@ export default {
       const subject = "Wettkampfergebnisse"
       const body = `Sieh dir diese Wettkampfergebnisse an: http://${window.location.host + newPath}`
       this.emailLink = `mailto:?subject=${subject}&body=${body}`
+
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
@@ -491,18 +541,19 @@ export default {
       immediate: true,
       deep: true,
       handler(to, from) {
-          
+
         if (typeof to !== 'undefined') {
           // redirect from calendar to RSA 
           if (to.fullPath.includes("?competition_id=")) {
             const url = new URL(window.location.href);
             const comp_id = url.searchParams.get("competition_id");
-            this.displayCompetitions = !!comp_id; 
+            this.displayCompetitions = !!comp_id;
             const store = useRennstrukturAnalyseState()
             const data = {
               "competition_id": comp_id
             }
             store.fetchCompetitionData(data)
+            store.setDisplay('SINGLE')
           }
         }
         if (typeof from !== 'undefined' && typeof to !== 'undefined') {
@@ -516,12 +567,14 @@ export default {
           }
           // from races backwards to events
           else if (from.path.match(/\/rennstrukturanalyse\/[\w-]+\/[\w-]+/) && !to.fullPath.includes("?race_id=")
-              && !from.fullPath.includes("?race_id=") && to.path.match(/\/rennstrukturanalyse\/[\w-]+/)) {
+            && !from.fullPath.includes("?race_id=") && to.path.match(/\/rennstrukturanalyse\/[\w-]+/)) {
             this.noFurtherEntries = false
             this.displayRaces = false
             this.displayCompetitions = false
             this.displayEvents = true
             this.breadCrumbs.splice(1)
+            const store = useRennstrukturAnalyseState()
+            store.setDisplay('SINGLE')
           }
           // from comp forward to events
           else if (from.path === "/rennstrukturanalyse" && to.path.match(/\/rennstrukturanalyse\/[\w-]+/)) {
@@ -536,7 +589,7 @@ export default {
             }
           } // from event forward to races
           else if (from.path.match(/\/rennstrukturanalyse\/[\w-]+/) && to.path.match(/\/rennstrukturanalyse\/[\w-]+\/[\w-]+/)
-              && !to.fullPath.includes("?race_id=") && !from.fullPath.includes("?race_id=")) {
+            && !to.fullPath.includes("?race_id=") && !from.fullPath.includes("?race_id=")) {
             this.displayRaces = true
             this.displayCompetitions = false
             this.displayEvents = false
@@ -545,22 +598,29 @@ export default {
                 title: this.events.find(obj => obj.id === this.lastEventId).display_name,
               })
             }
+            const store = useRennstrukturAnalyseState()
+            store.setDisplay('SINGLE')
           } else if (from.fullPath.includes("?race_id=") && !to.fullPath.includes("?race_id=") &&
-              to.path.match(/\/rennstrukturanalyse\/[\w-]+\/[\w-]+/)) {
+            to.path.match(/\/rennstrukturanalyse\/[\w-]+\/[\w-]+/)) {
             this.displayRaceDataAnalysis = false
             this.displayEvents = false
             this.displayRaces = true
             this.showEmailIcon = false
-            router.replace({path: `/rennstrukturanalyse/${this.lastCompId}/${this.lastEventId}`, query: {}})
+            router.replace({ path: `/rennstrukturanalyse/${this.lastCompId}/${this.lastEventId}`, query: {} })
+            const store = useRennstrukturAnalyseState()
+            store.setDisplay('SINGLE')
           } else if (to.fullPath.includes("?race_id=")) {
             this.displayRaces = false
             this.displayRaceDataAnalysis = true
+            const store = useRennstrukturAnalyseState()
+            store.setDisplay('SINGLE')
           }
         }
       }
     }
   }
 }
+
 </script>
 
 <style lang="scss" scoped>
@@ -610,7 +670,11 @@ export default {
 }
 
 @media print {
-  i, .filterToggleButton, .filterToggleButtonMobile, .sources {
+
+  i,
+  .filterToggleButton,
+  .filterToggleButtonMobile,
+  .sources {
     display: none;
   }
 }
@@ -624,5 +688,11 @@ export default {
   text-decoration: none;
   color: black;
   border-bottom: 1px solid black;
+}
+
+.padding {
+  padding-top: 30px;
+  /* Adds 20 pixels of padding at the bottom */
+  color: white
 }
 </style>
