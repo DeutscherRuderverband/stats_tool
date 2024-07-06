@@ -1,81 +1,81 @@
-version: '3.8'
+version: "3.8"
 services:
-  api:
-    build:
-      context: backend
-      dockerfile: ./api.Dockerfile
-    ports:
-      - 5000:5000
-    volumes:
-      - ./backend:/usr/src/app
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PORT: "5000"
-      PGUSER: "postgres"
-      PGPASSWORD: "postgres"
-      PGHOST: "db"
-      PGPORT: "5432"
-      PGDATABASE: "rowing"
-      DB_VERBOSITY: "1"
-      JWT_SECRET_KEY: "dev-secret-str"
+    api:
+        build:
+            context: backend
+            dockerfile: ./api.Dockerfile
+        ports:
+            - 1234:5000
+        volumes:
+            - ./backend:/usr/src/app
+        depends_on:
+            db:
+                condition: service_healthy
+        environment:
+            PORT: "5000"
+            PGUSER: "postgres"
+            PGPASSWORD: "postgres"
+            PGHOST: "db"
+            PGPORT: "5432"
+            PGDATABASE: "rowing"
+            DB_VERBOSITY: "1"
+            JWT_SECRET_KEY: "dev-secret-str"
 
-  scraper:
-    build:
-      context: backend
-      dockerfile: ./scraper.Dockerfile
-    volumes:
-      - ./backend:/usr/src/app
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PGUSER: "postgres"
-      PGPASSWORD: "postgres"
-      PGHOST: "db"
-      PGPORT: "5432"
-      PGDATABASE: "rowing"
-      DB_VERBOSITY: "0"
-      DRV_SCRAPER_DEV_MODE: "1"
-      SCRAPER_SINGLEPASS: "0"
-      SCRAPER_YEAR_MIN: "1986"
-      OUTLIER_DETECTION_PERCENTILE_MIN: ".001"
-      OUTLIER_DETECTION_PERCENTILE_MAX: ".97"
+    scraper:
+        build:
+            context: backend
+            dockerfile: ./scraper.Dockerfile
+        volumes:
+            - ./backend:/usr/src/app
+        depends_on:
+            db:
+                condition: service_healthy
+        environment:
+            PGUSER: "postgres"
+            PGPASSWORD: "postgres"
+            PGHOST: "db"
+            PGPORT: "5432"
+            PGDATABASE: "rowing"
+            DB_VERBOSITY: "0"
+            DRV_SCRAPER_DEV_MODE: "1"
+            SCRAPER_SINGLEPASS: "0"
+            SCRAPER_YEAR_MIN: "1986"
+            OUTLIER_DETECTION_PERCENTILE_MIN: ".001"
+            OUTLIER_DETECTION_PERCENTILE_MAX: ".97"
 
-  db:
-    image: postgres:14.1-alpine
-    restart: unless-stopped
-    user: postgres
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-      POSTGRES_DB: "rowing"
-    ports:
-      - 5432:5432
-    volumes:
-      - db:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    db:
+        image: postgres:14.1-alpine
+        restart: unless-stopped
+        user: postgres
+        environment:
+            POSTGRES_USER: "postgres"
+            POSTGRES_PASSWORD: "postgres"
+            POSTGRES_DB: "rowing"
+        ports:
+            - 5432:5432
+        volumes:
+            - db:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
-  frontend:
-    build:
-      context: frontend
-      dockerfile: ./dev.Dockerfile
-    ports:
-      - 5173:5173
-    volumes:
-      - ./frontend/src:/usr/app/src
-      - ./frontend/public:/usr/app/public
-    depends_on:
-      - api
-    environment:
-      PORT: "5173"
-      VITE_BACKEND_API_BASE_URL: "http://localhost:5000"
+    frontend:
+        build:
+            context: frontend
+            dockerfile: ./dev.Dockerfile
+        ports:
+            - 5173:5173
+        volumes:
+            - ./frontend/src:/usr/app/src
+            - ./frontend/public:/usr/app/public
+        depends_on:
+            - api
+        environment:
+            PORT: "5173"
+            VITE_BACKEND_API_BASE_URL: "http://localhost:1234"
 
 volumes:
-  db:
-    driver: local
+    db:
+        driver: local

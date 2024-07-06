@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.12-slim
 # not using alpine because of numpy
 
 # Ref: https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
