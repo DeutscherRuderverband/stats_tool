@@ -40,7 +40,7 @@
             v-if="displayRaceDataAnalysis">mdi-table-arrow-right
           </v-icon>
           <v-icon @click="exportRaces()" color="grey" class="ml-2 v-icon--size-large"
-            v-if="multiple">mdi-table-arrow-right
+            v-if="display == 'MULTIPLE'">mdi-table-arrow-right
           </v-icon>
         </v-col>
         <v-divider></v-divider>
@@ -57,7 +57,7 @@
         </v-container>
 
         <!-- SINGLE -->
-        <v-container v-if="display=='SINGLE' && !loading" class="pa-0">
+        <v-container v-if="display == 'SINGLE' && !loading" class="pa-0">
           <v-breadcrumbs v-if="getAnalysis" style="color: grey; height: 22px" class="pa-0 my-2"
             :items="breadCrumbs"></v-breadcrumbs>
           <!-- competition/ event/ races lists -->
@@ -126,15 +126,35 @@
           <!-- Single Rennstrukturanalyse -->
           <v-container v-if="displayRaceDataAnalysis" class="px-0 py-2">
             <v-row no-gutters>
-              <v-col cols="6">
+              <v-col cols="6" class="pt-3">
                 <h2>{{ `${competitionData.display_name} (${competitionData.boat_class})` }}</h2>
               </v-col>
+              <!--
               <v-col cols="6" class="text-right">
                 <p style="color: grey">Bestzeiten: {{ formatMilliseconds(competitionData.result_time_world_best) }} (WB)
                   |
                   {{ formatMilliseconds(competitionData.result_time_best_of_current_olympia_cycle) }} (OZ/Jahr)</p>
                 <p><b>{{ competitionData.venue }} | {{ competitionData.start_date }}</b></p>
               </v-col>
+              -->
+
+              <v-spacer></v-spacer>
+
+              <v-col cols="auto" class="align-center pt-2" style="color: grey">
+                Bestzeiten:
+                <v-tooltip activator="parent" location="bottom">
+                  Berechnung der Relationszeit zu ausgewählter Bestzeit
+                </v-tooltip>
+              </v-col>
+
+              <v-col cols="auto" class="pt-0 pl-0 pb-1 text-right">
+                <v-radio-group v-model="radios" dense inline class="mb-n7 pb-0">
+                  <v-radio color="blue" :label="`${formatMilliseconds(competitionData.result_time_world_best)} (WBT)`" value="wbt"></v-radio>
+                  <v-radio color="blue" :label="`${formatMilliseconds(competitionData.result_time_world_best_before_olympia_cycle)} (WBT vor OZ)`" value="ozt"></v-radio>
+                </v-radio-group>
+                <p class="pt-0 mt-0"><b>{{ competitionData.venue }} | {{ competitionData.start_date }}</b></p>
+              </v-col>
+
             </v-row>
 
             <v-container class="pa-0 d-flex">
@@ -249,7 +269,7 @@
 
         <!-- MULTIPLE -->
         <v-container v-if="display == 'MULTIPLE' && !loading" class="px-0 pt-4">
-          
+
           <v-row>
             <v-col cols="6" class="pt-3 align-center">
               <h2>Vergleich Rennstruktur {{ boatClassData.boat_class }}</h2>
@@ -258,7 +278,7 @@
             <v-spacer></v-spacer>
 
             <v-col cols="auto" class="align-center pt-5" style="color: grey">
-              Bestzeiten: 
+              Bestzeiten:
               <!-- Andere Variante: Ohne Radio Buttons
               <span :class="{'enlarged-text': WBT}" @click="WBT = !WBT">6:52.78 (WBT)</span>
                | 
@@ -268,25 +288,25 @@
                 Berechnung der Relationszeit zu ausgewählter Bestzeit
               </v-tooltip>
             </v-col>
-            
+
             <v-col cols="auto" class="pb-0 pl-0 mb-n3">
-              <v-radio-group v-model="radios" dense inline>
-                <v-radio color="blue" :label="`${boatClassData.wbt} (WBT)`" value="wbt"></v-radio>
-                <v-radio color="blue" :label="`${boatClassData.wbt_oz} (WBT vor OZ)`" value="ozt"></v-radio>
+              <v-radio-group v-model="wbt" dense inline>
+                <v-radio color="blue" :label="`${boatClassData.wbt} (WBT)`" value="wbt" @click="setRelationTimeFrom('wbt')" :disabled="boatClassData.wbt == '00:00.00'"></v-radio>
+                <v-radio color="blue" :label="`${boatClassData.wbt_oz} (WBT vor OZ)`" value="ozt" @click="setRelationTimeFrom('ozt')" :disabled="boatClassData.wbt_oz == '00:00.00'"></v-radio>
               </v-radio-group>
             </v-col>
 
           </v-row>
 
-          
-          
+
+
           <v-table class="tableStyles" density="compact">
             <thead>
               <tr>
                 <th v-for="tableHead in multipleTableData[0]" class="px-2">
                   <p>{{ tableHead.text }}<v-tooltip activator="parent" location="bottom"
                       v-if="tableHead.tooltip != null">{{
-                        tableHead.tooltip }}</v-tooltip></p>
+                      tableHead.tooltip }}</v-tooltip></p>
                 </th>
               </tr>
             </thead>
@@ -560,6 +580,10 @@ export default {
       this.mobile = this.windowWidth < 890
       let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
+    },
+    setRelationTimeFrom(value) {
+      const store = useRennstrukturAnalyseState()
+      store.setRelationTimeFrom(value)
     }
   },
   watch: {

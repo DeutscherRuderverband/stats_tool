@@ -86,13 +86,38 @@
                 </v-select>
 
                 <!-- Competions -->
-                <v-select class="pt-3" chips multiple density="comfortable" label="Event(s)"
-                  :items="optionsCompetitions" v-model="panel.selectedCompetitions" variant="outlined">
+                <v-select class="pt-3" multiple density="comfortable" label="Event(s)" :items="optionsCompetitions"
+                  v-model="panel.selectedCompetitions" variant="outlined">
+
+                  
+                  <template v-slot:prepend-item>
+                    <v-list-item title="Select All" @click="toggleSelectAll(panel)">
+                      <template v-slot:prepend>
+                        <v-checkbox-btn :indeterminate="panel.selectedCompetitions.length != 0 && !allSelected"
+                          :model-value="allSelected"></v-checkbox-btn>
+                      </template>
+                    </v-list-item>
+                    <v-divider class="mt-2"></v-divider>
+                  </template>
+
+                  <template v-slot:selection="{ item, index }">
+                    <v-chip v-if="index === 0 && panel.selectedCompetitions.length == optionsCompetitions.length" size="small">
+                      <span>Alle</span>
+                    </v-chip>
+                    <v-chip v-if="index < 3 && panel.selectedCompetitions.length != optionsCompetitions.length" size="small">
+                      <span>{{ item.title }}</span>
+                    </v-chip>
+                    <span v-if="index === 3 && panel.selectedCompetitions.length != optionsCompetitions.length" class="text-grey text-caption align-self-center">
+                       (+{{ panel.selectedCompetitions.length - 3 }} weitere)
+                    </span>
+                  </template>
+
+
                 </v-select>
 
                 <!-- Phase (final, semifinal, ...) -->
-                <v-select label="Lauf" class="pt-2" clearable :items="optionsPhases" v-model="panel.selectedPhases" multiple
-                  variant="outlined" chips>
+                <v-select label="Lauf" class="pt-2" clearable :items="optionsPhases" v-model="panel.selectedPhases"
+                  multiple variant="outlined" chips>
                 </v-select>
 
                 <!--Placements -->
@@ -202,6 +227,7 @@ export default {
       //Competition
       selectedCompetition: "WCH", //For single filter
       optionsCompetitions: [],
+      allSelected: true,
       
       //Phase
       optionsPhases: [],
@@ -261,6 +287,7 @@ export default {
       // competition category id
       const compTypes = this.raceAnalysisFilterOptions.competition_categories
       this.optionsCompetitions = compTypes.map(item => item.display_name)
+      this.panels[0].selectedCompetitions = this.optionsCompetitions
 
       // Runs
       this.optionsPhases = this.raceAnalysisFilterOptions.runs
@@ -336,7 +363,7 @@ export default {
     addPanel() {
       const newIndex = this.panels.length + 1;
       if (this.panels.length < 6) {
-        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: defaultYear - 4, endYear: defaultYear, selectedCountry: defaultCountry[newIndex -1], selectedCompetitions: defaultCompetitions,
+        this.panels.push({ title: `Gruppe ${newIndex}`, startYear: defaultYear - 4, endYear: defaultYear, selectedCountry: defaultCountry[newIndex -1], selectedCompetitions: this.optionsCompetitions,
         selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [] });
       }
       else {
@@ -352,6 +379,15 @@ export default {
       if (this.panels.length >1) {
         this.panels.pop();
       }
+    },
+
+    toggleSelectAll(panel) {
+      if (this.allSelected) {
+        panel.selectedCompetitions = [];
+      } else {
+        panel.selectedCompetitions = [...this.optionsCompetitions];
+      }
+      this.allSelected = !this.allSelected;
     },
 
     hideFilter() {

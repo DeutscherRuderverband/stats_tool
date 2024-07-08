@@ -302,7 +302,13 @@ export const useRennstrukturAnalyseState = defineStore({
                 //Relationszeit
                 let relationsZeit = "-"
                 if (totalTime != 0) {
-                    if(state.relation_time_from_wbt == "wbt") {
+                    if(state.data.multiple.world_best_time == 0 && state.data.multiple.oz_best_time != 0) {
+                        state.relation_time_from = "ozt"
+                    }
+                    else if(state.data.multiple.oz_best_time == 0 && state.data.multiple.world_best_time != 0)  {
+                        state.relation_time_from = "wbt"
+                    }
+                    if(state.relation_time_from == "wbt") {
                         relationsZeit = (state.data.multiple.world_best_time / totalTime * 100).toFixed(1)
                     }
                     else {
@@ -406,7 +412,15 @@ export const useRennstrukturAnalyseState = defineStore({
 
                     //Relationszeit
                     if (totalTime != 0) {
-                        const relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
+                        let relationsZeit = 0
+                        if(state.relation_time_from == "wbt") {
+                            relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
+                        }
+                        else {
+                            relationsZeit = (state.data.raceData[0].result_time_world_best_before_olympia_cycle / totalTime * 100).toFixed(1)
+                        }
+
+                        //const relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
                         rowData.push(`${relationsZeit}%`)
                     }
                     else {
@@ -769,7 +783,7 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         setRelationTimeFrom(value) {
             console.log("New RelationTime")
-            this.relation_time_from_wbt = value
+            this.relation_time_from = value
         },
         setChartOptionBoats(hidden, boat) {
             let boats_in_chart = this.data.raceData[0].chartOptions.boats_in_chart
