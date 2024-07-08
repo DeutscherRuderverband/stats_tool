@@ -249,7 +249,37 @@
 
         <!-- MULTIPLE -->
         <v-container v-if="display == 'MULTIPLE' && !loading" class="px-0 pt-4">
-          <h2>Vergleich Rennstruktur {{ multiple.boat_class }}</h2>
+          
+          <v-row>
+            <v-col cols="6" class="pt-3 align-center">
+              <h2>Vergleich Rennstruktur {{ boatClassData.boat_class }}</h2>
+            </v-col>
+
+            <v-spacer></v-spacer>
+
+            <v-col cols="auto" class="align-center pt-5" style="color: grey">
+              Bestzeiten: 
+              <!-- Andere Variante: Ohne Radio Buttons
+              <span :class="{'enlarged-text': WBT}" @click="WBT = !WBT">6:52.78 (WBT)</span>
+               | 
+              <span :class="{'enlarged-text': !WBT}" @click="WBT = !WBT">6:55.78 (vor OZ)</span>
+              -->
+              <v-tooltip activator="parent" location="bottom">
+                Berechnung der Relationszeit zu ausgewählter Bestzeit
+              </v-tooltip>
+            </v-col>
+            
+            <v-col cols="auto" class="pb-0 pl-0 mb-n3">
+              <v-radio-group v-model="radios" dense inline>
+                <v-radio color="blue" :label="`${boatClassData.wbt} (WBT)`" value="wbt"></v-radio>
+                <v-radio color="blue" :label="`${boatClassData.wbt_oz} (WBT vor OZ)`" value="ozt"></v-radio>
+              </v-radio-group>
+            </v-col>
+
+          </v-row>
+
+          
+          
           <v-table class="tableStyles" density="compact">
             <thead>
               <tr>
@@ -368,7 +398,9 @@ export default {
     ...mapState(useRennstrukturAnalyseState, {
       display: "getDisplay"
     }),
-
+    ...mapState(useRennstrukturAnalyseState, {
+      wbt: "getRelationTimeFrom"
+    }),
     ...mapState(useRennstrukturAnalyseState, {
       outliers: "getOutlierCountries" 
     }),
@@ -378,8 +410,13 @@ export default {
     ...mapState(useRennstrukturAnalyseState, {    //Used for general information about competition, could be less?
       competitionData: 'getCompetitionData'
     }),
+    /*
     ...mapState(useRennstrukturAnalyseState, { 
       multiple: "getMultiple"
+    }),
+    */
+    ...mapState(useRennstrukturAnalyseState, { 
+      boatClassData: "getBoatClassData"
     }),
 
     //Table data
@@ -441,12 +478,14 @@ export default {
       races: {},
       lastCompId: null,
       lastEventId: null,
+      radios: "wbt",
     }
   },
   created() {
     window.addEventListener('resize', this.checkScreen);
     this.checkScreen();
     this.filterOpen = this.filterState
+    this.radios = this.wbt
 
     window.onload = () => {
       const url = new URL(window.location.href);
@@ -461,7 +500,7 @@ export default {
   methods: {
     formatMilliseconds(ms) {
       if (!ms) {
-        return '00:00.000';
+        return '00:00.00';
       }
       return new Date(ms).toISOString().slice(14, -2);
     },
@@ -536,6 +575,10 @@ export default {
     loading() {
       router.push('/rennstrukturanalyse')
       this.displayRaceDataAnalysis = false
+    },
+    radios(newValue) {
+      const store = useRennstrukturAnalyseState()
+      store.setRelationTimeFrom(newValue)
     },
     $route: {
       immediate: true,

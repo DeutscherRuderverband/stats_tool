@@ -25,7 +25,7 @@ from sqlalchemy.orm import joinedload
 
 from . import auth
 from model import model
-from .race import result_time_best_of_year_interval, compute_intermediates_figures, strokes_for_intermediate_steps, getIntermediateTimes, calculateIntermediateTimes, calculateConfidenceIntervall, getPacingProfile
+from .race import *
 from common.rowing import propulsion_in_meters_per_stroke
 from . import mocks  # todo: remove me
 from . import globals
@@ -133,7 +133,7 @@ def get_race_analysis_filter_results() -> dict:
     See https://github.com/N10100010/DRV_project/blob/api-design/doc/backend-api.md#user-auswahl-jahr-einzeln-und-wettkampfklasse-zb-olympics for mock of return value.
 
     """
-    from datetime import datetime
+    #from datetime import datetime
     import logging
 
     year = request.json["data"].get('year', None)
@@ -299,7 +299,6 @@ def get_matrix() -> dict:
 @app.route('/get_race_boat_groups', methods=['POST'])
 @jwt_required()
 def get_race_boat_groups():
-
     session = Scoped_Session()
 
     boat_class = request.json["data"]["boat_class"]
@@ -441,7 +440,12 @@ def get_race_boat_groups():
         group = f"Gruppe {index + 1}"
         groups.append({"name": group, "stats": summary, "stats_race_data": summary_gps, "pacing_profile": pacing_profile, "count": count, "min_year": min_Year, "max_year": max_Year,"events": competitions, "phases": phases, "ranks": ranks, "country": country, "race_boats": boats_formatted})
 
-    result = {"boat_class": boat_class, "world_best_time": world_best_time_ms ,"groups": groups}
+        #Best Time Before current olympic cycle, from excelsheet
+        best_oz_time = getOzBestTime(boat_class, getOlympicCycle(datetime.datetime.today().year))
+        best_oz_time_ms = convertToMs(best_oz_time)
+
+
+    result = {"boat_class": boat_class, "world_best_time": world_best_time_ms, "oz_best_time": best_oz_time_ms, "groups": groups}
     return result
     
 

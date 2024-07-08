@@ -33,7 +33,7 @@ docker compose down --rmi all --volumes
 
 Using Python (at least v3.10), install all requirements.txt
 
-    pip install -r api.requirements.txt
+    pip install -r api.requirements.txtnet
     pip install -r scraper.requirements.txt
 
 ### Database (PostgreSQL)
