@@ -25,7 +25,7 @@ from sqlalchemy.orm import joinedload
 
 from . import auth
 from model import model
-from .race import result_time_best_of_year_interval, compute_intermediates_figures, strokes_for_intermediate_steps, getIntermediateTimes, calculateIntermediateTimes, calculateConfidenceIntervall, getPacingProfile
+from .race import *
 from common.rowing import propulsion_in_meters_per_stroke
 from . import mocks  # todo: remove me
 from . import globals
@@ -133,7 +133,7 @@ def get_race_analysis_filter_results() -> dict:
     See https://github.com/N10100010/DRV_project/blob/api-design/doc/backend-api.md#user-auswahl-jahr-einzeln-und-wettkampfklasse-zb-olympics for mock of return value.
 
     """
-    from datetime import datetime
+    #from datetime import datetime
     import logging
 
     year = request.json["data"].get('year', None)
@@ -299,7 +299,6 @@ def get_matrix() -> dict:
 @app.route('/get_race_boat_groups', methods=['POST'])
 @jwt_required()
 def get_race_boat_groups():
-
     session = Scoped_Session()
 
     boat_class = request.json["data"]["boat_class"]
@@ -343,10 +342,12 @@ def get_race_boat_groups():
         race_boats = session.execute(statement).scalars()
 
         boats_formatted = []
+        relevant_competitions = set()
         count = 0
 
         for boat in race_boats:
             count+= 1
+            relevant_competitions.add(boat.race.event.competition.competition_type.abbreviation)
 
             world_best_race_boat = boat.race.event.boat_class.world_best_race_boat
             if world_best_race_boat:
@@ -439,9 +440,14 @@ def get_race_boat_groups():
             pacing_profile = getPacingProfile(summary[500]["pace [millis]"]["mean"], summary[1000]["pace [millis]"]["mean"], summary[1500]["pace [millis]"]["mean"], summary[2000]["pace [millis]"]["mean"])
 
         group = f"Gruppe {index + 1}"
-        groups.append({"name": group, "stats": summary, "stats_race_data": summary_gps, "pacing_profile": pacing_profile, "count": count, "min_year": min_Year, "max_year": max_Year,"events": competitions, "phases": phases, "ranks": ranks, "country": country, "race_boats": boats_formatted})
+        groups.append({"name": group, "stats": summary, "stats_race_data": summary_gps, "pacing_profile": pacing_profile, "count": count, "min_year": min_Year, "max_year": max_Year,"events": list(relevant_competitions), "phases": phases, "ranks": ranks, "country": country, "race_boats": boats_formatted})
 
-    result = {"boat_class": boat_class, "world_best_time": world_best_time_ms ,"groups": groups}
+        #Best Time Before current olympic cycle, from excelsheet
+        best_oz_time = getOzBestTime(boat_class, getOlympicCycle(datetime.datetime.today().year))
+        best_oz_time_ms = convertToMs(best_oz_time)
+
+
+    result = {"boat_class": boat_class, "world_best_time": world_best_time_ms, "oz_best_time": best_oz_time_ms, "groups": groups}
     return result
     
 
@@ -494,6 +500,10 @@ def get_race(race_id: int) -> dict:
         year_start=datetime.date.today().year - 4
     )
 
+    #Best Time Before current olympic cycle, from excelsheet
+    best_oz_time = getOzBestTime(race.event.boat_class.abbreviation, getOlympicCycle(datetime.datetime.today().year))
+    best_oz_time_ms = convertToMs(best_oz_time)
+
     intermediates_figures = compute_intermediates_figures(race.race_boats)
 
     result = {
@@ -504,6 +514,7 @@ def get_race(race_id: int) -> dict:
         "boat_class": race.event.boat_class.abbreviation,  # long name?
         "result_time_world_best": world_best_time_ms,
         "result_time_best_of_current_olympia_cycle": best_of_last_4_years_ms,  # int in ms
+        "result_time_world_best_before_olympia_cycle": best_oz_time_ms,
         "progression_code": race.progression,
         "pdf_urls": {
             "result": race.pdf_url_results,

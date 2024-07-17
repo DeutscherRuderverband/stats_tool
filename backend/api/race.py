@@ -8,6 +8,7 @@ from collections.abc import Iterable
 from scipy import stats
 import numpy as np
 import math
+import pandas as pd
 
 from sqlalchemy import select, or_, and_, func
 
@@ -316,6 +317,30 @@ def isEven(ta, t_average):
         return False
     relative_time = ta / t_average
     return 0.99 <= relative_time and relative_time <= 1.01
+
+def getOlympicCycle(year):
+    start_year = year - (year + 3) % 4
+    end_year = year + (3 - (year + 3) % 4)
+    if (start_year == 2021):
+        start_year = 2022
+    if (end_year == 2020):
+        end_year = 2021
+    return f"{start_year}-{end_year}"
+
+def getOzBestTime(row, column):
+    df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
+    try: 
+        return df.loc[row, column]
+    except:
+        return 0
+    
+#Expected Format "5:18,68" -> "M:SS,MS"
+def convertToMs(time):
+    time_format = "%M:%S,%f"
+    time_obj = datetime.datetime.strptime(time, time_format)
+    total_milliseconds = (time_obj.minute * 60 * 1000) + (time_obj.second * 1000) + int(time_obj.microsecond / 1000)
+    return total_milliseconds
+
 
 
 if __name__ == '__main__':

@@ -143,6 +143,7 @@ export const useRennstrukturAnalyseState = defineStore({
         filterOpen: false,
         loadingState: false,
         display: "EMPTY",
+        relation_time_from: "wbt",
         compData: [],
         tableExport: [],
         outlierCountries: new Set(),
@@ -211,6 +212,13 @@ export const useRennstrukturAnalyseState = defineStore({
             state.compData = data
             return data
         },
+        getBoatClassData(state) {
+            return {
+                "boat_class": state.data.multiple.boat_class,
+                "wbt": formatMilliseconds(state.data.multiple.world_best_time),
+                "wbt_oz": formatMilliseconds(state.data.multiple.oz_best_time),
+            }
+        },
         
         getOutlierCountries(state) {
             return state.outlierCountries
@@ -218,6 +226,10 @@ export const useRennstrukturAnalyseState = defineStore({
         getLoadingState(state) {
             return state.loadingState
         },
+        getRelationTimeFrom(state) {
+            return state.relation_time_from
+        },
+
 
         //Table data
         getMultipleTableData(state) {
@@ -233,7 +245,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
                 {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
                 {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
-                {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"},
+                {text: 'Relationszeit', tooltip: "zu ausgewähler Bestzeit"},
                 {text: 'Rennstruktur', tooltip: null}
             ]
             tableData.push(tableHead)
@@ -290,7 +302,19 @@ export const useRennstrukturAnalyseState = defineStore({
                 //Relationszeit
                 let relationsZeit = "-"
                 if (totalTime != 0) {
-                    relationsZeit = (state.data.multiple.world_best_time / totalTime * 100).toFixed(1)
+                    if(state.data.multiple.world_best_time == 0 && state.data.multiple.oz_best_time != 0) {
+                        state.relation_time_from = "ozt"
+                    }
+                    else if(state.data.multiple.oz_best_time == 0 && state.data.multiple.world_best_time != 0)  {
+                        state.relation_time_from = "wbt"
+                    }
+                    if(state.relation_time_from == "wbt") {
+                        relationsZeit = (state.data.multiple.world_best_time / totalTime * 100).toFixed(1)
+                    }
+                    else {
+                        relationsZeit = (state.data.multiple.oz_best_time / totalTime * 100).toFixed(1)
+                    }
+
                     rowData.push(`${relationsZeit}%`)
                     rowData.push(group.pacing_profile)  //Rennstruktur
                 }
@@ -388,7 +412,15 @@ export const useRennstrukturAnalyseState = defineStore({
 
                     //Relationszeit
                     if (totalTime != 0) {
-                        const relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
+                        let relationsZeit = 0
+                        if(state.relation_time_from == "wbt") {
+                            relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
+                        }
+                        else {
+                            relationsZeit = (state.data.raceData[0].result_time_world_best_before_olympia_cycle / totalTime * 100).toFixed(1)
+                        }
+
+                        //const relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
                         rowData.push(`${relationsZeit}%`)
                     }
                     else {
@@ -748,6 +780,10 @@ export const useRennstrukturAnalyseState = defineStore({
         setDisplay(view) {
             //EMPTY, SINGLE, MULTIPLE
             this.display = view
+        },
+        setRelationTimeFrom(value) {
+            console.log("New RelationTime")
+            this.relation_time_from = value
         },
         setChartOptionBoats(hidden, boat) {
             let boats_in_chart = this.data.raceData[0].chartOptions.boats_in_chart
