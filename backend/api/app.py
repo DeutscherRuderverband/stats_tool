@@ -1,34 +1,30 @@
 import os
-from secrets import token_hex
 import datetime
 import json
-from itertools import groupby
+from secrets import token_hex
 from collections import OrderedDict
 from statistics import stdev, median, mean
-from scipy import stats
+
 import numpy as np
-import math
 from typing import List
 
-from flask import Flask
-from flask import request
-from flask import abort, jsonify
-from flask import Response
+from flask import Flask, request, abort, jsonify, Response
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
-
-# disable auth by uncommenting the following line
-#jwt_required = lambda: (lambda x: x) # disable auth
 
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import joinedload
 
 from . import auth
-from model import model
-from .race import *
-from common.rowing import propulsion_in_meters_per_stroke
 from . import mocks  # todo: remove me
 from . import globals
+from . import race
+from model import model
+from common.rowing import propulsion_in_meters_per_stroke
+
+
+# disable auth by uncommenting the following line
+#jwt_required = lambda: (lambda x: x) # disable auth
 
 # app is the main controller for the Flask-Server and will start the app in the main function 
 app = Flask(__name__, template_folder=None)
@@ -354,9 +350,9 @@ def get_race_boat_groups():
                 world_best_time_ms = world_best_race_boat.result_time_ms
 
             # intermediate data
-            times = getIntermediateTimes(boat)
-            calculated_times = calculateIntermediateTimes(times)
-            strokes = strokes_for_intermediate_steps(boat.race_data)
+            times = race.getIntermediateTimes(boat)
+            calculated_times = race.calculateIntermediateTimes(times)
+            strokes =  race.strokes_for_intermediate_steps(boat.race_data)
             for key, stroke,  in strokes.items():
                 if calculated_times.get(key) is not None:
                     calculated_times[key]["stroke [1/min]"] = stroke
@@ -406,7 +402,7 @@ def get_race_boat_groups():
             for key, figures in values.items():
                 if key != "is_outlier":
                     summary[distance][key] = {}
-                    mean, lower, upper = calculateConfidenceIntervall(figures)
+                    mean, lower, upper =  race.calculateConfidenceIntervall(figures)
                     summary[distance][key]["mean"] = mean
                     summary[distance][key]["lower_bound"] = lower
                     summary[distance][key]["upper_bound"] = upper
@@ -429,7 +425,7 @@ def get_race_boat_groups():
             for key, figures in values.items():
                 if key != "is_outlier":
                     summary_gps[distance][key] = {}
-                    mean, lower, upper = calculateConfidenceIntervall(figures)
+                    mean, lower, upper =  race.calculateConfidenceIntervall(figures)
                     summary_gps[distance][key]["mean"] = mean
                     summary_gps[distance][key]["lower_bound"] = lower
                     summary_gps[distance][key]["upper_bound"] = upper
@@ -437,14 +433,14 @@ def get_race_boat_groups():
         #Get Pacing Profile
         pacing_profile = "-"
         if summary != {}:
-            pacing_profile = getPacingProfile(summary[500]["pace [millis]"]["mean"], summary[1000]["pace [millis]"]["mean"], summary[1500]["pace [millis]"]["mean"], summary[2000]["pace [millis]"]["mean"])
+            pacing_profile =  race.getPacingProfile(summary[500]["pace [millis]"]["mean"], summary[1000]["pace [millis]"]["mean"], summary[1500]["pace [millis]"]["mean"], summary[2000]["pace [millis]"]["mean"])
 
         group = f"Gruppe {index + 1}"
         groups.append({"name": group, "stats": summary, "stats_race_data": summary_gps, "pacing_profile": pacing_profile, "count": count, "min_year": min_Year, "max_year": max_Year,"events": list(relevant_competitions), "phases": phases, "ranks": ranks, "country": country, "race_boats": boats_formatted})
 
         #Best Time Before current olympic cycle, from excelsheet
-        best_oz_time = getOzBestTime(boat_class, getOlympicCycle(datetime.datetime.today().year))
-        best_oz_time_ms = convertToMs(best_oz_time)
+        best_oz_time =  race.getOzBestTime(boat_class,  race.getOlympicCycle(datetime.datetime.today().year))
+        best_oz_time_ms =  race.convertToMs(best_oz_time)
 
 
     result = {"boat_class": boat_class, "world_best_time": world_best_time_ms, "oz_best_time": best_oz_time_ms, "groups": groups}
@@ -494,17 +490,17 @@ def get_race(race_id: int) -> dict:
     if world_best_race_boat:
         world_best_time_ms = world_best_race_boat.result_time_ms
 
-    best_of_last_4_years_ms = result_time_best_of_year_interval(
+    best_of_last_4_years_ms =  race.result_time_best_of_year_interval(
         session=session,
         boat_class_id=race.event.boat_class.id,
         year_start=datetime.date.today().year - 4
     )
 
     #Best Time Before current olympic cycle, from excelsheet
-    best_oz_time = getOzBestTime(race.event.boat_class.abbreviation, getOlympicCycle(datetime.datetime.today().year))
-    best_oz_time_ms = convertToMs(best_oz_time)
+    best_oz_time =  race.getOzBestTime(race.event.boat_class.abbreviation,  race.getOlympicCycle(datetime.datetime.today().year))
+    best_oz_time_ms =  race.convertToMs(best_oz_time)
 
-    intermediates_figures = compute_intermediates_figures(race.race_boats)
+    intermediates_figures =  race.compute_intermediates_figures(race.race_boats)
 
     result = {
         "race_id": race.id,
@@ -561,7 +557,7 @@ def get_race(race_id: int) -> dict:
             }
 
         # intermediates
-        strokes_for_intermediates = strokes_for_intermediate_steps(race_boat.race_data)
+        strokes_for_intermediates =  race.strokes_for_intermediate_steps(race_boat.race_data)
         total_time = race_boat.result_time_ms
         for distance_meter, figures in intermediates_figures[race_boat.id].items(): # ❌ TODO: iterate over figure matrix (see intermediates_figures) to provide dicts for all 'cells'
             intermediate: model.Intermediate_Time = figures["__intermediate"]

@@ -1,19 +1,19 @@
 import datetime
-from collections import OrderedDict, defaultdict
-from contextlib import suppress
 import itertools
+import math
 import statistics
+from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
+from contextlib import suppress
 
 from scipy import stats
 import numpy as np
-import math
 import pandas as pd
-
 from sqlalchemy import select, or_, and_, func
 
-from common.helpers import stepfunction
 from model import model
+from common.helpers import stepfunction
+
 
 COND_VALID_2000M_RESULTS = and_(
     model.Intermediate_Time.distance_meter == 2000,
@@ -81,27 +81,9 @@ def prepare_grid(race_boats, force_grid_resolution=None, course_length=2000) -> 
 
     return list(range(grid_resolution, course_length+grid_resolution, grid_resolution))
 
-def _skipping_non_int(values):
-    """iterates only ints"""
-    return ( val for val in values if isinstance(val,int) )
-
 def _skip_NoneType(values):
     """drop None values"""
     return ( val for val in values if val != None )
-
-def _find_min_difference(values):
-    min_diff = None
-    last_val = None
-    for idx, val in enumerate(_skipping_non_int(values)):
-        first_loop = idx == 0
-        if first_loop:
-            last_val = val
-            continue
-
-        diff = val - last_val
-        min_diff = diff if min_diff == None else min(diff, min_diff)
-        last_val = val
-    return min_diff
 
 def valid_intermediate(interm: model.Intermediate_Time) -> bool:
     return (
@@ -118,12 +100,6 @@ def _best_time(intermediates: list[model.Intermediate_Time]) -> int:
     with suppress(ValueError):
         best_time = min(result_times)
     return best_time
-
-def _instantaneous_speed(figures_dict, grid_resolution):
-    pace = figures_dict.get('pace', None)
-    if pace != None:
-        return grid_resolution/pace
-    return None
 
 def _speeds(boats_dict, distance):
     for _, distance_dict in boats_dict.items():
@@ -342,24 +318,7 @@ def convertToMs(time):
     return total_milliseconds
 
 
-
 if __name__ == '__main__':
     from sys import exit as sysexit
-
-    with model.Scoped_Session() as session:
-        stmt = (select(model.Race))
-        iterator = session.execute(stmt).scalars()
-        for race in iterator:
-            result = compute_intermediates_figures(race.race_boats)
-            break
-
+    pass
     sysexit()
-
-    with model.Scoped_Session() as session:
-        for boat_class in session.scalars(select(model.Boat_Class)):
-            res = result_time_best_of_year_interval(
-                session=session,
-                boat_class_id=boat_class.id,
-                year_start=2020
-            )
-            print('result_time_best_of_last_n_years', res)
