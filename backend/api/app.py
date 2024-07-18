@@ -295,15 +295,18 @@ def get_matrix() -> dict:
 @app.route('/get_race_boat_groups', methods=['POST'])
 @jwt_required()
 def get_race_boat_groups():
+    """
+    WHEN? THIS FUNCTION IS CALLED WHEN THE USER SELECTED RACEGROUPS WITH THE MULTIPLE FILTER IN RENNSTRUKTURANALYSE
+    Gets the mandatory information to display a race-analysis of several race-boat-groups (Rennstrukturanalyse-Multiple).
+    @return: the information of the race groups
+    """
     session = Scoped_Session()
 
     boat_class = request.json["data"]["boat_class"]
     world_best_time_ms = 0
     groups = []
 
-
     datas = request.json["data"]["groups"]
-
 
     for index, data in enumerate(datas):
     

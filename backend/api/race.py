@@ -25,8 +25,7 @@ COND_VALID_2000M_RESULTS = and_(
     )
 )
 
-def result_time_best_of_year_interval(session, boat_class_id, year_start,
-                                      year_end=datetime.date.today().year):
+def result_time_best_of_year_interval(session, boat_class_id, year_start, year_end=datetime.date.today().year):
     """returns result time as flot in ms"""
 
     statement = (
@@ -212,6 +211,13 @@ def strokes_for_intermediate_steps(race_data_list, stepsize=500):
     return result
 
 def getIntermediateTimes(race_boat):
+    """
+    Get rank, time and is_outlier for every 500m section
+    Return:
+        Dictionary: intermediates[distance][metric]
+        -> distance: 500, 1000, 1500, 2000
+        -> metric: 'rank', 'time [millis]', 'is_outlier'
+    """
     intermediates = {}
 
     grid = prepare_grid(race_boat, force_grid_resolution=500, course_length=2000)
@@ -229,6 +235,17 @@ def getIntermediateTimes(race_boat):
     return intermediates
 
 def calculateIntermediateTimes(intermediates):
+    """
+    Extend intermediates dictionary with pace, speed and relative speed
+    Args:
+        Dictionary: intermediates[distance][metric]
+        -> distance: 500, 1000, 1500, 2000
+        -> metric: 'rank', 'time [millis]', 'is_outlier'
+    Returns:
+        Dictionary: intermediates[distance][metric]
+        -> distance: 500, 1000, 1500, 2000
+        -> metric: 'rank', 'time [millis]', 'is_outlier', 'pace [millis]', 'speed [m/s]', 'rel_speed [%]'
+    """
     time = 0
     total_time = intermediates[2000]["time [millis]"]
     for key, value in intermediates.items():
@@ -244,10 +261,17 @@ def calculateIntermediateTimes(intermediates):
 
     return intermediates
 
-#Calculate the 95% confidence interval for population mean
-#n <= 30, t-distribution, n>30 z-distribution
-#return mean, lower, upper
 def calculateConfidenceIntervall(sample_data):
+    """
+    Calculate the 95% confidence interval from sample data.
+    The true population mean lies with 95% certainty in the computed range.
+
+    Args:
+        sample_data (List): Mean values from all race boats in sample
+
+    Returns:
+        Tuple: Containing mean (float), lower bound (float), upper bound (float) of 95% ci.
+    """
     sample_data = list(filter(lambda x: x is not None and x > 0, sample_data)) #Filter none and 0 values
     n = len(sample_data)
     if n == 0:
@@ -272,11 +296,11 @@ def calculateConfidenceIntervall(sample_data):
 
         return mean, lower, upper
 
-#Possible pacing profiles are: Even, J-shape, Reverse J-shape, negativ, positiv, other
 def getPacingProfile(t1, t2, t3, t4):
+    """Identify Pacing Profile based on 500m times."""
     pacing_profile = "Other"
     t_average = (t1 + t2 + t3 + t4) / 4
-    if isEven(t1, t_average) and isEven(t2, t_average) and isEven(t3, t_average) and isEven(t4, t_average):
+    if _isEven(t1, t_average) and _isEven(t2, t_average) and _isEven(t3, t_average) and _isEven(t4, t_average):
         pacing_profile = "Even"
     elif t1 < t4 and t4 < min(t2, t3):
         pacing_profile = "Reverse J-Shape"
@@ -288,13 +312,15 @@ def getPacingProfile(t1, t2, t3, t4):
         pacing_profile = "Positive"
     return pacing_profile
 
-def isEven(ta, t_average):
+def _isEven(ta, t_average):
+    """Check if time 'ta' is within a 1% difference from average time 't_average'."""
     if t_average == 0:
         return False
     relative_time = ta / t_average
     return 0.99 <= relative_time and relative_time <= 1.01
 
 def getOlympicCycle(year):
+    """Find period of olymic cycle for given year."""
     start_year = year - (year + 3) % 4
     end_year = year + (3 - (year + 3) % 4)
     if (start_year == 2021):
@@ -304,14 +330,25 @@ def getOlympicCycle(year):
     return f"{start_year}-{end_year}"
 
 def getOzBestTime(row, column):
+    """
+    Gets the best time of a boat class before a specific Olympia Cycle.
+    Data from wbt.csv file.
+
+    Args:
+        row (String): boat class abbreviation (e.g. M1x)
+        column (String): olympia cycle period (e.g. 2022-2024)
+    
+    Returns:
+        String: best time in format 'M:SS,MS'    
+    """
     df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
     try: 
         return df.loc[row, column]
     except:
         return 0
     
-#Expected Format "5:18,68" -> "M:SS,MS"
 def convertToMs(time):
+    """Convert time with format 'M:SS,MS' to milliseconds."""
     time_format = "%M:%S,%f"
     time_obj = datetime.datetime.strptime(time, time_format)
     total_milliseconds = (time_obj.minute * 60 * 1000) + (time_obj.second * 1000) + int(time_obj.microsecond / 1000)
@@ -320,5 +357,5 @@ def convertToMs(time):
 
 if __name__ == '__main__':
     from sys import exit as sysexit
-    pass
+    pass        #replace for testing purposes
     sysexit()
