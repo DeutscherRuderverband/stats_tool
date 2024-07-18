@@ -319,7 +319,7 @@ def _isEven(ta: float, t_average: float) -> bool:
     relative_time = ta / t_average
     return 0.99 <= relative_time and relative_time <= 1.01
 
-def getOlympicCycle(year: int):
+def _getOlympicCycle(year: int):
     """Find period of olymic cycle for given year."""
     start_year = year - (year + 3) % 4
     end_year = year + (3 - (year + 3) % 4)
@@ -329,30 +329,42 @@ def getOlympicCycle(year: int):
         end_year = 2021
     return f"{start_year}-{end_year}"
 
-def getOzBestTime(row: str, column: str) -> str:
+def getOzBestTime(boat_class: str, year: int) -> int:
     """
     Gets the best time of a boat class before a specific Olympia Cycle.
     Data from wbt.csv file.
 
     Args:
-        row (String): boat class abbreviation (e.g. M1x)
+        boat_class (String): boat class abbreviation (e.g. M1x)
         column (String): olympia cycle period (e.g. 2022-2024)
     
     Returns:
         String: best time in format 'M:SS,MS'    
     """
+    column_name = _getOlympicCycle(year)
     df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
-    try: 
-        return df.loc[row, column]
+    try:
+        best_time = df.loc[boat_class, column_name]
+        return _convertToMs(best_time)
     except:
-        return '0:00,00'
+        return 0
     
-def convertToMs(time: str) -> int:
+def _convertToMs(time: str) -> int:
     """Convert time with format 'M:SS,MS' to milliseconds."""
     time_format = "%M:%S,%f"
     time_obj = datetime.datetime.strptime(time, time_format)
     total_milliseconds = (time_obj.minute * 60 * 1000) + (time_obj.second * 1000) + int(time_obj.microsecond / 1000)
     return total_milliseconds
+
+def getWorldBestTime(boat_class: str, session) -> int:
+    """Get the world best time of a boat class"""
+    statement = select(model.Boat_Class).where(model.Boat_Class.abbreviation == boat_class)
+    boat_class_object = session.execute(statement).scalars().first()
+    world_best_race_boat = boat_class_object.world_best_race_boat
+    if world_best_race_boat:
+        return world_best_race_boat.result_time_ms
+    else:
+        return 0
 
 
 if __name__ == '__main__':
