@@ -210,7 +210,7 @@ def strokes_for_intermediate_steps(race_data_list, stepsize=500):
         result[meter_mark] = avg
     return result
 
-def getIntermediateTimes(race_boat):
+def getIntermediateTimes(race_boat: model.Race_Boat):
     """
     Get rank, time and is_outlier for every 500m section
     Return:
@@ -234,7 +234,7 @@ def getIntermediateTimes(race_boat):
             intermediates[distance]["is_outlier"] = intermediate.is_outlier
     return intermediates
 
-def calculateIntermediateTimes(intermediates):
+def calculateIntermediateTimes(intermediates: dict) -> dict:
     """
     Extend intermediates dictionary with pace, speed and relative speed
     Args:
@@ -261,7 +261,7 @@ def calculateIntermediateTimes(intermediates):
 
     return intermediates
 
-def calculateConfidenceIntervall(sample_data):
+def calculateConfidenceIntervall(sample_data: list) -> tuple:
     """
     Calculate the 95% confidence interval from sample data.
     The true population mean lies with 95% certainty in the computed range.
@@ -296,7 +296,7 @@ def calculateConfidenceIntervall(sample_data):
 
         return mean, lower, upper
 
-def getPacingProfile(t1, t2, t3, t4):
+def getPacingProfile(t1: float, t2: float, t3: float, t4: float) -> str:
     """Identify Pacing Profile based on 500m times."""
     pacing_profile = "Other"
     t_average = (t1 + t2 + t3 + t4) / 4
@@ -312,14 +312,14 @@ def getPacingProfile(t1, t2, t3, t4):
         pacing_profile = "Positive"
     return pacing_profile
 
-def _isEven(ta, t_average):
+def _isEven(ta: float, t_average: float) -> bool:
     """Check if time 'ta' is within a 1% difference from average time 't_average'."""
     if t_average == 0:
         return False
     relative_time = ta / t_average
     return 0.99 <= relative_time and relative_time <= 1.01
 
-def getOlympicCycle(year):
+def getOlympicCycle(year: int):
     """Find period of olymic cycle for given year."""
     start_year = year - (year + 3) % 4
     end_year = year + (3 - (year + 3) % 4)
@@ -329,7 +329,7 @@ def getOlympicCycle(year):
         end_year = 2021
     return f"{start_year}-{end_year}"
 
-def getOzBestTime(row, column):
+def getOzBestTime(row: str, column: str) -> str:
     """
     Gets the best time of a boat class before a specific Olympia Cycle.
     Data from wbt.csv file.
@@ -345,9 +345,9 @@ def getOzBestTime(row, column):
     try: 
         return df.loc[row, column]
     except:
-        return 0
+        return '0:00,00'
     
-def convertToMs(time):
+def convertToMs(time: str) -> int:
     """Convert time with format 'M:SS,MS' to milliseconds."""
     time_format = "%M:%S,%f"
     time_obj = datetime.datetime.strptime(time, time_format)
