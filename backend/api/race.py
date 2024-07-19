@@ -1,19 +1,19 @@
 import datetime
-from collections import OrderedDict, defaultdict
-from contextlib import suppress
 import itertools
+import math
 import statistics
+from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
+from contextlib import suppress
 
 from scipy import stats
 import numpy as np
-import math
 import pandas as pd
-
 from sqlalchemy import select, or_, and_, func
 
-from common.helpers import stepfunction
 from model import model
+from common.helpers import stepfunction
+
 
 COND_VALID_2000M_RESULTS = and_(
     model.Intermediate_Time.distance_meter == 2000,
@@ -25,8 +25,7 @@ COND_VALID_2000M_RESULTS = and_(
     )
 )
 
-def result_time_best_of_year_interval(session, boat_class_id, year_start,
-                                      year_end=datetime.date.today().year):
+def result_time_best_of_year_interval(session, boat_class_id, year_start, year_end=datetime.date.today().year):
     """returns result time as flot in ms"""
 
     statement = (
@@ -81,27 +80,9 @@ def prepare_grid(race_boats, force_grid_resolution=None, course_length=2000) -> 
 
     return list(range(grid_resolution, course_length+grid_resolution, grid_resolution))
 
-def _skipping_non_int(values):
-    """iterates only ints"""
-    return ( val for val in values if isinstance(val,int) )
-
 def _skip_NoneType(values):
     """drop None values"""
     return ( val for val in values if val != None )
-
-def _find_min_difference(values):
-    min_diff = None
-    last_val = None
-    for idx, val in enumerate(_skipping_non_int(values)):
-        first_loop = idx == 0
-        if first_loop:
-            last_val = val
-            continue
-
-        diff = val - last_val
-        min_diff = diff if min_diff == None else min(diff, min_diff)
-        last_val = val
-    return min_diff
 
 def valid_intermediate(interm: model.Intermediate_Time) -> bool:
     return (
@@ -118,12 +99,6 @@ def _best_time(intermediates: list[model.Intermediate_Time]) -> int:
     with suppress(ValueError):
         best_time = min(result_times)
     return best_time
-
-def _instantaneous_speed(figures_dict, grid_resolution):
-    pace = figures_dict.get('pace', None)
-    if pace != None:
-        return grid_resolution/pace
-    return None
 
 def _speeds(boats_dict, distance):
     for _, distance_dict in boats_dict.items():
@@ -235,7 +210,14 @@ def strokes_for_intermediate_steps(race_data_list, stepsize=500):
         result[meter_mark] = avg
     return result
 
-def getIntermediateTimes(race_boat):
+def getIntermediateTimes(race_boat: model.Race_Boat):
+    """
+    Get rank, time and is_outlier for every 500m section
+    Return:
+        Dictionary: intermediates[distance][metric]
+        -> distance: 500, 1000, 1500, 2000
+        -> metric: 'rank', 'time [millis]', 'is_outlier'
+    """
     intermediates = {}
 
     grid = prepare_grid(race_boat, force_grid_resolution=500, course_length=2000)
@@ -252,7 +234,18 @@ def getIntermediateTimes(race_boat):
             intermediates[distance]["is_outlier"] = intermediate.is_outlier
     return intermediates
 
-def calculateIntermediateTimes(intermediates):
+def calculateIntermediateTimes(intermediates: dict) -> dict:
+    """
+    Extend intermediates dictionary with pace, speed and relative speed
+    Args:
+        Dictionary: intermediates[distance][metric]
+        -> distance: 500, 1000, 1500, 2000
+        -> metric: 'rank', 'time [millis]', 'is_outlier'
+    Returns:
+        Dictionary: intermediates[distance][metric]
+        -> distance: 500, 1000, 1500, 2000
+        -> metric: 'rank', 'time [millis]', 'is_outlier', 'pace [millis]', 'speed [m/s]', 'rel_speed [%]'
+    """
     time = 0
     total_time = intermediates[2000]["time [millis]"]
     for key, value in intermediates.items():
@@ -268,10 +261,17 @@ def calculateIntermediateTimes(intermediates):
 
     return intermediates
 
-#Calculate the 95% confidence interval for population mean
-#n <= 30, t-distribution, n>30 z-distribution
-#return mean, lower, upper
-def calculateConfidenceIntervall(sample_data):
+def calculateConfidenceIntervall(sample_data: list) -> tuple:
+    """
+    Calculate the 95% confidence interval from sample data.
+    The true population mean lies with 95% certainty in the computed range.
+
+    Args:
+        sample_data (List): Mean values from all race boats in sample
+
+    Returns:
+        Tuple: Containing mean (float), lower bound (float), upper bound (float) of 95% ci.
+    """
     sample_data = list(filter(lambda x: x is not None and x > 0, sample_data)) #Filter none and 0 values
     n = len(sample_data)
     if n == 0:
@@ -296,11 +296,11 @@ def calculateConfidenceIntervall(sample_data):
 
         return mean, lower, upper
 
-#Possible pacing profiles are: Even, J-shape, Reverse J-shape, negativ, positiv, other
-def getPacingProfile(t1, t2, t3, t4):
+def getPacingProfile(t1: float, t2: float, t3: float, t4: float) -> str:
+    """Identify Pacing Profile based on 500m times."""
     pacing_profile = "Other"
     t_average = (t1 + t2 + t3 + t4) / 4
-    if isEven(t1, t_average) and isEven(t2, t_average) and isEven(t3, t_average) and isEven(t4, t_average):
+    if _isEven(t1, t_average) and _isEven(t2, t_average) and _isEven(t3, t_average) and _isEven(t4, t_average):
         pacing_profile = "Even"
     elif t1 < t4 and t4 < min(t2, t3):
         pacing_profile = "Reverse J-Shape"
@@ -312,13 +312,15 @@ def getPacingProfile(t1, t2, t3, t4):
         pacing_profile = "Positive"
     return pacing_profile
 
-def isEven(ta, t_average):
+def _isEven(ta: float, t_average: float) -> bool:
+    """Check if time 'ta' is within a 1% difference from average time 't_average'."""
     if t_average == 0:
         return False
     relative_time = ta / t_average
     return 0.99 <= relative_time and relative_time <= 1.01
 
-def getOlympicCycle(year):
+def _getOlympicCycle(year: int):
+    """Find period of olymic cycle for given year."""
     start_year = year - (year + 3) % 4
     end_year = year + (3 - (year + 3) % 4)
     if (start_year == 2021):
@@ -327,39 +329,45 @@ def getOlympicCycle(year):
         end_year = 2021
     return f"{start_year}-{end_year}"
 
-def getOzBestTime(row, column):
-    df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
-    try: 
-        return df.loc[row, column]
+def getOzBestTime(boat_class: str, year: int) -> int:
+    """
+    Gets the best time of a boat class before a specific Olympia Cycle.
+    Data from wbt.csv file.
+
+    Args:
+        boat_class (String): boat class abbreviation (e.g. M1x)
+        column (String): olympia cycle period (e.g. 2022-2024)
+    
+    Returns:
+        String: best time in format 'M:SS,MS'    
+    """
+    column_name = _getOlympicCycle(year)
+    try:
+        df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
+        best_time = df.loc[boat_class, column_name]
+        return _convertToMs(best_time)
     except:
         return 0
     
-#Expected Format "5:18,68" -> "M:SS,MS"
-def convertToMs(time):
+def _convertToMs(time: str) -> int:
+    """Convert time with format 'M:SS,MS' to milliseconds."""
     time_format = "%M:%S,%f"
     time_obj = datetime.datetime.strptime(time, time_format)
     total_milliseconds = (time_obj.minute * 60 * 1000) + (time_obj.second * 1000) + int(time_obj.microsecond / 1000)
     return total_milliseconds
 
+def getWorldBestTime(boat_class: str, session) -> int:
+    """Get the world best time of a boat class"""
+    statement = select(model.Boat_Class).where(model.Boat_Class.abbreviation == boat_class)
+    boat_class_object = session.execute(statement).scalars().first()
+    world_best_race_boat = boat_class_object.world_best_race_boat
+    if world_best_race_boat:
+        return world_best_race_boat.result_time_ms
+    else:
+        return 0
 
 
 if __name__ == '__main__':
     from sys import exit as sysexit
-
-    with model.Scoped_Session() as session:
-        stmt = (select(model.Race))
-        iterator = session.execute(stmt).scalars()
-        for race in iterator:
-            result = compute_intermediates_figures(race.race_boats)
-            break
-
+    pass        #replace for testing purposes
     sysexit()
-
-    with model.Scoped_Session() as session:
-        for boat_class in session.scalars(select(model.Boat_Class)):
-            res = result_time_best_of_year_interval(
-                session=session,
-                boat_class_id=boat_class.id,
-                year_start=2020
-            )
-            print('result_time_best_of_last_n_years', res)
