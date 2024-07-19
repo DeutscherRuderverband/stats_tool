@@ -5,6 +5,11 @@ import itertools
 import statistics
 from collections.abc import Iterable
 
+from scipy import stats
+import numpy as np
+import math
+import pandas as pd
+
 from sqlalchemy import select, or_, and_, func
 
 from common.helpers import stepfunction
@@ -211,7 +216,7 @@ def compute_intermediates_figures(race_boats):
 def is_valid_race_data(race_data: model.Race_Data) -> bool:
     return race_data.is_outlier == False
 
-def _iter_strokes_from_race_data(race_data_list: Iterable[model.Race_Data]) -> model.Race_Data:
+def _iter_strokes_from_race_data(race_data_list: Iterable[model.Race_Data]):
     for race_data in race_data_list:
         is_valid_stroke = (
             race_data.is_outlier == False
@@ -229,6 +234,114 @@ def strokes_for_intermediate_steps(race_data_list, stepsize=500):
             avg = statistics.fmean(_iter_strokes_from_race_data(data_points))
         result[meter_mark] = avg
     return result
+
+def getIntermediateTimes(race_boat):
+    intermediates = {}
+
+    grid = prepare_grid(race_boat, force_grid_resolution=500, course_length=2000)
+
+    for distance in grid:
+        intermediates[distance] = {"rank": 0, "time [millis]": 0, "is_outlier": 0}
+
+    intermediate : model.Intermediate_Time
+    for intermediate in race_boat.intermediates:
+        distance = intermediate.distance_meter
+        if intermediates.get(distance) is not None:
+            intermediates[distance]["rank"] = intermediate.rank
+            intermediates[distance]["time [millis]"] = intermediate.result_time_ms if intermediate.result_time_ms is not None else 0
+            intermediates[distance]["is_outlier"] = intermediate.is_outlier
+    return intermediates
+
+def calculateIntermediateTimes(intermediates):
+    time = 0
+    total_time = intermediates[2000]["time [millis]"]
+    for key, value in intermediates.items():
+        pace = value["time [millis]"] - time
+        intermediates[key]["pace [millis]"] = pace
+        time = value["time [millis]"]
+        if pace != 0:
+            intermediates[key]["speed [m/s]"] = 500 / pace * 1000 
+            intermediates[key]["rel_speed [%]"] =  total_time / (4 * pace)
+        else:
+            intermediates[key]["speed [m/s]"] = 0
+            intermediates[key]["rel_speed [%]"] = 0
+
+    return intermediates
+
+#Calculate the 95% confidence interval for population mean
+#n <= 30, t-distribution, n>30 z-distribution
+#return mean, lower, upper
+def calculateConfidenceIntervall(sample_data):
+    sample_data = list(filter(lambda x: x is not None and x > 0, sample_data)) #Filter none and 0 values
+    n = len(sample_data)
+    if n == 0:
+        return 0, 0, 0
+    elif n == 1:
+        return sample_data[0], sample_data[0], sample_data[0]
+    else:
+        mean = np.mean(sample_data)
+        std_dev = np.std(sample_data, ddof=1)  # ddof=1 for sample standard deviation
+        std_error = std_dev / math.sqrt(n)
+        
+        if n<= 30: 
+            critical_value = stats.t.ppf(1 - 0.05/2, n - 1) #t-value for 95% confidence
+        else:
+            critical_value = 1.96  #z-value for large sample sizes
+
+        margin_of_error = critical_value * std_error
+
+        #Calculate confidence Intervall
+        lower = mean - margin_of_error
+        upper = mean + margin_of_error
+
+        return mean, lower, upper
+
+#Possible pacing profiles are: Even, J-shape, Reverse J-shape, negativ, positiv, other
+def getPacingProfile(t1, t2, t3, t4):
+    pacing_profile = "Other"
+    t_average = (t1 + t2 + t3 + t4) / 4
+    if isEven(t1, t_average) and isEven(t2, t_average) and isEven(t3, t_average) and isEven(t4, t_average):
+        pacing_profile = "Even"
+    elif t1 < t4 and t4 < min(t2, t3):
+        pacing_profile = "Reverse J-Shape"
+    elif t4 < t1 and t1 < min(t2, t3):
+        pacing_profile = "J-Shape"
+    elif t1 < t2 and t2 < min(t3, t4):
+        pacing_profile = "Negative"
+    elif t4 < t3 and t3 < min(t1, t2):
+        pacing_profile = "Positive"
+    return pacing_profile
+
+def isEven(ta, t_average):
+    if t_average == 0:
+        return False
+    relative_time = ta / t_average
+    return 0.99 <= relative_time and relative_time <= 1.01
+
+def getOlympicCycle(year):
+    start_year = year - (year + 3) % 4
+    end_year = year + (3 - (year + 3) % 4)
+    if (start_year == 2021):
+        start_year = 2022
+    if (end_year == 2020):
+        end_year = 2021
+    return f"{start_year}-{end_year}"
+
+def getOzBestTime(row, column):
+    df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
+    try: 
+        return df.loc[row, column]
+    except:
+        return 0
+    
+#Expected Format "5:18,68" -> "M:SS,MS"
+def convertToMs(time):
+    time_format = "%M:%S,%f"
+    time_obj = datetime.datetime.strptime(time, time_format)
+    total_milliseconds = (time_obj.minute * 60 * 1000) + (time_obj.second * 1000) + int(time_obj.microsecond / 1000)
+    return total_milliseconds
+
+
 
 if __name__ == '__main__':
     from sys import exit as sysexit

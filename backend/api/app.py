@@ -5,7 +5,10 @@ import json
 from itertools import groupby
 from collections import OrderedDict
 from statistics import stdev, median, mean
+from scipy import stats
 import numpy as np
+import math
+from typing import List
 
 from flask import Flask
 from flask import request
@@ -15,14 +18,14 @@ from flask_cors import CORS
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 
 # disable auth by uncommenting the following line
-# jwt_required = lambda: (lambda x: x) # disable auth
+#jwt_required = lambda: (lambda x: x) # disable auth
 
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import joinedload
 
 from . import auth
 from model import model
-from .race import result_time_best_of_year_interval, compute_intermediates_figures, strokes_for_intermediate_steps
+from .race import *
 from common.rowing import propulsion_in_meters_per_stroke
 from . import mocks  # todo: remove me
 from . import globals
@@ -92,6 +95,7 @@ def get_race_analysis_filter_options():
     This endpoint give the filter options data for the race data page.
     """
     session = Scoped_Session()
+
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
     statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation)
@@ -101,7 +105,15 @@ def get_race_analysis_filter_options():
     } for v in session.execute(statement).fetchall()]
     sorted_categories = sorted(competition_categories, key=lambda x: x['display_name'])
 
-    return {"years": (min_year, max_year), "competition_categories": sorted_categories}
+    nations = {entity.country_code: entity.name for entity in session.execute(select(model.Country)).scalars()}
+
+    return {"years": (min_year, max_year),
+            "competition_categories": sorted_categories,
+            "boat_classes": globals.BOATCLASSES_BY_GENDER_AGE_WEIGHT,
+            "nations": dict(sorted(nations.items(), key=lambda x: x[0])),
+            "runs": session.execute(select(model.Race.phase_type).distinct()).scalars().all(),
+            "ranks": [1, 2, 3, 4, 5, 6]
+            }
 
 
 @app.route('/race_analysis_filter_results', methods=['POST'])
@@ -121,14 +133,14 @@ def get_race_analysis_filter_results() -> dict:
     See https://github.com/N10100010/DRV_project/blob/api-design/doc/backend-api.md#user-auswahl-jahr-einzeln-und-wettkampfklasse-zb-olympics for mock of return value.
 
     """
-    from datetime import datetime
+    #from datetime import datetime
     import logging
 
     year = request.json["data"].get('year', None)
-    competition_type_id = request.json["data"].get('competition_type', None) 
+    competition_type = request.json["data"].get('competition_type', None) 
     competition_id = request.json["data"].get('competition_id', None) 
 
-    logging.info(f"Year: {year}, comp cat: {competition_type_id}, comp id: {competition_id}")
+    logging.info(f"Year: {year}, comp cat: {competition_type}, comp id: {competition_id}")
 
     session = Scoped_Session()
 
@@ -150,7 +162,7 @@ def get_race_analysis_filter_results() -> dict:
             .join(model.Competition_Type.competition_category)
             .where(
                 and_(
-                    model.Competition_Type.additional_id_ == competition_type_id,
+                    model.Competition_Type.abbreviation == competition_type,
                     model.Competition.year == year,
                 )
             )
@@ -284,6 +296,162 @@ def get_matrix() -> dict:
     return result
 
 
+@app.route('/get_race_boat_groups', methods=['POST'])
+@jwt_required()
+def get_race_boat_groups():
+    session = Scoped_Session()
+
+    boat_class = request.json["data"]["boat_class"]
+    world_best_time_ms = 0
+    groups = []
+
+
+    datas = request.json["data"]["groups"]
+
+
+    for index, data in enumerate(datas):
+    
+        min_Year = data["start_year"]
+        max_Year = data["end_year"]
+        country = data["country"]
+        competitions = data["events"]
+        phases = data["phases"]
+        ranks = data["placements"]
+
+
+        statement = (
+        select(model.Race_Boat)
+        .join(model.Race_Boat.country)
+        .join(model.Race_Boat.race)
+        .join(model.Race.event)
+        .join(model.Event.boat_class)
+        .join(model.Event.competition)
+        .join(model.Competition.competition_type)
+        .where(
+            model.Country.country_code == country,
+            model.Race_Boat.rank.in_(ranks),
+            model.Race.phase_type.in_(phases),
+            model.Boat_Class.abbreviation == boat_class,
+            model.Competition.year >= min_Year,
+            model.Competition.year <= max_Year,
+            model.Competition_Type.abbreviation.in_(competitions)
+            )
+        )
+    
+        race_boats: List[model.Race_Boat]
+        race_boats = session.execute(statement).scalars()
+
+        boats_formatted = []
+        relevant_competitions = set()
+        count = 0
+
+        for boat in race_boats:
+            count+= 1
+            relevant_competitions.add(boat.race.event.competition.competition_type.abbreviation)
+
+            world_best_race_boat = boat.race.event.boat_class.world_best_race_boat
+            if world_best_race_boat:
+                world_best_time_ms = world_best_race_boat.result_time_ms
+
+            # intermediate data
+            times = getIntermediateTimes(boat)
+            calculated_times = calculateIntermediateTimes(times)
+            strokes = strokes_for_intermediate_steps(boat.race_data)
+            for key, stroke,  in strokes.items():
+                if calculated_times.get(key) is not None:
+                    calculated_times[key]["stroke [1/min]"] = stroke
+
+            # race_data aka gps data
+            race_data_result = {}
+            sorted_race_data = sorted(boat.race_data, key=lambda x: x.distance_meter)
+            race_data: model.Race_Data
+            for race_data in sorted_race_data:
+                propulsion = propulsion_in_meters_per_stroke(race_data.stroke, race_data.speed_meter_per_sec)
+                race_data_result[str(race_data.distance_meter)] = {
+                    "speed [m/s]": race_data.speed_meter_per_sec,
+                    "stroke [1/min]": race_data.stroke,
+                    "propulsion [m/stroke]": propulsion
+            }
+
+            boat_formatted = {
+                "id": boat.id,
+                "name": boat.name,
+                "time": boat.result_time_ms,
+                "rank": boat.rank,
+                "phase": boat.race.phase_type,
+                "year": boat.race.event.competition.year,
+                "event": boat.race.event.competition.competition_type.abbreviation,
+                "city": boat.race.event.competition.venue.city,
+                "intermediates": calculated_times,
+                "race_data": race_data_result
+            }
+
+            boats_formatted.append(boat_formatted)
+
+        #Get intermediate values of all boats
+        stats = {}
+        for boat in boats_formatted:
+            for distance, values in boat["intermediates"].items():
+                if distance not in stats:
+                    stats[distance] = {}
+                for key, figure in values.items():
+                    if key not in stats[distance]:
+                        stats[distance][key] = []
+                    stats[distance][key].append(figure)
+
+        #Calculate means 
+        summary = {}
+        for distance, values in stats.items():
+            summary[distance] = {}
+            for key, figures in values.items():
+                if key != "is_outlier":
+                    summary[distance][key] = {}
+                    mean, lower, upper = calculateConfidenceIntervall(figures)
+                    summary[distance][key]["mean"] = mean
+                    summary[distance][key]["lower_bound"] = lower
+                    summary[distance][key]["upper_bound"] = upper
+
+        #Get race_data values of all boats 
+        stats_gps = {}
+        for boat in boats_formatted:
+            for distance, values in boat["race_data"].items():
+                if distance not in stats_gps:
+                    stats_gps[distance] = {}
+                for key, figure in values.items():
+                    if key not in stats_gps[distance]:
+                        stats_gps[distance][key] = []
+                    stats_gps[distance][key].append(figure)
+
+        #Calculate means for gps data
+        summary_gps = {}
+        for distance, values in stats_gps.items():
+            summary_gps[distance] = {}
+            for key, figures in values.items():
+                if key != "is_outlier":
+                    summary_gps[distance][key] = {}
+                    mean, lower, upper = calculateConfidenceIntervall(figures)
+                    summary_gps[distance][key]["mean"] = mean
+                    summary_gps[distance][key]["lower_bound"] = lower
+                    summary_gps[distance][key]["upper_bound"] = upper
+
+        #Get Pacing Profile
+        pacing_profile = "-"
+        if summary != {}:
+            pacing_profile = getPacingProfile(summary[500]["pace [millis]"]["mean"], summary[1000]["pace [millis]"]["mean"], summary[1500]["pace [millis]"]["mean"], summary[2000]["pace [millis]"]["mean"])
+
+        group = f"Gruppe {index + 1}"
+        groups.append({"name": group, "stats": summary, "stats_race_data": summary_gps, "pacing_profile": pacing_profile, "count": count, "min_year": min_Year, "max_year": max_Year,"events": list(relevant_competitions), "phases": phases, "ranks": ranks, "country": country, "race_boats": boats_formatted})
+
+        #Best Time Before current olympic cycle, from excelsheet
+        best_oz_time = getOzBestTime(boat_class, getOlympicCycle(datetime.datetime.today().year))
+        best_oz_time_ms = convertToMs(best_oz_time)
+
+
+    result = {"boat_class": boat_class, "world_best_time": world_best_time_ms, "oz_best_time": best_oz_time_ms, "groups": groups}
+    return result
+    
+
+
 @app.route('/get_race/<int:race_id>/', methods=['GET'])
 @jwt_required()
 def get_race(race_id: int) -> dict:
@@ -332,6 +500,10 @@ def get_race(race_id: int) -> dict:
         year_start=datetime.date.today().year - 4
     )
 
+    #Best Time Before current olympic cycle, from excelsheet
+    best_oz_time = getOzBestTime(race.event.boat_class.abbreviation, getOlympicCycle(datetime.datetime.today().year))
+    best_oz_time_ms = convertToMs(best_oz_time)
+
     intermediates_figures = compute_intermediates_figures(race.race_boats)
 
     result = {
@@ -342,6 +514,7 @@ def get_race(race_id: int) -> dict:
         "boat_class": race.event.boat_class.abbreviation,  # long name?
         "result_time_world_best": world_best_time_ms,
         "result_time_best_of_current_olympia_cycle": best_of_last_4_years_ms,  # int in ms
+        "result_time_world_best_before_olympia_cycle": best_oz_time_ms,
         "progression_code": race.progression,
         "pdf_urls": {
             "result": race.pdf_url_results,
@@ -389,6 +562,7 @@ def get_race(race_id: int) -> dict:
 
         # intermediates
         strokes_for_intermediates = strokes_for_intermediate_steps(race_boat.race_data)
+        total_time = race_boat.result_time_ms
         for distance_meter, figures in intermediates_figures[race_boat.id].items(): # ❌ TODO: iterate over figure matrix (see intermediates_figures) to provide dicts for all 'cells'
             intermediate: model.Intermediate_Time = figures["__intermediate"]
             intermediate_dict = {
@@ -396,6 +570,7 @@ def get_race(race_id: int) -> dict:
                 "time [millis]": None,
                 "pace [millis]": None,
                 "speed [m/s]": None,
+                "rel_speed [%]": None,
                 "deficit [millis]": None,
                 "rel_diff_to_avg_speed [%]": None,
                 "stroke [1/min]": None,
@@ -408,10 +583,12 @@ def get_race(race_id: int) -> dict:
 
             is_valid_mark = isinstance(result_time, int)
             if is_valid_mark:
+                rel_speed = figures.get('speed')/(2000/ total_time * 1000 )
                 intermediate_dict.update({
                     "rank": intermediate.rank if intermediate else None,
                     "pace [millis]": figures.get('pace'),
                     "speed [m/s]": figures.get('speed'),
+                    "rel_speed [%]": rel_speed,
                     "deficit [millis]": figures.get('deficit'),
                     "rel_diff_to_avg_speed [%]": figures.get('rel_diff_to_avg_speed'),
                     "stroke [1/min]": strokes_for_intermediates.get(distance_meter),
@@ -615,7 +792,7 @@ def get_athlete(athlete_id: int):
 
     race_boats = session.query(model.Race_Boat).filter(model.Race_Boat.id.in_(athlete_race_boats)).all()
 
-    race_results, race_ids, athlete_boat_classes, best_time_boat_class, nation, race_phase = {}, [], set(), "", "", ""
+    race_results, race_ids, athlete_boat_classes, best_time_boat_class, nation, race_phase = [], [], set(), "", "", ""
     total, gold, silver, bronze, final_a, final_b = 0, 0, 0, 0, 0, 0
 
     for i, race_boat in enumerate(race_boats):
@@ -640,12 +817,18 @@ def get_athlete(athlete_id: int):
         elif phase == 'final' and phase_num == 2:
             final_b += 1
 
-        race_results[i] = {
+        race_results.append({
             "race_id": race_boat.race_id,
             "rank": race_boat.rank,
             "race_phase": race_phase,
-            "result_time": race_boat.result_time_ms
-        }
+            "result_time": race_boat.result_time_ms,
+
+            "name": race_boat.race.event.competition.name,
+            "venue": f'{race_boat.race.event.competition.venue.city}, {race_boat.race.event.competition.venue.country.name}',
+            "boat_class": race_boat.race.event.boat_class.abbreviation,
+            "start_time": str((race_boat.race.date).strftime("%Y-%m-%d %H:%M")),
+            "competition_category": race_boat.race.event.competition.competition_type.competition_category.name
+        })
         nation = race_boat.country.country_code
 
     races = session.query(model.Race).order_by(model.Race.date.desc()).filter(model.Race.id.in_(race_ids)).all()
@@ -664,12 +847,7 @@ def get_athlete(athlete_id: int):
         elif not any(ath.endswith("x") for ath in athlete_boat_classes):
             athlete_disciplines.add("Riemen")
 
-        comp_type = race.event.competition.competition_type.competition_category.name
-        race_results[i]["name"] = comp.name
-        race_results[i]["venue"] = f'{comp.venue.city}, {comp.venue.country.name}'
-        race_results[i]["boat_class"] = boat_class_name
-        race_results[i]["start_time"] = str((race.date).strftime("%Y-%m-%d %H:%M"))
-        race_results[i]["competition_category"] = comp_type
+    sorted_race_results = sorted(race_results, key=lambda item: item['start_time'], reverse=True)
 
     return json.dumps({
         "name": athlete.name,
@@ -688,7 +866,7 @@ def get_athlete(athlete_id: int):
         "final_a": final_a,
         "final_b": final_b,
         "num_of_races": len(athlete_race_boats),
-        "race_list": race_results,
+        "race_list": sorted_race_results,
     })
 
 
