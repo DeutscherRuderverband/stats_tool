@@ -343,7 +343,7 @@ def getOzBestTime(boat_class: str, year: int) -> int:
     """
     column_name = _getOlympicCycle(year)
     try:
-        df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
+        df = pd.read_csv('/usr/src/app/wt.csv', sep=';', index_col=0)
         best_time = df.loc[boat_class, column_name]
         return _convertToMs(best_time)
     except:

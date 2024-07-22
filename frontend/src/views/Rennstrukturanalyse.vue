@@ -222,6 +222,22 @@
             </v-row>
 
             <v-row>
+              <h3 class="pl-4">Visualisierungsoptionen</h3>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-select label="Zeige Differenz zu..." class="pt-0" compact :items="getChartOptions.boats"
+                  v-model="getChartOptions.difference_to" variant="outlined">
+                </v-select>
+              </v-col>
+              <v-col>
+                <v-select label="Boote in Visualisierungen" class="pt-0" compact multiple :items="getChartOptions.boats"
+                  v-model="getChartOptions.boats_in_chart" variant="outlined">
+                </v-select>
+              </v-col>
+            </v-row>
+
+            <v-row class="pt-0 mt-0">
               <v-col :cols="mobile ? 12 : 6" class="pa-0">
                 <v-container :class="mobile ? 'pa-0' : 'pa-2'">
                   <LineChart :data="getGPsData[0]" :chartOptions="singleChartOptions[0]" class="chart-bg"></LineChart>
@@ -248,21 +264,7 @@
               </v-col>
             </v-row>
 
-            <v-row>
-              <h3 class="pl-4 pt-4">Visualisierungsoptionen</h3>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-select label="Zeige Differenz zu..." class="pt-0" compact :items="getChartOptions.boats"
-                  v-model="getChartOptions.difference_to" variant="outlined">
-                </v-select>
-              </v-col>
-              <v-col>
-                <v-select label="Boote in Visualisierungen" class="pt-0" compact multiple :items="getChartOptions.boats"
-                  v-model="getChartOptions.boats_in_chart" variant="outlined">
-                </v-select>
-              </v-col>
-            </v-row>
+            
 
           </v-container>
         </v-container>
@@ -279,11 +281,6 @@
 
             <v-col cols="auto" class="align-center pt-5" style="color: grey">
               Bestzeiten:
-              <!-- Andere Variante: Ohne Radio Buttons
-              <span :class="{'enlarged-text': WBT}" @click="WBT = !WBT">6:52.78 (WBT)</span>
-               | 
-              <span :class="{'enlarged-text': !WBT}" @click="WBT = !WBT">6:55.78 (vor OZ)</span>
-              -->
               <v-tooltip activator="parent" location="bottom">
                 Berechnung der Relationszeit zu ausgewählter Bestzeit
               </v-tooltip>
@@ -330,8 +327,26 @@
           </v-table>
           <p>Die Tabelle zeigt für jede Gruppe die durchschnittlichen Werte über alle Rennen</p>
 
+          <v-row>
+            <h3 class="pl-3 pt-10">Visualisierungsoptionen</h3>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-select label="95% Konfidenzintervall" class="pt-0" compact
+                :items="getMultipleChartOptions.confidenceIntervalOptions"
+                v-model="getMultipleChartOptions.showConfidenceInterval" variant="outlined">
+              </v-select>
+            </v-col>
+            <v-col>
+              <v-select label="Gruppen in Visualisierungen" class="pt-0" compact multiple
+                :items="getMultipleChartOptions.groups" v-model="getMultipleChartOptions.groups_in_chart"
+                variant="outlined">
+              </v-select>
+            </v-col>
+          </v-row>
+
           <!-- Graphen -->
-          <v-row class="padding">
+          <v-row class="mt-0 pt-0">
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
                 <LineChart :data="getPacingProfiles" :chartOptions="multipleChartOptions[0]" class="chart-bg">
@@ -363,23 +378,6 @@
             </v-col>
           </v-row>
 
-          <v-row>
-            <h3 class="pl-4 pt-4">Visualisierungsoptionen</h3>
-          </v-row>
-          <v-row>
-            <v-col>
-              <v-select label="95% Konfidenzintervall" class="pt-0" compact
-                :items="getMultipleChartOptions.confidenceIntervalOptions"
-                v-model="getMultipleChartOptions.showConfidenceInterval" variant="outlined">
-              </v-select>
-            </v-col>
-            <v-col>
-              <v-select label="Gruppen in Visualisierungen" class="pt-0" compact multiple
-                :items="getMultipleChartOptions.groups" v-model="getMultipleChartOptions.groups_in_chart"
-                variant="outlined">
-              </v-select>
-            </v-col>
-          </v-row>
         </v-container>
 
       </v-container>

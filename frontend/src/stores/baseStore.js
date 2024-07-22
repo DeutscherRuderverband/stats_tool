@@ -279,8 +279,7 @@ export const useRennstrukturAnalyseState = defineStore({
                             intermediate_values.push([
                                 `${formatMilliseconds(time)} (${rank.toFixed(1)})`,
                                 `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                `${strokeFrequency} spm`,
-                                `${propulsion} m/Schlag`,
+                                `${strokeFrequency} spm (${propulsion} m/Schlag)`,
                                 `${speed} m/s`
                             ]
                             )
@@ -393,8 +392,7 @@ export const useRennstrukturAnalyseState = defineStore({
                                 intermediate_values.push([
                                     `${formatMilliseconds(time)} (${rank})`,
                                     `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                    `${strokeFrequency} spm`,
-                                    `${propulsion} m/Schlag`,
+                                    `${strokeFrequency} spm, (${propulsion} m/Schlag)`,
                                     `${speed} m/s`
                                 ]
                                 )
