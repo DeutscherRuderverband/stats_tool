@@ -25,6 +25,10 @@ function calculatePropulsion(speed, strokeFrequency) {
 
 }
 
+function getLabel(group, country) {
+    return `${group} (${country})`
+}
+
 function createCSV(content, title) {
     const csvContent = "data:text/csv;charset=utf-8," + content
     const encodedUri = encodeURI(csvContent);
@@ -46,10 +50,10 @@ function createChartOptions(boats) {
 
 function createMultipleChartOptions(groups) {
     return {
-        groups: groups.map(group => group.name),
+        groups: groups.map(group => getLabel(group.name, group.country)),
         showConfidenceInterval: "Anzeigen",
         confidenceIntervalOptions: ["Anzeigen", "Verbergen"],
-        groups_in_chart: groups.map(group => group.name),
+        groups_in_chart: groups.map(group => getLabel(group.name, group.country)),
     }
 }
 
@@ -528,7 +532,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 let colorIndex = 0
 
                 state.data.multiple.groups.forEach(dataObj => {
-                    const label = dataObj.name
+                    const label = getLabel(dataObj.name, dataObj.country)
 
                     dataKeys.forEach(key => {
                         let backgroundColor
@@ -601,7 +605,7 @@ export const useRennstrukturAnalyseState = defineStore({
             let colorIndex = 0;
             const dataKeys = ["mean", "lower_bound", "upper_bound"];
             state.data.multiple.groups.forEach(group => {
-                const label = group.name;
+                const label = getLabel(group.name, group.country);
                 dataKeys.forEach(key => {
                     let backgroundColor
                     let borderColor
@@ -645,7 +649,7 @@ export const useRennstrukturAnalyseState = defineStore({
             let colorIndex = 0;
             const dataKeys = ["mean", "lower_bound", "upper_bound"];
             state.data.multiple.groups.forEach(group => {
-                const label = group.name;
+                const label = getLabel(group.name, group.country);
                 dataKeys.forEach(key => {
                     let backgroundColor
                     let borderColor
