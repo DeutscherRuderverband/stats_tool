@@ -245,10 +245,10 @@ export const useRennstrukturAnalyseState = defineStore({
                 {text: 'Läufe', tooltip: "Läufe (Platzierungen)"},
                 {text: 'Nation', tooltip: null},
                 {text: 'Zeit', tooltip: "mm:ss; Speed"},
-                {text: '500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
-                {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
-                {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
-                {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: '500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
+                {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
+                {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
+                {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
                 {text: 'Relationszeit', tooltip: "zu ausgewähler Bestzeit"},
                 {text: 'Rennstruktur', tooltip: null}
             ]
@@ -340,10 +340,10 @@ export const useRennstrukturAnalyseState = defineStore({
                 {text: 'Nation', tooltip: null},
                 {text: 'Mannschaft', tooltip: null},
                 {text: 'Zeit', tooltip: "mm:ss; Speed"},
-                {text: '500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
-                {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
-                {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
-                {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute; Meter/Schlag; Speed"},
+                {text: '500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
+                {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
+                {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
+                {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
                 {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"}
             ]
             tableData.push(tableHead)
@@ -704,7 +704,7 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getMultipleChartOptions(state) {
             return [
-                getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, undefined, undefined, false),
+                getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, 0.96, 1.04, false),
                 getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined, undefined, undefined, undefined, undefined, false),
                 getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true, undefined, 1, 1, 6, false),
                 getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false, undefined, undefined, undefined, undefined, false),
@@ -834,6 +834,7 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         exportRaces() {
             let csvContent = [];
+            const spilts = [500, 1000, 1500, 2000]
             const columnNames = ["Gruppe", "Nation", "Jahr", "Event", "Stadt", "Lauf", "Platzierung", "Zeit", "500m_split", "1000m_split", "1500m_split", "2000m_split"]
             csvContent.push(columnNames.join(";") + "\n")
             const groups = this.data.multiple.groups
@@ -845,15 +846,13 @@ export const useRennstrukturAnalyseState = defineStore({
                     row.push(boat.year)
                     //Mannschaft
                     row.push(boat.event)
-                    //Datum
                     row.push(boat.city)
                     row.push(boat.phase)
                     row.push(boat.rank)
                     row.push(formatMilliseconds(boat.time))
-                    row.push(formatMilliseconds(boat.intermediates[500]["pace [millis]"]))
-                    row.push(formatMilliseconds(boat.intermediates[1000]["pace [millis]"]))
-                    row.push(formatMilliseconds(boat.intermediates[1500]["pace [millis]"]))
-                    row.push(formatMilliseconds(boat.intermediates[2000]["pace [millis]"]))
+                    spilts.forEach(split => {
+                        row.push(formatMilliseconds(boat.intermediates[split]["pace [millis]"]))
+                    })
                     csvContent.push(Object.values(row).join(';') + "\n")
                 })
             });

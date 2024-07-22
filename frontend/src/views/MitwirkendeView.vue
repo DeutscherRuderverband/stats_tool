@@ -11,13 +11,15 @@
         <p>Anke Müller</p>
         <br>
         <h2>Frontend</h2>
-        <p>Harri Faßbender<br />
-          Julian Fritzmann</p>
+        <p>Harri Faßbender<br/>
+          Julian Fritzmann<br/>
+          Kiara Nagler</p>
         <br>
         <h2>Backend</h2>
         <p>Nicolas Reinhart<br />
           Raphael Wettinger<br />
-          Harri Faßbender</p>
+          Harri Faßbender<br/>
+          Kiara Nagler</p>
         <br>
         <h2>Betreuer</h2>
         <p>Prof. Dr.-Ing. Johannes Maucher</p>
@@ -29,6 +31,7 @@
       <v-col :cols="mobile ? 12 : 6">
         <h2>Entwicklung</h2>
         <p>Diese Webanwendung wurde im Wintersemester 2022/2023 von Studierenden des Masterstudiengangs Computer Science and Media am Institute for Applied Artificial Intelligence (IAAI) an der Hochschule der Medien Stuttgart entwickelt.</p>
+        <p>Im Sommersemester 2024 wurde die Webanwendung erweitert.</p>
         <br>
         <a href="https://ai.hdm-stuttgart.de/" class="mr-5"><img src="@/assets/images/IAAI_Logo_black.svg" width="100"></a>
         <a href="https://www.hdm-stuttgart.de/"><img src="@/assets/images/HDM_Logo_color.svg" width="80"></a>

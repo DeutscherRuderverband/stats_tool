@@ -27,9 +27,8 @@
           <h1 v-bind:style='{ "font-size": (windowWidth < 400 ? "22px" : "30px") }'>Rennstrukturanalyse</h1>
           <v-icon id="tooltip-analysis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
           </v-icon>
-          <v-tooltip activator="#tooltip-analysis-icon" location="end" open-on-hover>Die Rennstrukturanalyse erlaubt die
-            gezielte Betrachtung des Rennverlaufs auf Basis von Ergebnis- und GPS
-            Daten.
+          <v-tooltip activator="#tooltip-analysis-icon" location="end" open-on-hover>Die Rennstrukturanalyse erlaubt die Betrachtung des Rennverlaufes
+            ein oder mehrerer Rennen basierend auf Ergebnis- und GPS-Daten.
           </v-tooltip>
           <a :href="emailLink" v-show="showEmailIcon">
             <v-icon color="grey" class="ml-2 v-icon--size-large">mdi-email-outline
@@ -129,14 +128,6 @@
               <v-col cols="6" class="pt-3">
                 <h2>{{ `${competitionData.display_name} (${competitionData.boat_class})` }}</h2>
               </v-col>
-              <!--
-              <v-col cols="6" class="text-right">
-                <p style="color: grey">Bestzeiten: {{ formatMilliseconds(competitionData.result_time_world_best) }} (WB)
-                  |
-                  {{ formatMilliseconds(competitionData.result_time_best_of_current_olympia_cycle) }} (OZ/Jahr)</p>
-                <p><b>{{ competitionData.venue }} | {{ competitionData.start_date }}</b></p>
-              </v-col>
-              -->
 
               <v-spacer></v-spacer>
 
@@ -264,8 +255,6 @@
               </v-col>
             </v-row>
 
-            
-
           </v-container>
         </v-container>
 
@@ -294,8 +283,6 @@
             </v-col>
 
           </v-row>
-
-
 
           <v-table class="tableStyles" density="compact">
             <thead>
