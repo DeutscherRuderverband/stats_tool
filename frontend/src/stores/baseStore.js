@@ -287,15 +287,15 @@ export const useRennstrukturAnalyseState = defineStore({
                             const rank = intermediate["rank"]["mean"]
                             const pace = intermediate["pace [millis]"]["mean"]
                             const relativePace = (pace / totalTime * 400).toFixed(1)
-                            const strokeFrequency = intermediate["stroke [1/min]"] ? intermediate["stroke [1/min]"]["mean"].toFixed(1).toString() : "-"
-                            const speed = intermediate["speed [m/s]"]["mean"] ? intermediate["speed [m/s]"]["mean"].toFixed(1): "-"
+                            const strokeFrequency = intermediate["stroke [1/min]"] ? intermediate["stroke [1/min]"]["mean"] : 0
+                            const speed = intermediate["speed [m/s]"]["mean"] ? intermediate["speed [m/s]"]["mean"]: 0
                             const propulsion = calculatePropulsion(speed, strokeFrequency)
                        
                             intermediate_values.push([
                                 `${formatMilliseconds(time)} (${rank.toFixed(1)})`,
                                 `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                `${strokeFrequency} spm (${propulsion.toFixed(1)} m/Schlag)`,
-                                `${speed} m/s`
+                                `${strokeFrequency.toFixed(1)} spm (${propulsion.toFixed(1)} m/Schlag)`,
+                                `${speed.toFixed(1)} m/s`
                             ]
                             )
                         }
@@ -400,14 +400,14 @@ export const useRennstrukturAnalyseState = defineStore({
                                 const rank = intermediate["rank"]
                                 const pace = intermediate["pace [millis]"]
                                 const relativePace = (pace / totalTime * 400).toFixed(1)
-                                const strokeFrequency = intermediate["stroke [1/min]"] ? roundToTwoDecimal(intermediate["stroke [1/min]"]).toString() : "-"
-                                const speed = intermediate["speed [m/s]"] ? roundToTwoDecimal(intermediate["speed [m/s]"]): "-"
+                                const strokeFrequency = intermediate["stroke [1/min]"] ? roundToTwoDecimal(intermediate["stroke [1/min]"]) : 0
+                                const speed = intermediate["speed [m/s]"] ? roundToTwoDecimal(intermediate["speed [m/s]"]): 0
                                 const propulsion = calculatePropulsion(speed, strokeFrequency)
                            
                                 intermediate_values.push([
                                     `${formatMilliseconds(time)} (${rank})`,
                                     `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                    `${strokeFrequency} spm, (${propulsion} m/Schlag)`,
+                                    `${strokeFrequency} spm, (${propulsion.toFixed(1)} m/Schlag)`,
                                     `${speed} m/s`
                                 ]
                                 )
@@ -433,7 +433,6 @@ export const useRennstrukturAnalyseState = defineStore({
                             relationsZeit = (state.data.raceData[0].result_time_world_best_before_olympia_cycle / totalTime * 100).toFixed(1)
                         }
 
-                        //const relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)
                         rowData.push(`${relationsZeit}%`)
                     }
                     else {
@@ -715,7 +714,7 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getMultipleChartOptions(state) {
             return [
-                getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, 0.96, 1.04, false),
+                getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, undefined, undefined, false),
                 getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined, undefined, undefined, undefined, undefined, false),
                 getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true, undefined, 1, 1, 6, false),
                 getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false, undefined, undefined, undefined, undefined, false),
@@ -861,7 +860,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     //Athletes
                     let athletes = Object.values(boat.athletes).map(athlete => `(${athlete.boat_position}) ${athlete.first_name} ${athlete.last_name}`)
                     row.push(athletes.join(', '))
-                    row.push(boat.phase)
+                    row.push(boat.phase_sub)
                     row.push(boat.rank)
                     row.push(formatMilliseconds(boat.time))
                     splits.forEach(split => {

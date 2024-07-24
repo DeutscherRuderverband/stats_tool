@@ -13,6 +13,7 @@ from sqlalchemy import select, or_, and_, func
 
 from model import model
 from common.helpers import stepfunction
+from . import globals
 
 
 COND_VALID_2000M_RESULTS = and_(
@@ -368,6 +369,12 @@ def getWorldBestTime(boat_class: str, session) -> int:
 
 
 def getAthletes(race_boat_athletes: model.Association_Race_Boat_Athlete) -> dict:
+    '''
+    Get information of all athletes in boat.
+    
+    Returns:
+        Dict: athletes{0:{id, first_name, last_name, full_name, boat_position}, 1:{...}, ...}
+    '''
     sorted_athletes = sorted(race_boat_athletes, key=lambda x: (x.boat_position != 'b', x.boat_position))
     athlete_assoc: model.Association_Race_Boat_Athlete
     athletes = {}
@@ -381,6 +388,26 @@ def getAthletes(race_boat_athletes: model.Association_Race_Boat_Athlete) -> dict
             "boat_position": athlete_assoc.boat_position
         }
     return athletes
+
+def getPhaseType(phase_type: str, phase_subtype: str, phase_num: int) -> str:
+    "Merge phase type, subtype and number into one string"
+    phase_subtype = phase_subtype if phase_subtype else ""
+    phase_string = globals.RACE_PHASE_MAPPING.get(phase_type + phase_subtype + str(phase_num))
+    return phase_string if phase_string else phase_type + str(phase_num)
+
+def separatePhaseTypes(phases: list):
+    "Separate phase types, into phase type and phase number (-> in this case phase number only relevant for final)"
+    mapping = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
+    phase_type = set()
+    phase_number = set()
+    phase: str
+    for phase in phases:
+        if phase[:5] == "final":
+            phase_type.add("final")
+            phase_number.add(mapping[phase[-1]])
+        else:
+            phase_type.add(phase)
+    return list(phase_type), list(phase_number)
 
 
 if __name__ == '__main__':

@@ -187,7 +187,7 @@ import { mapState } from "pinia";
 const defaultYear = new Date().getFullYear()
 const defaultCountry = ["GER (Germany)", "NED (Netherlands)", "GBR (Great Britain)", "ITA (Italy)", "UKR (Ukraine)", "ROU (Romania)"]
 const defaultCompetitions = ["OG", "WCH", "WCp 1", "WCp 2", "WCp 3"]
-const defaultPhases = ["final", "semifinal"]
+const defaultPhases = ["final A", "final B", "semifinal"]
 const defualtPlacements = [1,2,3,4,5,6]
 
 export default {

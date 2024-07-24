@@ -107,7 +107,7 @@ def get_race_analysis_filter_options():
             "competition_categories": sorted_categories,
             "boat_classes": globals.BOATCLASSES_BY_GENDER_AGE_WEIGHT,
             "nations": dict(sorted(nations.items(), key=lambda x: x[0])),
-            "runs": session.execute(select(model.Race.phase_type).distinct()).scalars().all(),
+            "runs": globals.RACE_PHASE_FILTER_OPTIONS,
             "ranks": [1, 2, 3, 4, 5, 6]
             }
 
@@ -312,9 +312,8 @@ def get_race_boat_groups():
         max_Year = data["end_year"]
         country = data["country"]
         competitions = data["events"]
-        phases = data["phases"]
         ranks = data["placements"]
-
+        phases, phases_subtype = r.separatePhaseTypes(data["phases"])
 
         statement = (
         select(model.Race_Boat)
@@ -327,13 +326,21 @@ def get_race_boat_groups():
         .where(
             model.Country.country_code == country,
             model.Race_Boat.rank.in_(ranks),
-            model.Race.phase_type.in_(phases),
             model.Boat_Class.abbreviation == boat_class,
             model.Competition.year >= min_Year,
             model.Competition.year <= max_Year,
-            model.Competition_Type.abbreviation.in_(competitions)
+            model.Competition_Type.abbreviation.in_(competitions),
+            or_(
+                and_(
+                    model.Race.phase_type != "final",
+                    model.Race.phase_type.in_(phases)
+                ),
+                and_(
+                    model.Race.phase_type == 'final',
+                    model.Race.phase_number.in_(phases_subtype)
+                )
             )
-        )
+        ))
     
         race_boats: List[model.Race_Boat]
         race_boats = session.execute(statement).scalars().all()
@@ -375,6 +382,7 @@ def get_race_boat_groups():
                 "time": boat.result_time_ms,
                 "rank": boat.rank,
                 "phase": boat.race.phase_type,
+                "phase_sub": r.getPhaseType(boat.race.phase_type, boat.race.phase_subtype, boat.race.phase_number),
                 "year": boat.race.event.competition.year,
                 "event": boat.race.event.competition.competition_type.abbreviation,
                 "city": boat.race.event.competition.venue.city,
@@ -780,9 +788,9 @@ def get_athlete(athlete_id: int):
         boat = race_boat.race
         phase = boat.phase_type
         phase_num = boat.phase_number
-        phase_subtype = boat.phase_subtype if boat.phase_subtype else ""
-        phase_string = globals.RACE_PHASE_MAPPING.get(phase + phase_subtype + str(phase_num))
-        race_phase = phase_string if phase_string else phase + str(phase_num)
+
+        race_phase = r.getPhaseType(phase, boat.phase_subtype, phase_num)
+
         if phase == 'final' and phase_num == 1:
             final_a += 1
             if race_boat.rank == 1:
@@ -802,7 +810,6 @@ def get_athlete(athlete_id: int):
             "rank": race_boat.rank,
             "race_phase": race_phase,
             "result_time": race_boat.result_time_ms,
-
             "name": race_boat.race.event.competition.name,
             "venue": f'{race_boat.race.event.competition.venue.city}, {race_boat.race.event.competition.venue.country.name}',
             "boat_class": race_boat.race.event.boat_class.abbreviation,
@@ -816,9 +823,7 @@ def get_athlete(athlete_id: int):
     gender, athlete_disciplines = set(), set()
     for i, race in enumerate(races):
         gender.add(race.event.gender.name)
-        comp = session.query(model.Competition).filter(model.Competition.id == race.event.competition_id).one()
         boat_class_name = race.event.boat_class.abbreviation
-        best_time_boat_class = str(race.event.boat_class.world_best_race_boat)
         athlete_boat_classes.add(boat_class_name)
 
         # check disciplines
