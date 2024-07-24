@@ -926,6 +926,34 @@ def get_athletes_filter_options():
         "boat_classes": globals.BOATCLASSES_BY_GENDER_AGE_WEIGHT
     }], sort_keys=False)
 
+@app.route('/get_all_races_list', methods=['GET'])
+@jwt_required()
+def get_all_races_list():
+    session = Scoped_Session()
+
+    statement = (
+        select(model.Association_Race_Boat_Athlete)
+        .join(model.Association_Race_Boat_Athlete.race_boat)
+        .join(model.Race_Boat.race)
+        .join(model.Race.event)
+        .join(model.Event.competition)
+        .join(model.Competition.competition_type)
+        .where(
+            model.Race_Boat.country_id == 12,
+            model.Competition_Type.abbreviation.in_(["WCH", "WCp 1", "WCp 2", "WCp 3", "U23WCH", "JWCH", "EJCH", "OG", "ECH"]),
+            model.Race.phase_type == "final"
+        )
+    )
+
+    results = session.execute(statement).scalars()
+    races = []
+    for result in results:
+        row = [result.race_boat.country.country_code, result.athlete.last_name__, result.athlete.first_name__, result.athlete.birthdate, result.race_boat.race.event.gender.name, result.race_boat.race.event.competition.name, result.race_boat.race.date, result.race_boat.race.event.competition.venue.city, result.race_boat.race.event.boat_class.abbreviation, result.race_boat.race.phase_type, result.race_boat.race.phase_number, result.race_boat.rank, result.race_boat.result_time_ms]
+        #print(f'Rank: {result.race_boat.rank}, Time: {result.race_boat.result_time_ms}, Country: {result.race_boat.country.country_code}, First name: {result.athlete.first_name__}, Last name: {result.athlete.last_name__}, Geburtsdatum: {result.athlete.birthdate}, Geschlecht: {result.race_boat.race.event.gender.name}, Event: {result.race_boat.race.event.name}, Date: {result.race_boat.race.date}, Bootsklasse: {result.race_boat.race.event.boat_class.abbreviation}, Stadt: {result.race_boat.race.event.competition.venue.city}, Lauf: {result.race_boat.race.phase_type}, Phase_number: {result.race_boat.race.phase_number}')
+        races.append(row)
+
+    return races
+
 
 @app.route('/get_teams_filter_options', methods=['GET'])
 @jwt_required()
