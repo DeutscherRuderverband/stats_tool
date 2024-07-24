@@ -313,7 +313,9 @@ def get_race_boat_groups():
         country = data["country"]
         competitions = data["events"]
         ranks = data["placements"]
-        phases, phases_subtype = r.separatePhaseTypes(data["phases"])
+        phases_filter = data["phases"]
+        phases, phases_subtype = r.separatePhaseTypes(phases_filter)
+        athletes_id = data["athletes"]
 
         statement = (
         select(model.Race_Boat)
@@ -323,6 +325,7 @@ def get_race_boat_groups():
         .join(model.Event.boat_class)
         .join(model.Event.competition)
         .join(model.Competition.competition_type)
+        .join(model.Race_Boat.athletes)
         .where(
             model.Country.country_code == country,
             model.Race_Boat.rank.in_(ranks),
@@ -341,6 +344,11 @@ def get_race_boat_groups():
                 )
             )
         ))
+
+        if athletes_id:
+            statement = statement.where(
+                model.Association_Race_Boat_Athlete.athlete_id == athletes_id,
+            )
     
         race_boats: List[model.Race_Boat]
         race_boats = session.execute(statement).scalars().all()
@@ -445,7 +453,7 @@ def get_race_boat_groups():
             pacing_profile =  r.getPacingProfile(summary[500]["pace [millis]"]["mean"], summary[1000]["pace [millis]"]["mean"], summary[1500]["pace [millis]"]["mean"], summary[2000]["pace [millis]"]["mean"])
 
         group = f"Gruppe {index + 1}"
-        groups.append({"name": group, "stats": summary, "stats_race_data": summary_gps, "pacing_profile": pacing_profile, "count": total_boats, "min_year": min_Year, "max_year": max_Year,"events": list(relevant_competitions), "phases": phases, "ranks": ranks, "country": country, "race_boats": boats_formatted})
+        groups.append({"name": group, "stats": summary, "stats_race_data": summary_gps, "pacing_profile": pacing_profile, "count": total_boats, "min_year": min_Year, "max_year": max_Year,"events": list(relevant_competitions), "phases": phases_filter, "ranks": ranks, "country": country, "race_boats": boats_formatted})
 
     #World Best Times
     best_oz_time = r.getOzBestTime(boat_class, datetime.datetime.today().year)

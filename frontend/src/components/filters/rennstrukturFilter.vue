@@ -89,7 +89,7 @@
                 <v-select class="pt-3" multiple density="comfortable" label="Event(s)" :items="optionsCompetitions"
                   v-model="panel.selectedCompetitions" variant="outlined">
 
-                  
+
                   <template v-slot:prepend-item>
                     <v-list-item title="Select All" @click="toggleSelectAll(panel)">
                       <template v-slot:prepend>
@@ -101,14 +101,17 @@
                   </template>
 
                   <template v-slot:selection="{ item, index }">
-                    <v-chip v-if="index === 0 && panel.selectedCompetitions.length == optionsCompetitions.length" size="small">
+                    <v-chip v-if="index === 0 && panel.selectedCompetitions.length == optionsCompetitions.length"
+                      size="small">
                       <span>Alle</span>
                     </v-chip>
-                    <v-chip v-if="index < 3 && panel.selectedCompetitions.length != optionsCompetitions.length" size="small">
+                    <v-chip v-if="index < 3 && panel.selectedCompetitions.length != optionsCompetitions.length"
+                      size="small">
                       <span>{{ item.title }}</span>
                     </v-chip>
-                    <span v-if="index === 3 && panel.selectedCompetitions.length != optionsCompetitions.length" class="text-grey text-caption align-self-center">
-                       (+{{ panel.selectedCompetitions.length - 3 }} weitere)
+                    <span v-if="index === 3 && panel.selectedCompetitions.length != optionsCompetitions.length"
+                      class="text-grey text-caption align-self-center">
+                      (+{{ panel.selectedCompetitions.length - 3 }} weitere)
                     </span>
                   </template>
 
@@ -127,23 +130,13 @@
                 </v-select>
 
 
-                <!-- Races (calculated based on other filters) -->
-                <!-- ToDO?: Show Races, that match Filter, choose which races should be included-->
-                <!-- 
-                <v-row>
-                  <v-col>
-                    <h3>Ausgewählte Rennen:</h3>
-                  </v-col>
-                  <v-col class="text-right">
-                    <v-btn color="blue" class="mx-2" size="small">Aktualisieren</v-btn>
-                  </v-col>
-                </v-row>
-
-                
-                <v-select label="Rennen" class="pt-4" clearable :items="optionsRaces" v-model="selectedRaces" multiple
-                  variant="outlined">
-                </v-select>
-                -->
+                <!-- item-text="name" item-value="id"  -->
+                <v-autocomplete :items="previewAthleteResults"
+                  item-value="id"
+                  item-title="name" 
+                  v-model="panel.selectedAthletes" clearable variant="outlined" color="blue" label="Athlet"
+                  @input="value => searchAthletes(value, panel.selectedCountry)" class="pt-2">
+                </v-autocomplete>
 
               </v-expansion-panel-text>
             </v-expansion-panel>
@@ -181,6 +174,7 @@
 <script>
 import Checkbox from "@/components/filters/checkbox.vue";
 import { useRennstrukturAnalyseState } from "@/stores/baseStore";
+import {useAthletenState} from "@/stores/athletenStore";
 import { mapState } from "pinia";
 
 //Default values
@@ -198,6 +192,9 @@ export default {
     }),
     ...mapState(useRennstrukturAnalyseState, {
       showFilter: "getFilterState"
+    }),
+    ...mapState(useAthletenState, {
+      previewAthleteResults: "getPreviewAthleteResults"
     }),
   },
   data() {
@@ -235,10 +232,8 @@ export default {
       //Placement
       optionsPlacements: [],
 
-      //Races
-      //Add when filter shows races
-      //optionsRaces: [],
-      //selectedRaces: [],
+      // athletes
+      selectedAthlete: null,
 
       mobile: false,
       hoverFilter: false,
@@ -248,7 +243,7 @@ export default {
 
       panels: [
         { title: 'Gruppe 1', startYear: defaultYear - 4, endYear: defaultYear, selectedCountry: defaultCountry[0], selectedCompetitions: defaultCompetitions,
-         selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [] },
+         selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [], selectedAthletes: []},
       ],
       alertVisible: false,
 
@@ -294,11 +289,27 @@ export default {
       
       // Placement
       this.optionsPlacements = this.raceAnalysisFilterOptions.ranks
+
     }
     setFilterValues()
 
   },
   methods: {
+    searchAthletes(e, country) {
+      const store = useAthletenState()
+      const searchInput = e.target.value
+      if (searchInput.length > 0) {
+        clearTimeout(this.timeoutId)
+        this.timeoutId = setTimeout(() => {
+          store.postSearchAthlete({
+            "search_query": searchInput,
+            "nation": country,
+            "birth_year": null,
+            "boat_class": null
+          })
+        }, 450)
+      }
+    },
 
     async onSubmit() {
       const {valid} = await this.$refs.filterForm.validate()
@@ -345,7 +356,8 @@ export default {
           "country": panel.selectedCountry.slice(0, 3),
           "events": panel.selectedCompetitions,
           "phases": panel.selectedPhases,
-          "placements": panel.selectedPlacements
+          "placements": panel.selectedPlacements,
+          "athletes": panel.selectedAthletes
         }
         groups.push(groupData)
       }
@@ -364,7 +376,7 @@ export default {
       const newIndex = this.panels.length + 1;
       if (this.panels.length < 6) {
         this.panels.push({ title: `Gruppe ${newIndex}`, startYear: defaultYear - 4, endYear: defaultYear, selectedCountry: defaultCountry[newIndex -1], selectedCompetitions: this.optionsCompetitions,
-        selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [] });
+        selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [], selectedAthletes: [] });
       }
       else {
         this.alertVisible = true;
