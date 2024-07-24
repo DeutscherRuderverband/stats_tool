@@ -367,6 +367,22 @@ def getWorldBestTime(boat_class: str, session) -> int:
         return 0
 
 
+def getAthletes(race_boat_athletes: model.Association_Race_Boat_Athlete) -> dict:
+    sorted_athletes = sorted(race_boat_athletes, key=lambda x: (x.boat_position != 'b', x.boat_position))
+    athlete_assoc: model.Association_Race_Boat_Athlete
+    athletes = {}
+    for idx, athlete_assoc in enumerate(sorted_athletes):
+        athlete: model.Athlete = athlete_assoc.athlete
+        athletes[idx] = {
+            "id": athlete.id,
+            "first_name": athlete.first_name__,
+            "last_name": athlete.last_name__,
+            "full_name": athlete.name,
+            "boat_position": athlete_assoc.boat_position
+        }
+    return athletes
+
+
 if __name__ == '__main__':
     from sys import exit as sysexit
     pass        #replace for testing purposes

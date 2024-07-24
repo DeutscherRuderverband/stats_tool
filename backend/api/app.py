@@ -365,6 +365,9 @@ def get_race_boat_groups():
                     "stroke [1/min]": race_data.stroke,
                     "propulsion [m/stroke]": propulsion
             }
+                
+            #athletes
+            athletes = r.getAthletes(boat.athletes)
 
             boat_formatted = {
                 "id": boat.id,
@@ -375,6 +378,7 @@ def get_race_boat_groups():
                 "year": boat.race.event.competition.year,
                 "event": boat.race.event.competition.competition_type.abbreviation,
                 "city": boat.race.event.competition.venue.city,
+                "athletes": athletes,
                 "intermediates": calculated_times,
                 "race_data": race_data_result
             }
@@ -523,17 +527,7 @@ def get_race(race_id: int) -> dict:
         result['race_boats'].append(rb_result)
 
         # athletes
-        sorted_athletes = sorted(race_boat.athletes, key=lambda x: (x.boat_position != 'b', x.boat_position))
-        athlete_assoc: model.Association_Race_Boat_Athlete
-        for idx, athlete_assoc in enumerate(sorted_athletes):
-            athlete: model.Athlete = athlete_assoc.athlete
-            rb_result['athletes'][idx] = {
-                "id": athlete.id,
-                "first_name": athlete.first_name__,
-                "last_name": athlete.last_name__,
-                "full_name": athlete.name,
-                "boat_position": athlete_assoc.boat_position
-            }
+        rb_result["athletes"] = r.getAthletes(race_boat.athletes)
 
         # race_data aka gps data
         sorted_race_data = sorted(race_boat.race_data, key=lambda x: x.distance_meter)

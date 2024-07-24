@@ -15,12 +15,23 @@ function roundToTwoDecimal(num) {
     return num ? Number(num.toFixed(2)) : num;
 }
 
-function calculatePropulsion(speed, strokeFrequency) {
-    if(speed != '-' && strokeFrequency != '-' && strokeFrequency != 0) {
-        return  (speed * 60 / strokeFrequency).toFixed(1)
+function formatForExcel(num) {
+    if (typeof num === 'number'  && !isNaN(num)) {
+        const shortNum = roundToTwoDecimal(num)
+        const stringNum = shortNum ? shortNum.toString() : '0'
+        return stringNum.replace('.', ',')
     }
     else {
-        return '-'
+         return num
+    }   
+}
+
+function calculatePropulsion(speed, strokeFrequency) {
+    if(typeof speed === 'number' && typeof strokeFrequency === 'number' && strokeFrequency != 0 && !isNaN(strokeFrequency)) {
+        return (speed * 60 / strokeFrequency)
+    }
+    else {
+        return 0
     }
 
 }
@@ -283,7 +294,7 @@ export const useRennstrukturAnalyseState = defineStore({
                             intermediate_values.push([
                                 `${formatMilliseconds(time)} (${rank.toFixed(1)})`,
                                 `${formatMilliseconds(pace)} (${relativePace}%)`,
-                                `${strokeFrequency} spm (${propulsion} m/Schlag)`,
+                                `${strokeFrequency} spm (${propulsion.toFixed(1)} m/Schlag)`,
                                 `${speed} m/s`
                             ]
                             )
@@ -834,24 +845,36 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         exportRaces() {
             let csvContent = [];
-            const spilts = [500, 1000, 1500, 2000]
-            const columnNames = ["Gruppe", "Nation", "Jahr", "Event", "Stadt", "Lauf", "Platzierung", "Zeit", "500m_split", "1000m_split", "1500m_split", "2000m_split"]
+            const splits = [500, 1000, 1500, 2000]
+            const columnNames = ["Gruppe", "Nation", "Jahr", "Event", "Stadt", "Athleten", "Lauf", "Platzierung", "Zeit", "500m-Zeit", "500m-Platzierung", "500m-pace", "500m-rel. pace", "500m-spm", "500m-Vortrieb", "500m-m/s", "1000m-Zeit", "1000m-Platzierung", "1000m-pace", "1000m-rel. pace", "1000m-spm", "1000m-Vortrieb", "1000m-m/s", "1500m-Zeit", "1500m-Platzierung", "1500m-pace", "1500m-rel. pace", "1500m-spm", "1500m-Vortrieb", "1500m-m/s", "2000m-Zeit", "2000m-Platzierung", "2000m-pace", "2000m-rel. pace", "2000m-spm", "2000m-Vortrieb", "2000m-m/s"]
             csvContent.push(columnNames.join(";") + "\n")
             const groups = this.data.multiple.groups
             groups.forEach(group => {
                 group.race_boats.forEach(boat => {
                     const row = []
+                    let totalTime = boat.intermediates[2000]["time [millis]"]
                     row.push(group.name)
                     row.push(group.country)
                     row.push(boat.year)
-                    //Mannschaft
                     row.push(boat.event)
                     row.push(boat.city)
+                    //Athletes
+                    let athletes = Object.values(boat.athletes).map(athlete => `(${athlete.boat_position}) ${athlete.first_name} ${athlete.last_name}`)
+                    row.push(athletes.join(', '))
                     row.push(boat.phase)
                     row.push(boat.rank)
                     row.push(formatMilliseconds(boat.time))
-                    spilts.forEach(split => {
-                        row.push(formatMilliseconds(boat.intermediates[split]["pace [millis]"]))
+                    splits.forEach(split => {
+                        let pace = boat.intermediates[split]["pace [millis]"]
+                        let speed = boat.intermediates[split]["speed [m/s]"]
+                        let strokeFrequency = boat.intermediates[split]["stroke [1/min]"]
+                        row.push(formatMilliseconds(boat.intermediates[split]["time [millis]"]))
+                        row.push(boat.intermediates[split]["rank"])
+                        row.push(formatMilliseconds(pace))
+                        row.push(formatForExcel(pace / totalTime * 400))
+                        row.push(formatForExcel(strokeFrequency))
+                        row.push(formatForExcel(calculatePropulsion(speed, strokeFrequency)))
+                        row.push(formatForExcel(speed))
                     })
                     csvContent.push(Object.values(row).join(';') + "\n")
                 })
