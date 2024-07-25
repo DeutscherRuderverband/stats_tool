@@ -344,7 +344,7 @@ def getOzBestTime(boat_class: str, year: int) -> int:
     """
     column_name = _getOlympicCycle(year)
     try:
-        df = pd.read_csv('/usr/src/app/wt.csv', sep=';', index_col=0)
+        df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
         best_time = df.loc[boat_class, column_name]
         return _convertToMs(best_time)
     except:
@@ -358,7 +358,7 @@ def _convertToMs(time: str) -> int:
     return total_milliseconds
 
 def getWorldBestTime(boat_class: str, session) -> int:
-    """Get the world best time of a boat class"""
+    """Get the world best time of a boat class in ms"""
     statement = select(model.Boat_Class).where(model.Boat_Class.abbreviation == boat_class)
     boat_class_object = session.execute(statement).scalars().first()
     world_best_race_boat = boat_class_object.world_best_race_boat
