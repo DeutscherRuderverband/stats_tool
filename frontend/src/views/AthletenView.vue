@@ -205,13 +205,7 @@ export default {
     },
     exportTableData() {
       const store = useAthletenState()
-      if (!this.data.name) {
-        store.exportRaceList()
-      }
-      else {
-        store.exportTableData()
-      }
-      
+      store.exportTableData()
     },
     setFilterState() {
       this.filterOpen = !this.filterOpen;
