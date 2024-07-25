@@ -148,16 +148,13 @@ RACE_PHASE_FILTER_OPTIONS = [
     "final D",
     "semifinal",
     "quarterfinal",
+    "heat",
     "repechage",
     "preliminary",
-    "heat",
     "timetrial",
     "knockout",
     "seeding"
 ]
-
-        
-    
 
 
 RACE_PHASE_MAPPING = {

@@ -59,6 +59,24 @@ function createChartOptions(boats) {
     }
 }
 
+function getRaceDataLabels(groups) {
+    for (let group of groups) {
+        if (Object.keys(group.stats_race_data).length > 0) {
+            return ['0', ...Object.keys(group.stats_race_data)];
+        }
+    }
+    return ['0', '2000'];
+}
+
+function getIntermediateLabels(groups) {
+    for (let group of groups) {
+        if (Object.keys(group.stats).length > 0) {
+            return Object.keys(group.stats);
+        }
+    }
+    return ['0', '2000'];
+}
+
 function createMultipleChartOptions(groups) {
     return {
         groups: groups.map(group => getLabel(group.name, group.country)),
@@ -432,7 +450,6 @@ export const useRennstrukturAnalyseState = defineStore({
                         else {
                             relationsZeit = (state.data.raceData[0].result_time_world_best_before_olympia_cycle / totalTime * 100).toFixed(1)
                         }
-
                         rowData.push(`${relationsZeit}%`)
                     }
                     else {
@@ -575,7 +592,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     colorIndex++
                 });
                 return {
-                    labels: ['0', ...Object.keys(state.data.multiple.groups[0].stats_race_data)], //Add 0 in x-axis
+                    labels: getRaceDataLabels(state.data.multiple.groups),
                     datasets
                 };
             })
@@ -610,7 +627,7 @@ export const useRennstrukturAnalyseState = defineStore({
             })
         },
         getMeanIntermediateChartData(state) {
-            const labels = Object.keys(state.data.multiple.groups[0].stats)
+            const labels = getIntermediateLabels(state.data.multiple.groups)
             const datasets = [];
             let colorIndex = 0;
             const dataKeys = ["mean", "lower_bound", "upper_bound"];
@@ -654,7 +671,7 @@ export const useRennstrukturAnalyseState = defineStore({
 
         },
         getPacingProfiles(state) {
-            const labels = Object.keys(state.data.multiple.groups[0].stats)
+            const labels = getIntermediateLabels(state.data.multiple.groups)
             const datasets = [];
             let colorIndex = 0;
             const dataKeys = ["mean", "lower_bound", "upper_bound"];
