@@ -8,6 +8,16 @@ const formatMilliseconds = ms => {
     return new Date(ms).toISOString().slice(14, -2);
 };
 
+function createCSV(content, title) {
+    const csvContent = "data:text/csv;charset=utf-8," + content
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "Rennstruktur_" + title + ".csv");
+    document.body.appendChild(link);
+    link.click(); 
+}
+
 export const useAthletenState = defineStore({
     id: "athleten",
     state: () => ({
@@ -204,6 +214,17 @@ export const useAthletenState = defineStore({
         },
         setFilterState(filterState) {
             this.filterOpen = !filterState
+        },
+        async exportRaceList() {
+            await axios.get(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_all_races_list`)
+                .then(response => {
+                    const columns = ["Nation", "Name", "Vorname", "Geburtsdatum", "Geschlecht", "Event", "Datum", "Stadt", "Bootsklasse", "Lauf", "Phase", "Platz", "Fahrzeit"]
+                    const races = [columns, ...response.data]
+                    const csv_races = races.map(race => Object.values(race).join(';'))
+                    createCSV(Object.values(csv_races).join("\n"), "Rennliste")
+                }).catch(error => {
+                    console.error(`Request failed: ${error}`)
+                })
         },
         exportTableData() {
             var weight = 0;
