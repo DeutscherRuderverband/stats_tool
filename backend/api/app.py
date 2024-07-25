@@ -12,7 +12,7 @@ from flask import Flask, request, abort, jsonify, Response
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func, and_, or_, distinct
 from sqlalchemy.orm import joinedload
 
 from . import auth
@@ -319,6 +319,7 @@ def get_race_boat_groups():
 
         statement = (
         select(model.Race_Boat)
+        .distinct()
         .join(model.Race_Boat.country)
         .join(model.Race_Boat.race)
         .join(model.Race.event)

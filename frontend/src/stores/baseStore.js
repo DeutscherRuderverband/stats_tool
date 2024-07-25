@@ -357,7 +357,7 @@ export const useRennstrukturAnalyseState = defineStore({
 
                 tableData.push(rowData)
             }
-            console.log(state.data.multiple)
+            //console.log(state.data.multiple)
             return tableData
         },
         getTableData(state) {
@@ -459,7 +459,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     tableData.push(rowData);
                 }
             })
-            console.log(state.data.raceData)
+            //console.log(state.data.raceData)
             return tableData;
         },
 

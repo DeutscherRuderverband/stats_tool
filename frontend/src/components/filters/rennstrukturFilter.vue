@@ -49,7 +49,6 @@
             </v-chip>
           </v-chip-group>
 
-
           <!-- Bootsklasse-->
           <v-select class="pt-3" density="comfortable" label="Bootsklasse" :items="optionsBoatClass"
             v-model="selectedBoatClass" variant="outlined"></v-select>
@@ -89,7 +88,6 @@
                 <v-select class="pt-3" multiple density="comfortable" label="Event(s)" :items="optionsCompetitions"
                   v-model="panel.selectedCompetitions" variant="outlined">
 
-
                   <template v-slot:prepend-item>
                     <v-list-item title="Select All" @click="toggleSelectAll(panel)">
                       <template v-slot:prepend>
@@ -115,7 +113,6 @@
                     </span>
                   </template>
 
-
                 </v-select>
 
                 <!-- Phase (final, semifinal, ...) -->
@@ -129,8 +126,7 @@
                   :rules="[v => v.length > 0 || 'Wähle mindestens eine Laufkategorie']">
                 </v-select>
 
-
-                <!-- item-text="name" item-value="id"  -->
+                <!--Athlete -->
                 <v-autocomplete :items="previewAthleteResults"
                   item-value="id"
                   item-title="name" 
@@ -232,9 +228,6 @@ export default {
       //Placement
       optionsPlacements: [],
 
-      // athletes
-      selectedAthlete: null,
-
       mobile: false,
       hoverFilter: false,
       drawer: null,
@@ -243,7 +236,7 @@ export default {
 
       panels: [
         { title: 'Gruppe 1', startYear: defaultYear - 4, endYear: defaultYear, selectedCountry: defaultCountry[0], selectedCompetitions: defaultCompetitions,
-         selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [], selectedAthletes: []},
+         selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [], selectedAthletes: null},
       ],
       alertVisible: false,
 
@@ -338,7 +331,7 @@ export default {
         "year": this.selectedYear,
         "competition_type": this.selectedCompetition
       }
-      console.log(data)
+      //console.log(data)
       return store.postFormData(data).then(() => {
         console.log("Form data sent...")
       }).catch(error => {
@@ -376,7 +369,7 @@ export default {
       const newIndex = this.panels.length + 1;
       if (this.panels.length < 6) {
         this.panels.push({ title: `Gruppe ${newIndex}`, startYear: defaultYear - 4, endYear: defaultYear, selectedCountry: defaultCountry[newIndex -1], selectedCompetitions: this.optionsCompetitions,
-        selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [], selectedAthletes: [] });
+        selectedPhases: defaultPhases, selectedPlacements: defualtPlacements, optionsRaces: [], selectedAthletes: null});
       }
       else {
         this.alertVisible = true;
