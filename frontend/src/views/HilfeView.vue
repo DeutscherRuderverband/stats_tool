@@ -20,8 +20,47 @@
           Filterkriterien erstellt und abgerufen werden.</p>
         <br>
         <h3>Rennstrukturanalyse</h3>
-        <p>In diesem Modul werden die zur Verfügung stehenden 500m Abschnittszeiten sowie GPS-Daten (50m Auflösung) im
-          Rennverlauf tabellarisch und grafisch aufbereitet.</p>
+        <p>In diesem Modul werden die zur Verfügung stehenden 500m Abschnittszeiten sowie GPS-Daten (50m Auflösung)
+          im Rennverlauf tabellarisch und grafisch aufbereitet. Es besteht die Möglichkeit einzelne Rennen oder eine
+          Auswahl verschiedener Boote im Sinne einer Rennstrukturanalyse miteinander zu vergleichen.
+          Das Pacing-Profil wird hierbei basierend auf der zur mittleren Renngeschwindigkeit normalisierten vier 500m
+          Abschnitte bestimmt und in sechs Profile (Mentzoni & Losnegard, 2021) unterschieden:</p>
+          <br>
+        <v-row>
+          <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
+            <h4>Negativ</h4>
+            <!--<p>t1 &lt; t2, t2 &lt; min(t3, t4)</p>-->
+            <p>v1 > v2, v2 > max(v3, v4)</p>
+            <a class="mr-6"><img src="@/assets/images/Negative.png" :style="{width: '100%'}"></a>
+          </v-col>
+          <v-col :style="{ minWidth: '220px', maxWidth: '400px'}">
+            <h4>Reverse J-Shape</h4>
+            <!-- <p>t1 &lt; t4, t4 &lt min(t2, t3)</p> -->
+            <p>v1 > v4, v4 > max(v2, v3)</p>
+            <a class="mr-6"><img src="@/assets/images/RJ.png" :style="{width: '100%'}"></a>
+          </v-col>
+          <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
+            <h4>J-Shape</h4>
+            <!--<p>t4 &lt; t1, t1 &lt; min(t2, t3)</p> -->
+            <p>v4 > v1, v1 > max(v2, v3)</p>
+            <a class="mr-6"><img src="@/assets/images/J.png" :style="{width: '100%'}"></a>
+          </v-col>
+          <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
+            <h4>Even</h4>
+            <!--<p>0,99 &lt; [t1, t2, t3, t4] &lt; 1,01</p> -->
+            <p>0,99 &lt; [v1, v2, v3, v4] &lt; 1,01</p>
+            <a class="mr-6"><img src="@/assets/images/Even.png" :style="{width: '100%'}"></a>
+          </v-col>
+          <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
+            <h4>Positiv</h4>
+            <!--<p>t4 &lt; t3, t3 &lt; min(t1, t2)</p> -->
+            <p>v4 > v3, v3 > max(v1, v2)</p>
+          </v-col>
+          <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
+            <h4>Other</h4>
+            <p>All other combinations</p>
+          </v-col>
+        </v-row>
         <br>
         <h3>Athleten</h3>
         <p>In diesem Modul können Stammdaten wie z.B. Disziplin und Medaillenstatistiken sowie eine Auflistung von

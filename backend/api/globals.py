@@ -141,6 +141,22 @@ RACE_PHASE_SUBTYPE_BY_RACE_PHASE = {
     "preliminary": None,
 }
 
+RACE_PHASE_FILTER_OPTIONS = [
+    "final A",
+    "final B",
+    "final C",
+    "final D",
+    "semifinal",
+    "quarterfinal",
+    "heat",
+    "repechage",
+    "preliminary",
+    "timetrial",
+    "knockout",
+    "seeding"
+]
+
+
 RACE_PHASE_MAPPING = {
     "final1": "FA",
     "final2": "FB",
