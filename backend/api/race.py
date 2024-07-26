@@ -13,7 +13,6 @@ from sqlalchemy import select, or_, and_, func
 
 from model import model
 from common.helpers import stepfunction
-from . import globals
 
 
 COND_VALID_2000M_RESULTS = and_(
@@ -358,7 +357,7 @@ def _convertToMs(time: str) -> int:
     return total_milliseconds
 
 def getWorldBestTime(boat_class: str, session) -> int:
-    """Get the world best time of a boat class in ms"""
+    """Get the world best time of a boat class"""
     statement = select(model.Boat_Class).where(model.Boat_Class.abbreviation == boat_class)
     boat_class_object = session.execute(statement).scalars().first()
     world_best_race_boat = boat_class_object.world_best_race_boat
