@@ -402,7 +402,9 @@ def separatePhaseTypes(phases: list):
     phase_number = set()
     phase: str
     for phase in phases:
-        if phase[:5] == "final":
+        if phase == 'final':
+            continue
+        elif phase[:5] == "final":
             phase_type.add("final")
             phase_number.add(mapping[phase[-1]])
         else:

@@ -315,7 +315,7 @@ def get_race_boat_groups():
         ranks = data["placements"]
         phases_filter = data["phases"]
         phases, phases_subtype = r.separatePhaseTypes(phases_filter)
-        athletes_id = data["athletes"]
+        athletes_id = data.get("athletes")
 
         statement = (
         select(model.Race_Boat)
