@@ -31,25 +31,25 @@
             <h4>Negativ</h4>
             <!--<p>t1 &lt; t2, t2 &lt; min(t3, t4)</p>-->
             <p>v1 > v2, v2 > max(v3, v4)</p>
-            <a class="mr-6"><img src="@/assets/images/Negative.png" :style="{width: '100%'}"></a>
+            <a class="mr-6"><img src="@/assets/images/Negative2.png" :style="{width: '100%'}"></a>
           </v-col>
           <v-col :style="{ minWidth: '220px', maxWidth: '400px'}">
             <h4>Reverse J-Shape</h4>
             <!-- <p>t1 &lt; t4, t4 &lt min(t2, t3)</p> -->
             <p>v1 > v4, v4 > max(v2, v3)</p>
-            <a class="mr-6"><img src="@/assets/images/RJ.png" :style="{width: '100%'}"></a>
+            <a class="mr-6"><img src="@/assets/images/RJ2.png" :style="{width: '100%'}"></a>
           </v-col>
           <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
             <h4>J-Shape</h4>
             <!--<p>t4 &lt; t1, t1 &lt; min(t2, t3)</p> -->
             <p>v4 > v1, v1 > max(v2, v3)</p>
-            <a class="mr-6"><img src="@/assets/images/J.png" :style="{width: '100%'}"></a>
+            <a class="mr-6"><img src="@/assets/images/J2.png" :style="{width: '100%'}"></a>
           </v-col>
           <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
             <h4>Even</h4>
             <!--<p>0,99 &lt; [t1, t2, t3, t4] &lt; 1,01</p> -->
             <p>0,99 &lt; [v1, v2, v3, v4] &lt; 1,01</p>
-            <a class="mr-6"><img src="@/assets/images/Even.png" :style="{width: '100%'}"></a>
+            <a class="mr-6"><img src="@/assets/images/Even2.png" :style="{width: '100%'}"></a>
           </v-col>
           <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
             <h4>Positiv</h4>

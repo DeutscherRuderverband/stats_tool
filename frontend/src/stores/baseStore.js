@@ -811,7 +811,6 @@ export const useRennstrukturAnalyseState = defineStore({
             this.display = view
         },
         setRelationTimeFrom(value) {
-            console.log("New RelationTime")
             this.relation_time_from = value
         },
         setChartOptionBoats(hidden, boat) {
