@@ -24,7 +24,7 @@
           im Rennverlauf tabellarisch und grafisch aufbereitet. Es besteht die Möglichkeit einzelne Rennen oder eine
           Auswahl verschiedener Boote im Sinne einer Rennstrukturanalyse miteinander zu vergleichen.
           Das Pacing-Profil wird hierbei basierend auf der zur mittleren Renngeschwindigkeit normalisierten vier 500m
-          Abschnitte bestimmt und in sechs Profile (Mentzoni & Losnegard, 2021) unterschieden:</p>
+          Abschnitte (v1 bis v4) bestimmt und in sechs Profile unterschieden:</p>
           <br>
         <v-row>
           <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">

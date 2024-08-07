@@ -217,7 +217,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-select label="Zeige Differenz zu..." class="pt-0" compact :items="getChartOptions.boats"
+                <v-select label="Zeige Differenz zu" class="pt-0" compact :items="getChartOptions.boats"
                   v-model="getChartOptions.difference_to" variant="outlined">
                 </v-select>
               </v-col>

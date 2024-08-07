@@ -723,10 +723,10 @@ export const useRennstrukturAnalyseState = defineStore({
             return [
                 getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false,  undefined, undefined, undefined, undefined, true),
                 getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined,  undefined, undefined, undefined, undefined, true),
-                getChartOptions(state, "Rückstand zum Führenden [sek]", 'Strecke [m]', 'Rückstand [mm:ss.ms]', false, true, undefined, '00:00.00', formatMilliseconds(max_val + 100), true ),
+                getChartOptions(state, "Rückstand zum Führenden", 'Strecke [m]', 'Rückstand [mm:ss.ms]', false, true, undefined, '00:00.00', formatMilliseconds(max_val + 100), true ),
                 getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false,  undefined, undefined, undefined, undefined, true),
                 getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true,  undefined, 1, 1, number_of_boats, true),
-                getChartOptions(state, 'Differenz [m]', 'Strecke [m]', 'Differenz [m]', false,  undefined, undefined, undefined, undefined, true )
+                getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to}`, 'Strecke [m]', 'Differenz [m]', false,  undefined, undefined, undefined, undefined, true )
             ]
         },
         getMultipleChartOptions(state) {
