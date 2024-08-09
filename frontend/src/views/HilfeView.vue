@@ -27,6 +27,7 @@
           Abschnitte (v1 bis v4) bestimmt und in sechs Profile unterschieden:</p>
           <br>
         <v-row>
+          <!-- picture paths are case sensitive!-->
           <v-col :style="{ minWidth: '220px', maxWidth: '400px' }">
             <h4>Negativ</h4>
             <!--<p>t1 &lt; t2, t2 &lt; min(t3, t4)</p>-->
