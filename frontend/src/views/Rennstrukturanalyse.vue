@@ -217,7 +217,7 @@
             </v-row>
             <v-row>
               <v-col>
-                <v-select label="Zeige Differenz zu..." class="pt-0" compact :items="getChartOptions.boats"
+                <v-select label="Zeige Differenz zu" class="pt-0" compact :items="getChartOptions.boats"
                   v-model="getChartOptions.difference_to" variant="outlined">
                 </v-select>
               </v-col>
@@ -412,14 +412,9 @@ export default {
     ...mapState(useRennstrukturAnalyseState, {
       getAnalysis: "getAnalysisData"
     }),
-    ...mapState(useRennstrukturAnalyseState, {    //Used for general information about competition, could be less?
+    ...mapState(useRennstrukturAnalyseState, {    //Used for general information about competition
       competitionData: 'getCompetitionData'
     }),
-    /*
-    ...mapState(useRennstrukturAnalyseState, { 
-      multiple: "getMultiple"
-    }),
-    */
     ...mapState(useRennstrukturAnalyseState, { 
       boatClassData: "getBoatClassData"
     }),
@@ -616,6 +611,8 @@ export default {
             this.displayCompetitions = true
             this.displayRaces = false
             this.breadCrumbs.splice(0)
+            const store = useRennstrukturAnalyseState()
+            store.setDisplay('SINGLE')
           }
           // from races backwards to events
           else if (from.path.match(/\/rennstrukturanalyse\/[\w-]+\/[\w-]+/) && !to.fullPath.includes("?race_id=")
