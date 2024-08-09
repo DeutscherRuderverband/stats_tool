@@ -123,15 +123,22 @@
                 <!--Placements -->
                 <v-select label="Platzierung" class="pt-2" clearable :items="optionsPlacements"
                   v-model="panel.selectedPlacements" multiple variant="outlined" chips
-                  :rules="[v => v.length > 0 || 'Wähle mindestens eine Laufkategorie']">
+                  :rules="[v => v.length > 0 || 'Wähle mindestens eine Platzierung']">
                 </v-select>
 
                 <!--Athlete -->
-                <v-autocomplete :items="previewAthleteResults"
-                  item-value="id"
-                  item-title="name" 
-                  v-model="panel.selectedAthletes" clearable variant="outlined" color="blue" label="Athlet"
-                  @input="value => searchAthletes(value, panel.selectedCountry)" class="pt-2">
+                <v-autocomplete
+                  :items="[...previewAthleteResults, ...selectedAthletes].filter((item, index, self) => index === self.findIndex((t) => t.id === item.id))"
+                  item-value="id" item-title="name" v-model="panel.selectedAthletes" clearable variant="outlined"
+                  color="blue" label="Athlet" @input="value => searchAthletes(value, panel.selectedCountry)"
+                  class="pt-2" @change="updateSelectedAthletes">
+                  <template v-slot:no-data>
+                    <v-list-item>
+                      <v-list-item-content>
+                        <v-list-item-title>Für Ergebnisse, bitte Name eingeben</v-list-item-title>
+                      </v-list-item-content>
+                    </v-list-item>
+                  </template>
                 </v-autocomplete>
 
               </v-expansion-panel-text>
@@ -227,6 +234,9 @@ export default {
 
       //Placement
       optionsPlacements: [],
+
+      //Athletes
+      selectedAthletes: [],
 
       mobile: false,
       hoverFilter: false,
@@ -432,7 +442,18 @@ export default {
           }
         }
       }
-    }
+    },
+    updateSelectedAthletes(event) {
+      const panelAthletes = this.panels.map(panel => panel.selectedAthletes)
+      //Remove old athlete
+      this.selectedAthletes = this.selectedAthletes.filter(item => panelAthletes.includes(item.id))
+      //Find changed one
+      const newAthleteId = panelAthletes.find(item => !this.selectedAthletes.map(athlete => athlete.id).includes(item))
+      if (newAthleteId) {
+        const newAthlete = this.previewAthleteResults.find(athlete => athlete.id === newAthleteId)
+        this.selectedAthletes.push(newAthlete)
+      }
+    },
   },
   watch: {
     selectedGenders: function () {
