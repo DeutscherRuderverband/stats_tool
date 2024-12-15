@@ -86,7 +86,7 @@ function createMultipleChartOptions(groups) {
     }
 }
 
-function getChartOptions(state, title, x_title, y_title, y_reverse = false, y_type_time=false, y_stepsize, y_min, y_max, boat_chart) {
+function getChartOptions(state, title, x_title, y_title, y_reverse = false, y_stepsize, y_min, y_max, boat_chart) {
     //Returns options object
     const options = {
         responsive: true,
@@ -116,18 +116,6 @@ function getChartOptions(state, title, x_title, y_title, y_reverse = false, y_ty
                 display: true,
                 text: title
             },
-        }
-    }
-
-    if (y_type_time) {
-        options.scales.y.type = 'time'
-        options.scales.y.time = {
-            parser: 'mm:ss.SS',
-            unit: 'second',
-            displayFormats: {
-                second: 'mm:ss.SS',
-                tooltip: 'mm:ss.SS'
-            }
         }
     }
 
@@ -459,7 +447,6 @@ export const useRennstrukturAnalyseState = defineStore({
                     tableData.push(rowData);
                 }
             })
-            //console.log(state.data.raceData)
             return tableData;
         },
 
@@ -598,28 +585,38 @@ export const useRennstrukturAnalyseState = defineStore({
             })
         },
         getIntermediateChartData(state) {
-            const intermediateDataKeys = ["rank", "deficit [millis]"];
+            const intermediateDataKeys = ["rank", "time [millis]"];
+            // get reference boat to calculate difference
+            const raceData = state.data.raceData[0];
+            const raceBoats = raceData.race_boats;
+            const chartOptions = raceData.chartOptions;
+
+            const referenceBoat = chartOptions.difference_to
+            const winnerIdx = raceBoats.findIndex(team => team.name === referenceBoat);
+            const winnerData = raceBoats.map(dataObj => dataObj.intermediates)[winnerIdx];
+            const winnerTeamTimes = Object.fromEntries(Object.entries(winnerData).map(
+                ([key, val]) => [key, val["time [millis]"]]
+            ));
+
             return intermediateDataKeys.map(key => {
-                const datasets = [];
-                let colorIndex = 0;
-                state.data.raceData[0].race_boats.forEach(dataObj => {
-                    const label = dataObj.name;
-                    const backgroundColor = COLORS[colorIndex % 6];
-                    const borderColor = COLORS[colorIndex % 6];
+                const datasets = raceBoats.map((boat, index) => {
+                    const label = boat.name;
+                    const color = COLORS[index % 6];
+                    const hidden = !chartOptions.boats_in_chart.includes(label);
+
                     // add zero values as start point
-                    dataObj.intermediates["0"] = {"rank": 1, "deficit [millis]": 0}
-                    let data = Object.values(dataObj.intermediates).map(distanceObj => distanceObj[key]);
-                    if (key == "deficit [millis]") {
-                        data = data.map(x => formatMilliseconds(x))
+                    boat.intermediates["0"] = {"rank": 1, "time [millis]": 0}
+                    let data = []
+                    if (key == "time [millis]") {
+                        //(Time - reference boat time) / 1000
+                        data = Object.entries(boat.intermediates).map(([distance, value]) => (value[key] - (winnerTeamTimes[distance] ?? 0)) / 1000 );
                     }
-                    var hidden = true
-                    if (state.data.raceData[0].chartOptions.boats_in_chart.includes(label)) {
-                        hidden = false
+                    else if (key == "rank") {
+                        data = Object.values(boat.intermediates).map(distanceObj => distanceObj[key]);
                     }
-                    datasets.push({label, backgroundColor, borderColor, data, hidden});
-                    colorIndex++;
+                    return {label, backgroundColor: color , borderColor: color, data, hidden};
                 });
-                const chartLabels = Object.keys(state.data.raceData[0].race_boats[0].intermediates)
+                const chartLabels = Object.keys(raceBoats[0].intermediates)
                 return {
                     labels: chartLabels,
                     datasets
@@ -716,26 +713,23 @@ export const useRennstrukturAnalyseState = defineStore({
 
         //Chart options
         getSingleChartOptions(state) {
-            let max_val = Math.max(...state.data.raceData[0].race_boats.map(obj =>
-                Math.max(...Object.values(obj.intermediates).map(el => el["deficit [millis]"]))
-            ));
             const number_of_boats = state.data.raceData[0].race_boats.length;
             return [
-                getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false,  undefined, undefined, undefined, undefined, true),
-                getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined,  undefined, undefined, undefined, undefined, true),
-                getChartOptions(state, "Rückstand zum Führenden", 'Strecke [m]', 'Rückstand [mm:ss.ms]', false, true, undefined, '00:00.00', formatMilliseconds(max_val + 100), true ),
-                getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false,  undefined, undefined, undefined, undefined, true),
-                getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true,  undefined, 1, 1, number_of_boats, true),
-                getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to}`, 'Strecke [m]', 'Differenz [m]', false,  undefined, undefined, undefined, undefined, true )
+                getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false, undefined, undefined, undefined, true),
+                getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined, undefined, undefined, undefined, true),
+                getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to} in sek`, 'Strecke [m]', 'Rückstand [sek]', false, undefined, undefined, undefined, true ),
+                getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false, undefined, undefined, undefined, true),
+                getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true, 1, 1, number_of_boats, true),
+                getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to} in m`, 'Strecke [m]', 'Differenz [m]', false, undefined, undefined, undefined, true )
             ]
         },
         getMultipleChartOptions(state) {
             return [
-                getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, undefined, undefined, false),
-                getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined, undefined, undefined, undefined, undefined, false),
-                getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true, undefined, 1, 1, 6, false),
-                getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false, undefined, undefined, undefined, undefined, false),
-                getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false, undefined, undefined, undefined, undefined, false),
+                getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, undefined, false),
+                getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined, undefined, undefined, undefined, false),
+                getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true, 1, 1, 6, false),
+                getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false, undefined, undefined, undefined, false),
+                getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false, undefined, undefined, undefined, false),
             ]
         },
 
