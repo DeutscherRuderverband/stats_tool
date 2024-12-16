@@ -511,8 +511,6 @@ def get_race(race_id: int) -> dict:
         year_start=datetime.date.today().year - 4
     )
 
-    intermediates_figures =  r.compute_intermediates_figures(race.race_boats)
-
     result = {
         "race_id": race.id,
         "display_name": race.name,
@@ -558,6 +556,7 @@ def get_race(race_id: int) -> dict:
             }
 
         # intermediates
+        intermediates_figures =  r.compute_intermediates_figures(race.race_boats)
         strokes_for_intermediates =  r.strokes_for_intermediate_steps(race_boat.race_data)
         total_time = race_boat.result_time_ms
         for distance_meter, figures in intermediates_figures[race_boat.id].items(): # ❌ TODO: iterate over figure matrix (see intermediates_figures) to provide dicts for all 'cells'
@@ -568,7 +567,6 @@ def get_race(race_id: int) -> dict:
                 "pace [millis]": None,
                 "speed [m/s]": None,
                 "rel_speed [%]": None,
-                "deficit [millis]": None,
                 "rel_diff_to_avg_speed [%]": None,
                 "stroke [1/min]": None,
                 "is_outlier": None
@@ -586,7 +584,6 @@ def get_race(race_id: int) -> dict:
                     "pace [millis]": figures.get('pace'),
                     "speed [m/s]": figures.get('speed'),
                     "rel_speed [%]": rel_speed,
-                    "deficit [millis]": figures.get('deficit'),
                     "rel_diff_to_avg_speed [%]": figures.get('rel_diff_to_avg_speed'),
                     "stroke [1/min]": strokes_for_intermediates.get(distance_meter),
                     "is_outlier": intermediate.is_outlier if intermediate else None
