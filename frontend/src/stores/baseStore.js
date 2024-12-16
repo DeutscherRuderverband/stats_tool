@@ -307,8 +307,8 @@ export const useRennstrukturAnalyseState = defineStore({
                             const propulsion = calculatePropulsion(speed, strokeFrequency)
                        
                             intermediate_values.push([
-                                `${formatMilliseconds(time)} (${rank.toFixed(1)})`,
-                                `${formatMilliseconds(pace)} (${relativePace}%)`,
+                                `${formatMilliseconds(time)} min (${rank.toFixed(1)})`,
+                                `${formatMilliseconds(pace)} min (${relativePace}%)`,
                                 `${strokeFrequency.toFixed(1)} spm (${propulsion.toFixed(1)} m/Schlag)`,
                                 `${speed.toFixed(1)} m/s`
                             ]
@@ -418,8 +418,8 @@ export const useRennstrukturAnalyseState = defineStore({
                                 const propulsion = calculatePropulsion(speed, strokeFrequency)
                            
                                 intermediate_values.push([
-                                    `${formatMilliseconds(time)} (${rank})`,
-                                    `${formatMilliseconds(pace)} (${relativePace}%)`,
+                                    `${formatMilliseconds(time)} min (${rank})`,
+                                    `${formatMilliseconds(pace)} min (${relativePace}%)`,
                                     `${strokeFrequency} spm, (${propulsion.toFixed(1)} m/Schlag)`,
                                     `${speed} m/s`
                                 ]
