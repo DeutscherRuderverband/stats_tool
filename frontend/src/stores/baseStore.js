@@ -379,20 +379,19 @@ export const useRennstrukturAnalyseState = defineStore({
                     });
                     //Mannschaft
                     rowData.push(athleteNames);
-                    
-                    let totalTime = 0
-                    let averageSpeed = 0
-                    if (dataObj.intermediates && dataObj.intermediates[2000] && dataObj.intermediates[2000]["time [millis]"]) {
-                        totalTime = dataObj.intermediates[2000]["time [millis]"]
-                        averageSpeed = 2000 * 1000 / totalTime
-                        if(totalTime == 'NaN') {        //TODO: Mehrere Aunahmen, nicht nur DNS!
-                            totalTime = 0
-                            averageSpeed = 0
-                        }
-                    }
-                    //Zeit
-                    rowData.push([formatMilliseconds(totalTime), `${averageSpeed.toFixed(1)} m/s`])
 
+                    //Zeit
+                    const totalTime = dataObj.intermediates?.[2000]?.["time [millis]"] ?? 0;
+                    let averageSpeed = 0
+                    if ( Number.isFinite(totalTime)) {
+                        averageSpeed = 2000 * 1000 / totalTime
+                    }
+
+                    rowData.push([
+                        Number.isFinite(totalTime) ? formatMilliseconds(totalTime) : totalTime,
+                        `${averageSpeed.toFixed(1)} m/s`
+                    ]);
+                   
                     //dispalys time, rank, pace, relative pace, strokeFrequency, propulsion and speed for each 500m section
                     const intermediate_values = [];
 
@@ -401,7 +400,7 @@ export const useRennstrukturAnalyseState = defineStore({
                             if (intermediate["is_outlier"]) {
                                 state.outlierCountries.add(countryIdx)
                             }
-                            if(totalTime != 0) {
+                            if(Number.isFinite(totalTime) && totalTime != 0) {
                                 const time = intermediate["time [millis]"]
                                 const rank = intermediate["rank"]
                                 const pace = intermediate["pace [millis]"]
@@ -430,7 +429,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     })
 
                     //Relationszeit
-                    if (totalTime != 0) {
+                    if (Number.isFinite(totalTime) && totalTime != 0) {
                         let relationsZeit = 0
                         if(state.relation_time_from == "wbt") {
                             relationsZeit = (state.data.raceData[0].result_time_world_best / totalTime * 100).toFixed(1)

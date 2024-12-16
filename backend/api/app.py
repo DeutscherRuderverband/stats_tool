@@ -530,7 +530,7 @@ def get_race(race_id: int) -> dict:
         "race_boats": []
     }
 
-    sorted_race_boat_data = sorted(race.race_boats, key=lambda x: x.rank)
+    sorted_race_boat_data = sorted(race.race_boats, key=lambda x: x.rank if x.rank is not None else float('inf'))
     race_boat: model.Race_Boat
     for race_boat in sorted_race_boat_data:
         rb_result = {
@@ -554,7 +554,7 @@ def get_race(race_id: int) -> dict:
             rb_result['race_data'][str(race_data.distance_meter)] = {
                 "speed [m/s]": race_data.speed_meter_per_sec,
                 "stroke [1/min]": race_data.stroke,
-                "propulsion [m/stroke]": propulsion
+                "propulsion [m/stroke]": propulsion or 0
             }
 
         # intermediates
