@@ -24,14 +24,17 @@ RELEVANT_CMP_TYPE_ABBREVATIONS = [
     "WCH", 
     "OG",
     "ECH",
+    "OPQR",
+    "FOQR",
     #U19, U23
     "U23WCH", 
     "JWCH",
     "EJCH",
-    "YOG",
+    "ERU23CH",
     #Para
     "PG",
     #Coastel
+    "WRBSF",
     "WRCC",
     "ERCC",
 ]

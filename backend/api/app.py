@@ -94,7 +94,9 @@ def get_race_analysis_filter_options():
 
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation)
+    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation).where(
+            model.Competition_Type.abbreviation.in_(globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
+        )
     competition_categories = [{
         "id": v[0],
         "display_name": v[1],
