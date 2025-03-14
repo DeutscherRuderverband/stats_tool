@@ -186,6 +186,7 @@ def _iter_strokes_from_race_data(race_data_list: Iterable[model.Race_Data]):
 def strokes_for_intermediate_steps(race_data_list, stepsize=500):
     result = {}
     map_to_steps_func = lambda race_data: stepfunction(race_data.distance_meter, stepsize=stepsize)
+    race_data_list = sorted(race_data_list, key=lambda r: r.distance_meter)   # Itertools.groupby needs sorted list
     for meter_mark, data_points in itertools.groupby(race_data_list, key=map_to_steps_func):
         avg = None
         with suppress(TypeError, statistics.StatisticsError):
