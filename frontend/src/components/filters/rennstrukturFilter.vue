@@ -16,9 +16,9 @@
       <v-tab value="two" :class="{ inactive: tab === 'one' }">Multiple</v-tab>
     </v-tabs>
 
-    <v-tabs-window v-model="tab">
+    <v-window v-model="tab">
       <!-- SINGLE RACE -->
-      <v-tabs-window-item v-if="tab === 'one'">
+      <v-window-item value="one">
         <v-form id="rennstrukturFilterFormular" class="mt-2" @submit.prevent="onSubmit" ref="filterForm"
           v-model="formValid" lazy-validation>
           <!-- Year -->
@@ -41,10 +41,10 @@
             <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
           </v-container>
         </v-form>
-      </v-tabs-window-item>
+      </v-window-item>
 
       <!-- MULIPLE RACES -->
-      <v-tabs-window-item v-if="tab === 'two'">
+      <v-window-item value="two">
         <v-form id="rennstrukturFilterFormular2" class="mt-2" @submit.prevent="onMultipleSubmit" ref="filterForm2"
           v-model="formValid2" lazy-validation>
           <!-- Gender-->
@@ -154,9 +154,7 @@
                   class="pt-2" @change="updateSelectedAthletes">
                   <template v-slot:no-data>
                     <v-list-item>
-                      <v-list-item-content>
                         <v-list-item-title>Für Ergebnisse, bitte Name eingeben</v-list-item-title>
-                      </v-list-item-content>
                     </v-list-item>
                   </template>
                 </v-autocomplete>
@@ -176,7 +174,7 @@
           </v-row>
 
           <!-- Alert, when more than 6 groups-->
-          <v-alert v-if="alertVisible" class="mt-2" border-color="info" border="top" closable>
+          <v-alert v-if="alertVisible" class="mt-2" variant="tonal" color="info" closable>
             Maximal 6 Gruppen
           </v-alert>
 
@@ -187,8 +185,8 @@
 
         </v-form>
         <div class="padding"></div> <!-- Added so scrolling works correctly-->
-      </v-tabs-window-item>
-    </v-tabs-window>
+      </v-window-item>
+    </v-window>
   </v-container>
 
 </template>
