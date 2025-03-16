@@ -50,6 +50,24 @@ def result_time_best_of_year_interval(session, boat_class_id, year_start, year_e
 
     return result_time
 
+def fetch_competition_categories(session, abbreviations):
+        """
+        Fetch and return competition categories based on given abbreviations.
+        Args:
+            session: session object
+            abbreviations: List of competition type abbreviations
+        Returns:
+            Sorted list of competition categories and id as dictionaries
+        """
+        statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation).where(
+            model.Competition_Type.abbreviation.in_(abbreviations)
+        )
+        return sorted([
+            {"id": v[0], "display_name": v[1]} 
+            for v in session.execute(statement).fetchall()
+        ], key=lambda x: x["display_name"])
+
+
 
 def _assign_intermediates_to_grid(race_boats, grid) -> OrderedDict:
     transposed = OrderedDict()

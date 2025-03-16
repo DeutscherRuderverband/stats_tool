@@ -39,6 +39,21 @@ RELEVANT_CMP_TYPE_ABBREVATIONS = [
     "ERCC",
 ]
 
+SECONDARY_CMP_TYPE_ABBREVIATIONS = [
+    "CONT NF",
+    "EO",
+    "ID_NF",
+    "MASTER_NF",
+    "OE F",
+    "OE_NF",
+    "UNI_F",
+    "UNI_NF",
+    "WRIC",
+    "WRMR",
+    "YOG"
+    "FPQR"
+]
+
 BOATCLASSES_BY_GENDER_AGE_WEIGHT = {
     'm': {
         'u19': {

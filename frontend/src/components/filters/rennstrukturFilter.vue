@@ -26,7 +26,17 @@
             v-model="selectedYear" variant="outlined" :rules="[v => !!v || 'Wähle ein Jahr']"></v-select>
           <!-- Competitions -->
           <v-select class="pt-3" density="comfortable" label="Event" :items="optionsCompetitions"
-            v-model="selectedCompetition" variant="outlined"></v-select>
+            v-model="selectedCompetition" variant="outlined">
+            <template v-slot:append-item>
+                    <v-divider class="mt-2"></v-divider>
+                    <v-list-item :title="competitionToggleText" @click="toggleSecondaryCompetitions()">
+                      <template v-slot:prepend>
+                        <v-icon :icon="showMore ? 'mdi-chevron-down' : 'mdi-chevron-up'">
+                        </v-icon>
+                      </template>
+                    </v-list-item>
+                  </template>
+          </v-select>
           <v-container class="pa-0 pt-6 text-right">
             <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
           </v-container>
@@ -111,6 +121,16 @@
                       class="text-grey text-caption align-self-center">
                       (+{{ panel.selectedCompetitions.length - 3 }} weitere)
                     </span>
+                  </template>
+
+                  <template v-slot:append-item>
+                    <v-divider class="mt-2"></v-divider>
+                    <v-list-item :title="competitionToggleText" @click="toggleSecondaryCompetitions()">
+                      <template v-slot:prepend>
+                        <v-icon :icon="showMore ? 'mdi-chevron-down' : 'mdi-chevron-up'">
+                        </v-icon>
+                      </template>
+                    </v-list-item>
                   </template>
 
                 </v-select>
@@ -227,7 +247,10 @@ export default {
       //Competition
       selectedCompetition: "WCH", //For single filter
       optionsCompetitions: [],
+      secondaryCompetitions: [],
       allSelected: true,
+      showMore: true,
+      competitionToggleText: "Zeige mehr",
       
       //Phase
       optionsPhases: [],
@@ -286,6 +309,8 @@ export default {
       const compTypes = this.raceAnalysisFilterOptions.competition_categories
       this.optionsCompetitions = compTypes.map(item => item.display_name)
       this.panels[0].selectedCompetitions = this.optionsCompetitions
+
+      this.secondaryCompetitions = this.raceAnalysisFilterOptions.secondary_competition_categories.map(item=> item.display_name)
 
       // Runs
       this.optionsPhases = this.raceAnalysisFilterOptions.runs
@@ -403,6 +428,15 @@ export default {
         panel.selectedCompetitions = [...this.optionsCompetitions];
       }
       this.allSelected = !this.allSelected;
+    },
+
+    toggleSecondaryCompetitions() {
+      this.optionsCompetitions = this.showMore
+      ? [...this.optionsCompetitions, ...this.secondaryCompetitions] // Hinzufügen
+      : this.optionsCompetitions.filter(comp => !this.secondaryCompetitions.includes(comp)); // Entfernen
+
+      this.showMore = !this.showMore
+      this.competitionToggleText = this.showMore ? "Zeige mehr" : "Zeige weniger";
     },
 
     hideFilter() {

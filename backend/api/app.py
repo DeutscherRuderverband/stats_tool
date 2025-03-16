@@ -92,21 +92,18 @@ def get_race_analysis_filter_options():
     """
     session = Scoped_Session()
 
+    # Fetch year range
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation).where(
-            model.Competition_Type.abbreviation.in_(globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
-        )
-    competition_categories = [{
-        "id": v[0],
-        "display_name": v[1],
-    } for v in session.execute(statement).fetchall()]
-    sorted_categories = sorted(competition_categories, key=lambda x: x['display_name'])
+    # Fetch primary and secondary competition categories separately
+    competition_categories = r.fetch_competition_categories(session, globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
+    secondary_competition_categories = r.fetch_competition_categories(session, globals.SECONDARY_CMP_TYPE_ABBREVIATIONS)
 
     nations = {entity.country_code: entity.name for entity in session.execute(select(model.Country)).scalars()}
 
     return {"years": (min_year, max_year),
-            "competition_categories": sorted_categories,
+            "competition_categories": competition_categories,
+            "secondary_competition_categories": secondary_competition_categories,
             "boat_classes": globals.BOATCLASSES_BY_GENDER_AGE_WEIGHT,
             "nations": dict(sorted(nations.items(), key=lambda x: x[0])),
             "runs": globals.RACE_PHASE_FILTER_OPTIONS,
@@ -1147,19 +1144,15 @@ def get_report_filter_options():
     session = Scoped_Session()
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation).where(
-        model.Competition_Type.abbreviation.in_(globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
-    )
-    competition_categories = [{
-        "id": v[0],
-        "display_name": v[1],
-    } for v in session.execute(statement).fetchall()]
-    sorted_categories = sorted(competition_categories, key=lambda x: x['display_name'])
+   # Fetch primary and secondary competition categories separately
+    competition_categories = r.fetch_competition_categories(session, globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
+    secondary_competition_categories = r.fetch_competition_categories(session, globals.SECONDARY_CMP_TYPE_ABBREVIATIONS)
 
     return json.dumps([{
         "years": [{"start_year": min_year}, {"end_year": max_year}],
         "boat_classes": globals.BOATCLASSES_BY_GENDER_AGE_WEIGHT,
-        "competition_categories": sorted_categories,
+        "competition_categories": competition_categories,
+        "secondary_competition_categories": secondary_competition_categories,
         "runs": globals.RACE_PHASE_SUBTYPE_BY_RACE_PHASE,
         "ranks": [1, 2, 3, 4, 5, 6]
     }], sort_keys=False)
