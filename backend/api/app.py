@@ -960,11 +960,7 @@ def get_teams_filter_options():
         """
     session = Scoped_Session()
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation)
-    competition_categories = [{
-        "id": v[0],
-        "display_name": v[1],
-    } for v in session.execute(statement).fetchall()]
+    competition_categories = r.fetch_competition_categories(session, globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
     nations = {entity.country_code: entity.name for entity in session.execute(select(model.Country)).scalars()}
 
     return json.dumps([{
@@ -1037,11 +1033,7 @@ def get_medals_filter_options():
     session = Scoped_Session()
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation)
-    competition_categories = [{
-        "id": v[0],
-        "display_name": v[1],
-    } for v in session.execute(statement).fetchall()]
+    competition_categories = r.fetch_competition_categories(session, globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
     nations = {entity.country_code: entity.name for entity in session.execute(select(model.Country)).scalars()}
 
     return json.dumps([{
