@@ -52,7 +52,17 @@
                 label="Event(s)" :items="optionsCompTypes"
                 v-model="selectedCompTypes" variant="outlined"
                 :rules="[v => v.length > 0 || 'Wähle mindestens eine Wettkampfklasse']"
-      ></v-select>
+      >
+      <template v-slot:append-item>
+                    <v-divider class="mt-2"></v-divider>
+                    <v-list-item :title="competitionToggleText" @click="toggleSecondaryCompetitions()">
+                      <template v-slot:prepend>
+                        <v-icon :icon="showMore ? 'mdi-chevron-down' : 'mdi-chevron-up'">
+                        </v-icon>
+                      </template>
+                    </v-list-item>
+                  </template>
+    </v-select>
       <v-chip-group class="pt-2" filter color="blue" multiple v-model="selectedRuns">
         <v-chip density="comfortable" v-for="runOption in optionsRuns">
           {{ runOption.charAt(0).toUpperCase() + runOption.slice(1) }}
@@ -112,6 +122,10 @@ export default {
       compTypes: [], // list of dicts with objects containing displayName, id and key
       optionsCompTypes: [],
       selectedCompTypes: ["WCH", "OG", "WCp 1", "WCp 2", "WCp 3", "JWCH", "U23WCH"],
+      secondaryCompetitions: [],
+      showMore: true,
+      competitionToggleText: "Zeige mehr",
+
       // year
       startYear: 0,
       endYear: 0,
@@ -171,6 +185,8 @@ export default {
       // competition category id
       this.compTypes = data.competition_categories
       this.optionsCompTypes = this.compTypes.map(item => item.display_name)
+
+      this.secondaryCompetitions = data.secondary_competition_categories?.map(item => item.display_name) || [];
 
       // boatclasses
       this.boatClasses = {}
@@ -294,7 +310,15 @@ export default {
     checkScreen() {
       this.windowWidth = window.innerWidth
       this.mobile = this.windowWidth < 890
-    }
+    },
+    toggleSecondaryCompetitions() {
+      this.optionsCompTypes = this.showMore
+      ? [...this.optionsCompTypes, ...this.secondaryCompetitions] // Hinzufügen
+      : this.optionsCompTypes.filter(comp => !this.secondaryCompetitions.includes(comp)); // Entfernen
+
+      this.showMore = !this.showMore
+      this.competitionToggleText = this.showMore ? "Zeige mehr" : "Zeige weniger";
+    },
   },
   watch: {
     selectedYearShortCutOptions: function (newVal) {

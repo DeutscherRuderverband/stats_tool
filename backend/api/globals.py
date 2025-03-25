@@ -17,17 +17,41 @@ ALLOWED_COMPETITION_TYPES_MAPPING = {
 }
 
 RELEVANT_CMP_TYPE_ABBREVATIONS = [
-    "EJCH", 
-    "ECH", 
+    #Elite
     "WCp 1", 
     "WCp 2", 
     "WCp 3", 
     "WCH", 
+    "OG",
+    "ECH",
+    "OPQR",
+    "FOQR",
+    #U19, U23
     "U23WCH", 
-    "OG", 
-    "YOG", 
-    "WCH IE", 
-    "WCH IE JWCH", 
+    "JWCH",
+    "EJCH",
+    "ERU23CH",
+    #Para
+    "PG",
+    #Coastel
+    "WRBSF",
+    "WRCC",
+    "ERCC",
+]
+
+SECONDARY_CMP_TYPE_ABBREVIATIONS = [
+    "CONT NF",
+    "EO",
+    "ID_NF",
+    "MASTER_NF",
+    "OE F",
+    "OE_NF",
+    "UNI_F",
+    "UNI_NF",
+    "WRIC",
+    "WRMR",
+    "YOG"
+    "FPQR"
 ]
 
 BOATCLASSES_BY_GENDER_AGE_WEIGHT = {

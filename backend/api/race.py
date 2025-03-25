@@ -50,6 +50,24 @@ def result_time_best_of_year_interval(session, boat_class_id, year_start, year_e
 
     return result_time
 
+def fetch_competition_categories(session, abbreviations):
+        """
+        Fetch and return competition categories based on given abbreviations.
+        Args:
+            session: session object
+            abbreviations: List of competition type abbreviations
+        Returns:
+            Sorted list of competition categories and id as dictionaries
+        """
+        statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation).where(
+            model.Competition_Type.abbreviation.in_(abbreviations)
+        )
+        return sorted([
+            {"id": v[0], "display_name": v[1]} 
+            for v in session.execute(statement).fetchall()
+        ], key=lambda x: x["display_name"])
+
+
 
 def _assign_intermediates_to_grid(race_boats, grid) -> OrderedDict:
     transposed = OrderedDict()
@@ -93,14 +111,6 @@ def valid_intermediate(interm: model.Intermediate_Time) -> bool:
         and not interm.result_time_ms == None
     )
 
-def _best_time(intermediates: list[model.Intermediate_Time]) -> int:
-    valid_intermediates = tuple(( i for i in intermediates if valid_intermediate(i) ))
-    result_times = tuple( map(lambda i: i.result_time_ms, valid_intermediates) )
-    best_time = None
-    with suppress(ValueError):
-        best_time = min(result_times)
-    return best_time
-
 def _speeds(boats_dict, distance):
     for _, distance_dict in boats_dict.items():
         figures = distance_dict[distance]
@@ -119,16 +129,12 @@ def compute_intermediates_figures(race_boats):
     last_valid_intermeds_lookup = {}
     first_distance = True
     for distance, intermediates_dict in lookup.items():
-        intermediates = intermediates_dict.values()
-
-        best_time = _best_time(intermediates)
 
         valid_intermeds_lookup = {}
         intermediate: model.Intermediate_Time
         for race_boat_id, intermediate in intermediates_dict.items():
             figures = {
                 "__intermediate": None,
-                "deficit": None,
                 "rel_diff_to_avg_speed": None,
                 "pace": None,
                 "speed": None,
@@ -148,11 +154,6 @@ def compute_intermediates_figures(race_boats):
 
             valid_intermeds_lookup[race_boat_id] = intermediate
 
-            # relative to best boat
-            deficit = None
-            if best_time != None:
-                deficit = intermediate.result_time_ms - best_time
-
             pace = None
             if first_distance:
                 pace = intermediate.result_time_ms
@@ -166,7 +167,6 @@ def compute_intermediates_figures(race_boats):
                 dist_ = distance - last_distance
                 speed = dist_/pace_in_seconds
 
-            figures["deficit"] = deficit
             figures["pace"] = pace
             figures["speed"] = speed
             figures["result_time"] = intermediate.result_time_ms
@@ -204,6 +204,7 @@ def _iter_strokes_from_race_data(race_data_list: Iterable[model.Race_Data]):
 def strokes_for_intermediate_steps(race_data_list, stepsize=500):
     result = {}
     map_to_steps_func = lambda race_data: stepfunction(race_data.distance_meter, stepsize=stepsize)
+    race_data_list = sorted(race_data_list, key=lambda r: r.distance_meter)   # Itertools.groupby needs sorted list
     for meter_mark, data_points in itertools.groupby(race_data_list, key=map_to_steps_func):
         avg = None
         with suppress(TypeError, statistics.StatisticsError):

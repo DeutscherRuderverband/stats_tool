@@ -92,19 +92,18 @@ def get_race_analysis_filter_options():
     """
     session = Scoped_Session()
 
+    # Fetch year range
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation)
-    competition_categories = [{
-        "id": v[0],
-        "display_name": v[1],
-    } for v in session.execute(statement).fetchall()]
-    sorted_categories = sorted(competition_categories, key=lambda x: x['display_name'])
+    # Fetch primary and secondary competition categories separately
+    competition_categories = r.fetch_competition_categories(session, globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
+    secondary_competition_categories = r.fetch_competition_categories(session, globals.SECONDARY_CMP_TYPE_ABBREVIATIONS)
 
     nations = {entity.country_code: entity.name for entity in session.execute(select(model.Country)).scalars()}
 
     return {"years": (min_year, max_year),
-            "competition_categories": sorted_categories,
+            "competition_categories": competition_categories,
+            "secondary_competition_categories": secondary_competition_categories,
             "boat_classes": globals.BOATCLASSES_BY_GENDER_AGE_WEIGHT,
             "nations": dict(sorted(nations.items(), key=lambda x: x[0])),
             "runs": globals.RACE_PHASE_FILTER_OPTIONS,
@@ -511,8 +510,6 @@ def get_race(race_id: int) -> dict:
         year_start=datetime.date.today().year - 4
     )
 
-    intermediates_figures =  r.compute_intermediates_figures(race.race_boats)
-
     result = {
         "race_id": race.id,
         "display_name": race.name,
@@ -530,7 +527,7 @@ def get_race(race_id: int) -> dict:
         "race_boats": []
     }
 
-    sorted_race_boat_data = sorted(race.race_boats, key=lambda x: x.rank)
+    sorted_race_boat_data = sorted(race.race_boats, key=lambda x: x.rank if x.rank is not None else float('inf'))
     race_boat: model.Race_Boat
     for race_boat in sorted_race_boat_data:
         rb_result = {
@@ -554,10 +551,11 @@ def get_race(race_id: int) -> dict:
             rb_result['race_data'][str(race_data.distance_meter)] = {
                 "speed [m/s]": race_data.speed_meter_per_sec,
                 "stroke [1/min]": race_data.stroke,
-                "propulsion [m/stroke]": propulsion
+                "propulsion [m/stroke]": propulsion or 0
             }
 
         # intermediates
+        intermediates_figures =  r.compute_intermediates_figures(race.race_boats)
         strokes_for_intermediates =  r.strokes_for_intermediate_steps(race_boat.race_data)
         total_time = race_boat.result_time_ms
         for distance_meter, figures in intermediates_figures[race_boat.id].items(): # ❌ TODO: iterate over figure matrix (see intermediates_figures) to provide dicts for all 'cells'
@@ -568,7 +566,6 @@ def get_race(race_id: int) -> dict:
                 "pace [millis]": None,
                 "speed [m/s]": None,
                 "rel_speed [%]": None,
-                "deficit [millis]": None,
                 "rel_diff_to_avg_speed [%]": None,
                 "stroke [1/min]": None,
                 "is_outlier": None
@@ -586,7 +583,6 @@ def get_race(race_id: int) -> dict:
                     "pace [millis]": figures.get('pace'),
                     "speed [m/s]": figures.get('speed'),
                     "rel_speed [%]": rel_speed,
-                    "deficit [millis]": figures.get('deficit'),
                     "rel_diff_to_avg_speed [%]": figures.get('rel_diff_to_avg_speed'),
                     "stroke [1/min]": strokes_for_intermediates.get(distance_meter),
                     "is_outlier": intermediate.is_outlier if intermediate else None
@@ -964,11 +960,7 @@ def get_teams_filter_options():
         """
     session = Scoped_Session()
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation)
-    competition_categories = [{
-        "id": v[0],
-        "display_name": v[1],
-    } for v in session.execute(statement).fetchall()]
+    competition_categories = r.fetch_competition_categories(session, globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
     nations = {entity.country_code: entity.name for entity in session.execute(select(model.Country)).scalars()}
 
     return json.dumps([{
@@ -1041,11 +1033,7 @@ def get_medals_filter_options():
     session = Scoped_Session()
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation)
-    competition_categories = [{
-        "id": v[0],
-        "display_name": v[1],
-    } for v in session.execute(statement).fetchall()]
+    competition_categories = r.fetch_competition_categories(session, globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
     nations = {entity.country_code: entity.name for entity in session.execute(select(model.Country)).scalars()}
 
     return json.dumps([{
@@ -1148,19 +1136,15 @@ def get_report_filter_options():
     session = Scoped_Session()
     min_year, max_year = session.query(func.min(model.Competition.year), func.max(model.Competition.year)).first()
 
-    statement = select(model.Competition_Type.additional_id_, model.Competition_Type.abbreviation).where(
-        model.Competition_Type.abbreviation.in_(globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
-    )
-    competition_categories = [{
-        "id": v[0],
-        "display_name": v[1],
-    } for v in session.execute(statement).fetchall()]
-    sorted_categories = sorted(competition_categories, key=lambda x: x['display_name'])
+   # Fetch primary and secondary competition categories separately
+    competition_categories = r.fetch_competition_categories(session, globals.RELEVANT_CMP_TYPE_ABBREVATIONS)
+    secondary_competition_categories = r.fetch_competition_categories(session, globals.SECONDARY_CMP_TYPE_ABBREVIATIONS)
 
     return json.dumps([{
         "years": [{"start_year": min_year}, {"end_year": max_year}],
         "boat_classes": globals.BOATCLASSES_BY_GENDER_AGE_WEIGHT,
-        "competition_categories": sorted_categories,
+        "competition_categories": competition_categories,
+        "secondary_competition_categories": secondary_competition_categories,
         "runs": globals.RACE_PHASE_SUBTYPE_BY_RACE_PHASE,
         "ranks": [1, 2, 3, 4, 5, 6]
     }], sort_keys=False)
