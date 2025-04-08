@@ -39,7 +39,7 @@ Alternativ kann auch Anaconda verwendet werden:
 
 1. **Ordner herunterladen**:
    - Lade den Ordner `stats_tool/script` von GitHub herunter.
-     - **Option a:** Lade die Dateien direkt aus dem GitHub-Repository herunter und speichere sie in einem gemeinsamen Ordner.
+     - **Option a:** Lade die code.zip Datei direkt aus dem GitHub-Repository herunter und extrahiere die Dateien in einen neuen Ordner.
      - **Option b:** Wenn Git installiert ist, klone das gesamte Repository mit Git:
        ```bash
        git clone https://github.com/DeutscherRuderverband/stats_tool.git
@@ -52,7 +52,7 @@ Alternativ kann auch Anaconda verwendet werden:
      - `DATABASE_URL`: Die URL der PostgreSQL-Datenbank. Ersetze `username`, `password`, `host`, `port` und `database_name` durch die entsprechenden Werte aus Railway.
 
 3. **Skript ausführen**:
-   - Öffne das Terminal und navigiere zum Ordner, der die Datei `main.py` enthält.
+   - Öffne das Terminal und navigiere zum Ordner, der die Code-Dateien, also auch `main.py` enthält.
    - Starte das Skript mit folgendem Befehl:
      ```bash
      python main.py
