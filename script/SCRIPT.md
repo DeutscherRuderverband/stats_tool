@@ -5,7 +5,7 @@
 Dieses Skript ermöglicht es, Wettkampfergebnisse aus der Datenbank, die in Railway gehostet wird, für einen definierten Zeitraum abzufragen. Die abgefragten Ergebnisse werden anschließend in einer Excel-Datei gespeichert.
 
 ## Voraussetzungen
-Um das Skript auszuführen, musst du sicherstellen, dass Python 3.12 und die benötigten Bibliotheken installiert sind.
+Um das Skript auszuführen, musst du sicherstellen, dass Python 3.10 und die benötigten Bibliotheken installiert sind.
 
 #### 1. Variante – Python direkt installieren
 
