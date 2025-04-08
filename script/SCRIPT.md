@@ -10,16 +10,17 @@ Um das Skript auszuführen, musst du sicherstellen, dass Python 3.12 und die ben
 #### 1. Variante – Python direkt installieren
 
 **Benötigte Python-Version:**
-- Python 3.12
+- Python 3.10
 
 **Benötigte Bibliotheken:**
 - `sqlalchemy`
 - `pandas`
 - `psycopg2`
+- `openpyxl`
 
 **Installation der Bibliotheken:**
 ```bash
-pip install sqlalchemy pandas psycopg2
+pip install sqlalchemy=1.4.54 pandas psycopg2-binary=2.9.10 openpyxl
 ```
 
 #### 2. Variante – Anaconda
@@ -60,5 +61,4 @@ Alternativ kann auch Anaconda verwendet werden:
 ---
 
 **Zusätzliche Hinweise:**
-- Stelle sicher, dass deine Datenbank erreichbar ist und die Zugangsdaten korrekt sind.
-- Falls du auf Fehler stößt, überprüfe die Log-Ausgaben und stelle sicher, dass alle Bibliotheken richtig installiert sind.
+- Stelle sicher, dass die Datenbank erreichbar ist und die Zugangsdaten korrekt sind.

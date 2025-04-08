@@ -1,4 +1,7 @@
 # imports
+import os
+os.environ["SQLALCHEMY_SILENCE_UBER_WARNING"] = '1' # Suppress sqlalchemy warning
+
 from database import session
 from variables import DATE_FROM, DATE_TO
 from model import (Race_Data, Race, Race_Boat, Intermediate_Time, Athlete, Association_Race_Boat_Athlete,
@@ -11,6 +14,7 @@ from sqlalchemy.dialects.postgresql import aggregate_order_by
 import re
 
 # DATENBANKABFRAGE
+print("Starte den Datenbank-Export...")
 
 # Subquery für Stroke Rate
 stroke_rate = (
@@ -238,6 +242,7 @@ statement = (
 data = session.execute(statement)
 rows = data.mappings().all()
 data_df = pd.DataFrame(rows)
+print("Daten erfolgreich aus der Datenbank geladen.")
 column_order = ["Nation", "Name", "Vorname", "Geburtsdatum", "Geschlecht", "Wettbewerb", "Datum", "Ort", "Bootsklasse",
                 "Mannschaft", "Lauf",  "Lauftyp", "Laufnummer", "Platz", "Fahrzeit",
                 "Fahrzeit_Gold", "Fahrzeit_Silber", "Fahrzeit_Bronze",
@@ -304,6 +309,6 @@ for col in time_columns:
 data_df = data_df.round(1)
 data_df["Platz"] = data_df["Platz"].fillna(0).round(0).astype(int)
 
-
-data_df.to_excel("Renndaten.xlsx", index=False)
-print(data_df.head())
+filename = f"../Renndaten_{DATE_FROM.strftime('%Y-%m-%d')}_bis_{DATE_TO.strftime('%Y-%m-%d')}.xlsx"
+data_df.to_excel(filename, index=False)
+print("Daten in Excel gespeichert")
