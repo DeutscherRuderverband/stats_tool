@@ -549,6 +549,7 @@ export default {
     },
     loadRaceAnalysis(raceName, raceId) {
       const store = useRennstrukturAnalyseState()
+      store.setToLoadingState()
       store.fetchRaceData(raceId)
       this.showEmailIcon = true
       const newPath = `/rennstrukturanalyse/${this.lastCompId}/${this.lastEventId}?race_id=${raceId}`
@@ -561,8 +562,8 @@ export default {
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth < 900
-      let navbarHeight = window.innerWidth < 900 ? '71.25px' : '160px';
+      this.mobile = this.windowWidth < 890
+      let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
     },
     setRelationTimeFrom(value) {
@@ -579,10 +580,6 @@ export default {
         const store = useRennstrukturAnalyseState()
         store.setFilterState(oldVal)
       }
-    },
-    loading() {
-      router.push('/rennstrukturanalyse')
-      this.displayRaceDataAnalysis = false
     },
     radios(newValue) {
       const store = useRennstrukturAnalyseState()

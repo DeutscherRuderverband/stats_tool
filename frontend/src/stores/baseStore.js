@@ -91,8 +91,7 @@ function getChartOptions(state, title, x_title, y_title, y_reverse = false, y_st
                     lineWidth: (ctx) => {
                       // Thicker lines at 500m intervals
                       const tick = ctx.tick.label;
-                      //console.log('Tick value:', title, ctx.tick.value);
-                      return tick % 500 === 0 ? 2 : 0.5; // 2px thick for 0, 1000, 2000, else 0.5
+                      return tick % 500 === 0 ? 2 : 0.5;
                     },
                 },
             },
@@ -615,7 +614,7 @@ export const useRennstrukturAnalyseState = defineStore({
                         //(Time - reference boat time) / 1000
                         data = Object.entries(boat.intermediates).map(([distance, value]) => (value[key] - (winnerTeamTimes[distance] ?? 0)) / 1000 );
                     }
-                    else if (key == "rank") {
+                    else if (key == 'rank') {
                         data = Object.values(boat.intermediates).map(distanceObj => distanceObj[key]);
                     }
                     else {
