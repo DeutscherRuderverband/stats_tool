@@ -537,6 +537,7 @@ def get_race(race_id: int) -> dict:
             "athletes": OrderedDict(),
             "intermediates": OrderedDict(),
             "race_data": OrderedDict(),
+            "pacing_profile": None
         }
         result['race_boats'].append(rb_result)
 

@@ -561,8 +561,8 @@ export default {
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
-      this.mobile = this.windowWidth < 890
-      let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
+      this.mobile = this.windowWidth < 900
+      let navbarHeight = window.innerWidth < 900 ? '71.25px' : '160px';
       document.documentElement.style.setProperty('--navbar-height', navbarHeight);
     },
     setRelationTimeFrom(value) {

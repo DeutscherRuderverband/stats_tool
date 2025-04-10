@@ -59,31 +59,12 @@ function createChartOptions(boats) {
     }
 }
 
-function getRaceDataLabels(groups) {
-    for (let group of groups) {
-        if (Object.keys(group.stats_race_data).length > 0) {
-            return ['0', ...Object.keys(group.stats_race_data)];
-        }
+function getChartLabels(min = 0, max = 2000, steps = 500) {
+    const range = []
+    for(let i = min; i<= max; i+= steps) {
+        range.push(i)
     }
-    return ['0', '2000'];
-}
-
-function getGpsDataLabels(boats) {
-    for (let boat of boats) {
-        if (Object.keys(boat.race_data).length > 0) {
-            return ['0', ...Object.keys(boat.race_data)];
-        }
-    }
-    return ['0', '2000'];
-}
-
-function getIntermediateLabels(groups) {
-    for (let group of groups) {
-        if (Object.keys(group.stats).length > 0) {
-            return Object.keys(group.stats);
-        }
-    }
-    return ['0', '2000'];
+    return range
 }
 
 function createMultipleChartOptions(groups) {
@@ -105,7 +86,15 @@ function getChartOptions(state, title, x_title, y_title, y_reverse = false, y_st
                 title: {
                     display: true,
                     text: x_title
-                }
+                },
+                grid: {
+                    lineWidth: (ctx) => {
+                      // Thicker lines at 500m intervals
+                      const tick = ctx.tick.label;
+                      //console.log('Tick value:', title, ctx.tick.value);
+                      return tick % 500 === 0 ? 2 : 0.5; // 2px thick for 0, 1000, 2000, else 0.5
+                    },
+                },
             },
             y: {
                 title: {
@@ -521,7 +510,7 @@ export const useRennstrukturAnalyseState = defineStore({
             });
 
             return {
-                labels: getGpsDataLabels(raceBoats),  // Add 0 in x-axis
+                labels: getChartLabels(undefined, undefined, 50),  // Add 0 in x-axis
                 datasets,
             };
         },
@@ -547,7 +536,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     colorIndex++
                 });
                 return {
-                    labels: getGpsDataLabels(state.data.raceData[0].race_boats),
+                    labels: getChartLabels(undefined, undefined, 50),
                     datasets
                 };
             })
@@ -593,7 +582,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     colorIndex++
                 });
                 return {
-                    labels: getRaceDataLabels(state.data.multiple.groups),
+                    labels: getChartLabels(undefined, undefined, 50),
                     datasets
                 };
             })
@@ -613,7 +602,7 @@ export const useRennstrukturAnalyseState = defineStore({
             ));
 
             return intermediateDataKeys.map(key => {
-                let chartLabels = Object.keys(raceBoats[0].intermediates)
+                let chartLabels = getChartLabels(undefined, undefined, 500)
                 const datasets = raceBoats.map((boat, index) => {
                     const label = boat.name;
                     const color = COLORS[index % 6];
@@ -626,16 +615,15 @@ export const useRennstrukturAnalyseState = defineStore({
                         //(Time - reference boat time) / 1000
                         data = Object.entries(boat.intermediates).map(([distance, value]) => (value[key] - (winnerTeamTimes[distance] ?? 0)) / 1000 );
                     }
-                    else if (key == 'rank') {
+                    else if (key == "rank") {
                         data = Object.values(boat.intermediates).map(distanceObj => distanceObj[key]);
                     }
                     else {
                         data = Object.values(boat.intermediates).map(distanceObj => distanceObj[key]).slice(1);
-                        chartLabels = Object.keys(raceBoats[0].intermediates).slice(1)
+                        chartLabels = getChartLabels(500, undefined, 500)
                     }
                     return {label, backgroundColor: color , borderColor: color, data, hidden};
                 });
-                //const chartLabels = Object.keys(raceBoats[0].intermediates)
                 return {
                     labels: chartLabels,
                     datasets
@@ -643,7 +631,6 @@ export const useRennstrukturAnalyseState = defineStore({
             })
         },
         getMeanIntermediateChartData(state) {
-            const labels = getIntermediateLabels(state.data.multiple.groups)
             const datasets = [];
             let colorIndex = 0;
             const dataKeys = ["mean", "lower_bound", "upper_bound"];
@@ -681,13 +668,12 @@ export const useRennstrukturAnalyseState = defineStore({
 
             })
             return {
-                labels: labels,
+                labels: getChartLabels(500, undefined, 500),
                 datasets
             }
 
         },
         getMeanPacingProfiles(state) {
-            const labels = getIntermediateLabels(state.data.multiple.groups)
             const datasets = [];
             let colorIndex = 0;
             const dataKeys = ["mean", "lower_bound", "upper_bound"];
@@ -725,7 +711,7 @@ export const useRennstrukturAnalyseState = defineStore({
 
             })
             return {
-                labels: labels,
+                labels: getChartLabels(500, undefined, 500),
                 datasets
             }
         },
