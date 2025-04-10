@@ -300,19 +300,23 @@ def calculateConfidenceIntervall(sample_data: list) -> tuple:
 
 def getPacingProfile(t1: float, t2: float, t3: float, t4: float) -> str:
     """Identify Pacing Profile based on 500m times."""
-    pacing_profile = "Other"
-    t_average = (t1 + t2 + t3 + t4) / 4
-    if _isEven(t1, t_average) and _isEven(t2, t_average) and _isEven(t3, t_average) and _isEven(t4, t_average):
-        pacing_profile = "Even"
-    elif t1 < t4 and t4 < min(t2, t3):
-        pacing_profile = "Reverse J-Shape"
-    elif t4 < t1 and t1 < min(t2, t3):
-        pacing_profile = "J-Shape"
-    elif t1 < t2 and t2 < min(t3, t4):
-        pacing_profile = "Negative"
-    elif t4 < t3 and t3 < min(t1, t2):
-        pacing_profile = "Positive"
-    return pacing_profile
+    try:
+        t_average = (t1 + t2 + t3 + t4) / 4
+        if _isEven(t1, t_average) and _isEven(t2, t_average) and _isEven(t3, t_average) and _isEven(t4, t_average):
+            pacing_profile = "Even"
+        elif t1 < t4 and t4 < min(t2, t3):
+            pacing_profile = "Reverse J-Shape"
+        elif t4 < t1 and t1 < min(t2, t3):
+            pacing_profile = "J-Shape"
+        elif t1 < t2 and t2 < min(t3, t4):
+            pacing_profile = "Negative"
+        elif t4 < t3 and t3 < min(t1, t2):
+            pacing_profile = "Positive"
+        else:
+            pacing_profile = "Other"
+        return pacing_profile
+    except Exception:
+        return "-"
 
 def _isEven(ta: float, t_average: float) -> bool:
     """Check if time 'ta' is within a 1% difference from average time 't_average'."""

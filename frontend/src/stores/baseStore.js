@@ -369,7 +369,8 @@ export const useRennstrukturAnalyseState = defineStore({
                 {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
                 {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
                 {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
-                {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"}
+                {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"},
+                {text: 'Rennstruktur', tooltip: null}
             ]
             tableData.push(tableHead)
 
@@ -450,6 +451,9 @@ export const useRennstrukturAnalyseState = defineStore({
                     else {
                         rowData.push('-')
                     }
+
+                    //Rennstruktur
+                    rowData.push(dataObj.pacing_profile)
                 
                     tableData.push(rowData);
                 }
@@ -595,7 +599,7 @@ export const useRennstrukturAnalyseState = defineStore({
             })
         },
         getIntermediateChartData(state) {
-            const intermediateDataKeys = ["rank", "time [millis]"];
+            const intermediateDataKeys = ["rank", "time [millis]", "rel_speed [%]"];
             // get reference boat to calculate difference
             const raceData = state.data.raceData[0];
             const raceBoats = raceData.race_boats;
@@ -609,6 +613,7 @@ export const useRennstrukturAnalyseState = defineStore({
             ));
 
             return intermediateDataKeys.map(key => {
+                let chartLabels = Object.keys(raceBoats[0].intermediates)
                 const datasets = raceBoats.map((boat, index) => {
                     const label = boat.name;
                     const color = COLORS[index % 6];
@@ -621,12 +626,16 @@ export const useRennstrukturAnalyseState = defineStore({
                         //(Time - reference boat time) / 1000
                         data = Object.entries(boat.intermediates).map(([distance, value]) => (value[key] - (winnerTeamTimes[distance] ?? 0)) / 1000 );
                     }
-                    else if (key == "rank") {
+                    else if (key == 'rank') {
                         data = Object.values(boat.intermediates).map(distanceObj => distanceObj[key]);
+                    }
+                    else {
+                        data = Object.values(boat.intermediates).map(distanceObj => distanceObj[key]).slice(1);
+                        chartLabels = Object.keys(raceBoats[0].intermediates).slice(1)
                     }
                     return {label, backgroundColor: color , borderColor: color, data, hidden};
                 });
-                const chartLabels = Object.keys(raceBoats[0].intermediates)
+                //const chartLabels = Object.keys(raceBoats[0].intermediates)
                 return {
                     labels: chartLabels,
                     datasets
@@ -677,7 +686,7 @@ export const useRennstrukturAnalyseState = defineStore({
             }
 
         },
-        getPacingProfiles(state) {
+        getMeanPacingProfiles(state) {
             const labels = getIntermediateLabels(state.data.multiple.groups)
             const datasets = [];
             let colorIndex = 0;
@@ -720,7 +729,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 datasets
             }
         },
-
+        
         //Chart options
         getSingleChartOptions(state) {
             const number_of_boats = state.data.raceData[0].race_boats.length;
@@ -730,7 +739,8 @@ export const useRennstrukturAnalyseState = defineStore({
                 getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to} in sek`, 'Strecke [m]', 'Rückstand [sek]', false, undefined, undefined, undefined, true ),
                 getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false, undefined, undefined, undefined, true),
                 getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true, 1, 1, number_of_boats, true),
-                getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to} in m`, 'Strecke [m]', 'Differenz [m]', false, undefined, undefined, undefined, true )
+                getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to} in m`, 'Strecke [m]', 'Differenz [m]', false, undefined, undefined, undefined, true ),
+                getChartOptions(state, 'Rennstruktur', 'Strecke [m]', 'Normalisierte Geschwindigkeit', false, undefined, undefined, undefined, true)
             ]
         },
         getMultipleChartOptions(state) {

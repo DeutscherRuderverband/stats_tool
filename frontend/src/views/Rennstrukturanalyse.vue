@@ -240,6 +240,10 @@
                   <LineChart :data="getIntermediateData[1]" :chartOptions="singleChartOptions[2]" class="chart-bg">
                   </LineChart>
                 </v-container>
+                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+                  <LineChart :data="getIntermediateData[2]" :chartOptions="singleChartOptions[6]" class="chart-bg">
+                  </LineChart>
+                </v-container>
               </v-col>
               <v-col :cols="mobile ? 12 : 6" class="pa-0">
                 <v-container :class="mobile ? 'pa-0' : 'pa-2'">
@@ -336,7 +340,7 @@
           <v-row class="mt-0 pt-0">
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getPacingProfiles" :chartOptions="multipleChartOptions[0]" class="chart-bg">
+                <LineChart :data="getMeanPacingProfiles" :chartOptions="multipleChartOptions[0]" class="chart-bg">
                 </LineChart>
               </v-container>
 
@@ -444,7 +448,7 @@ export default {
       deficitMeters: "getDeficitInMeters"
     }),
     ...mapState(useRennstrukturAnalyseState, {
-      getPacingProfiles: "getPacingProfiles"
+      getMeanPacingProfiles: "getMeanPacingProfiles"
     }),
     //global chart options
     ...mapState(useRennstrukturAnalyseState, {

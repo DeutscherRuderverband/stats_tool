@@ -536,7 +536,7 @@ def get_race(race_id: int) -> dict:
             "rank": race_boat.rank,
             "athletes": OrderedDict(),
             "intermediates": OrderedDict(),
-            "race_data": OrderedDict()
+            "race_data": OrderedDict(),
         }
         result['race_boats'].append(rb_result)
 
@@ -587,6 +587,9 @@ def get_race(race_id: int) -> dict:
                     "stroke [1/min]": strokes_for_intermediates.get(distance_meter),
                     "is_outlier": intermediate.is_outlier if intermediate else None
                 })
+
+        # pacing profile
+        rb_result['pacing_profile'] = r.getPacingProfile(intermediates_figures[race_boat.id][500]['pace'], intermediates_figures[race_boat.id][1000]['pace'], intermediates_figures[race_boat.id][1500]['pace'], intermediates_figures[race_boat.id][2000]['pace'])
 
     return Response(json.dumps(result, sort_keys=False), content_type='application/json')
 
