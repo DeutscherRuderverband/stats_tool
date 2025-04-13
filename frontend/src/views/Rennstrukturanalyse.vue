@@ -36,7 +36,7 @@
           </a>
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
           <v-icon @click="exportTableData()" color="grey" class="ml-2 v-icon--size-large"
-            v-if="displayRaceDataAnalysis">mdi-table-arrow-right
+            v-if="displayRaceDataAnalysis && display == 'SINGLE'">mdi-table-arrow-right
           </v-icon>
           <v-icon @click="exportRaces()" color="grey" class="ml-2 v-icon--size-large"
             v-if="display == 'MULTIPLE'">mdi-table-arrow-right

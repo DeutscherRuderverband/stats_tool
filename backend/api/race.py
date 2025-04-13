@@ -349,8 +349,9 @@ def getOzBestTime(boat_class: str, year: int) -> int:
     """
     column_name = _getOlympicCycle(year)
     try:
-        df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
-        best_time = df.loc[boat_class, column_name]
+        df = pd.read_csv('/usr/src/app/wbt.csv', sep=',', index_col=0)
+        elite_boat_class = getEliteBoatClass(boat_class)
+        best_time = df.loc[elite_boat_class, column_name]
         return _convertToMs(best_time)
     except:
         return 0
@@ -364,13 +365,20 @@ def _convertToMs(time: str) -> int:
 
 def getWorldBestTime(boat_class: str, session) -> int:
     """Get the world best time of a boat class in ms"""
-    statement = select(model.Boat_Class).where(model.Boat_Class.abbreviation == boat_class)
+    elite_boat_class = getEliteBoatClass(boat_class)
+    statement = select(model.Boat_Class).where(model.Boat_Class.abbreviation == elite_boat_class)
     boat_class_object = session.execute(statement).scalars().first()
     world_best_race_boat = boat_class_object.world_best_race_boat
     if world_best_race_boat:
         return world_best_race_boat.result_time_ms
     else:
         return 0
+    
+def getEliteBoatClass(boat_class: str) -> str:
+    """Get the abbreviation of the elite boat class, e. g. BM1x -> M1x"""
+    if boat_class.startswith(('B', 'J')):
+        return boat_class[1:]
+    return boat_class
 
 
 def getAthletes(race_boat_athletes: model.Association_Race_Boat_Athlete) -> dict:
