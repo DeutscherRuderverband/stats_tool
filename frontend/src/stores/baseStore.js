@@ -160,6 +160,7 @@ export const useRennstrukturAnalyseState = defineStore({
     state: () => ({
         filterOpen: false,
         loadingState: false,
+        emailLink: '',
         display: "EMPTY",
         relation_time_from: "wbt",
         compData: [],
@@ -246,6 +247,9 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getRelationTimeFrom(state) {
             return state.relation_time_from
+        },
+        getEmailLink(state) {
+            return state.emailLink
         },
 
 
@@ -756,16 +760,16 @@ export const useRennstrukturAnalyseState = defineStore({
                     console.error(`Request failed: ${error}`)
                 })
         },
-        async postFormData(data) {
+        async fetchCompetitionData(data) { 
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
                 .then(response => {
                     this.data.analysis = response.data
                     this.display = "SINGLE"
-                    //this.data.multiple = null
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
         },
+
         async postMultipleFormData(data) {
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_race_boat_groups`, {data})
                 .then(response => {
@@ -786,15 +790,6 @@ export const useRennstrukturAnalyseState = defineStore({
                     console.error(`Request failed: ${error}`)
                 })
         },
-        async fetchCompetitionData(data) {          //Difference to postFormData?
-            await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
-                .then(response => {
-                    this.data.analysis = response.data
-                    this.display = "SINGLE"
-                }).catch(error => {
-                    console.error(`Request failed: ${error}`)
-                })
-        },
         setFilterState(filterState) {
             this.filterOpen = !filterState
         },
@@ -804,6 +799,10 @@ export const useRennstrukturAnalyseState = defineStore({
         setDisplay(view) {
             //EMPTY, SINGLE, MULTIPLE
             this.display = view
+        },
+        setEmailLink(link) {
+            this.emailLink = link
+
         },
         setRelationTimeFrom(value) {
             this.relation_time_from = value

@@ -1,115 +1,118 @@
 <template>
 
-    <!-- MULTIPLE -->
-    <v-container v-if="display == 'MULTIPLE' && !loading" class="px-0 pt-4">
+  <!--LOADING-->
+  <div v-if="loading">
+    <v-progress-circular class="pa-0 mt-3" indeterminate color="blue" size="40"></v-progress-circular>
+  </div>
 
-        <v-row>
-            <v-col cols="6" class="pt-3 align-center">
-                <h2>Vergleich Rennstruktur {{ boatClassData.boat_class }}</h2>
-            </v-col>
+  <!-- MULTIPLE -->
+  <v-container v-if="display == 'MULTIPLE' && !loading" class="px-0 pt-4">
 
-            <v-spacer></v-spacer>
+    <v-row>
+      <v-col cols="6" class="pt-3 align-center">
+        <h2>Vergleich Rennstruktur {{ boatClassData.boat_class }}</h2>
+      </v-col>
 
-            <v-col cols="auto" class="align-center pt-5" style="color: grey">
-                Bestzeiten:
-                <v-tooltip activator="parent" location="bottom">
-                    Berechnung der Relationszeit zu ausgewählter Bestzeit
-                </v-tooltip>
-            </v-col>
+      <v-spacer></v-spacer>
 
-            <v-col cols="auto" class="pb-0 pl-0 mb-n3">
-                <v-radio-group v-model="wbt" dense inline>
-                    <v-radio color="blue" :label="`${boatClassData.wbt} (WBT)`" value="wbt"
-                        @click="setRelationTimeFrom('wbt')" :disabled="boatClassData.wbt == '00:00.00'"></v-radio>
-                    <v-radio color="blue" :label="`${boatClassData.wbt_oz} (WBT vor OZ)`" value="ozt"
-                        @click="setRelationTimeFrom('ozt')" :disabled="boatClassData.wbt_oz == '00:00.00'"></v-radio>
-                </v-radio-group>
-            </v-col>
+      <v-col cols="auto" class="align-center pt-5" style="color: grey">
+        Bestzeiten:
+        <v-tooltip activator="parent" location="bottom">
+          Berechnung der Relationszeit zu ausgewählter Bestzeit
+        </v-tooltip>
+      </v-col>
 
-        </v-row>
+      <v-col cols="auto" class="pb-0 pl-0 mb-n3">
+        <v-radio-group v-model="wbt" dense inline>
+          <v-radio color="blue" :label="`${boatClassData.wbt} (WBT)`" value="wbt" @click="setRelationTimeFrom('wbt')"
+            :disabled="boatClassData.wbt == '00:00.00'"></v-radio>
+          <v-radio color="blue" :label="`${boatClassData.wbt_oz} (WBT vor OZ)`" value="ozt"
+            @click="setRelationTimeFrom('ozt')" :disabled="boatClassData.wbt_oz == '00:00.00'"></v-radio>
+        </v-radio-group>
+      </v-col>
 
-        <v-table class="tableStyles" density="compact">
-            <thead>
-                <tr>
-                    <th v-for="tableHead in multipleTableData[0]" class="px-2">
-                        <p>{{ tableHead.text }}<v-tooltip activator="parent" location="bottom"
-                                v-if="tableHead.tooltip != null">{{
-                                tableHead.tooltip }}</v-tooltip></p>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(country, idx) in multipleTableData.slice(1)">
-                    <td v-for="item in country" :key="item" class="px-2"
-                        :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
-                        <template v-if="Array.isArray(item)">
-                            <template v-for="element in item">
-                                <p>{{ element }}</p>
-                            </template>
-                        </template>
-                        <template v-else>
-                            <p>
-                                {{ item }}
-                            </p>
-                        </template>
-                    </td>
-                </tr>
-            </tbody>
-        </v-table>
-        <p>Die Tabelle zeigt für jede Gruppe die durchschnittlichen Werte über alle Rennen</p>
+    </v-row>
 
-        <v-row>
-            <h3 class="pl-3 pt-10">Visualisierungsoptionen</h3>
-        </v-row>
-        <v-row>
-            <v-col>
-                <v-select label="95% Konfidenzintervall" class="pt-0" compact
-                    :items="getMultipleChartOptions.confidenceIntervalOptions"
-                    v-model="getMultipleChartOptions.showConfidenceInterval" variant="outlined">
-                </v-select>
-            </v-col>
-            <v-col>
-                <v-select label="Gruppen in Visualisierungen" class="pt-0" compact multiple
-                    :items="getMultipleChartOptions.groups" v-model="getMultipleChartOptions.groups_in_chart"
-                    variant="outlined">
-                </v-select>
-            </v-col>
-        </v-row>
+    <v-table class="tableStyles" density="compact">
+      <thead>
+        <tr>
+          <th v-for="tableHead in multipleTableData[0]" class="px-2">
+            <p>{{ tableHead.text }}<v-tooltip activator="parent" location="bottom" v-if="tableHead.tooltip != null">{{
+              tableHead.tooltip }}</v-tooltip></p>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(country, idx) in multipleTableData.slice(1)">
+          <td v-for="item in country" :key="item" class="px-2"
+            :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
+            <template v-if="Array.isArray(item)">
+              <template v-for="element in item">
+                <p>{{ element }}</p>
+              </template>
+            </template>
+            <template v-else>
+              <p>
+                {{ item }}
+              </p>
+            </template>
+          </td>
+        </tr>
+      </tbody>
+    </v-table>
+    <p>Die Tabelle zeigt für jede Gruppe die durchschnittlichen Werte über alle Rennen</p>
 
-        <!-- Graphen -->
-        <v-row class="mt-0 pt-0">
-            <v-col :cols="mobile ? 12 : 6" class="pa-0">
-                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                    <LineChart :data="getMeanPacingProfiles" :chartOptions="multipleChartOptions[0]" class="chart-bg">
-                    </LineChart>
-                </v-container>
+    <v-row>
+      <h3 class="pl-3 pt-10">Visualisierungsoptionen</h3>
+    </v-row>
+    <v-row>
+      <v-col>
+        <v-select label="95% Konfidenzintervall" class="pt-0" compact
+          :items="getMultipleChartOptions.confidenceIntervalOptions"
+          v-model="getMultipleChartOptions.showConfidenceInterval" variant="outlined">
+        </v-select>
+      </v-col>
+      <v-col>
+        <v-select label="Gruppen in Visualisierungen" class="pt-0" compact multiple
+          :items="getMultipleChartOptions.groups" v-model="getMultipleChartOptions.groups_in_chart" variant="outlined">
+        </v-select>
+      </v-col>
+    </v-row>
 
-                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                    <LineChart :data="getMeanGPsData[2]" :chartOptions="multipleChartOptions[1]" class="chart-bg">
-                    </LineChart>
-                </v-container>
+    <!-- Graphen -->
+    <v-row class="mt-0 pt-0">
+      <v-col :cols="mobile ? 12 : 6" class="pa-0">
+        <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+          <LineChart :data="getMeanPacingProfiles" :chartOptions="multipleChartOptions[0]" class="chart-bg">
+          </LineChart>
+        </v-container>
 
-                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                    <LineChart :data="getMeanIntermediateData" :chartOptions="multipleChartOptions[2]" class="chart-bg">
-                    </LineChart>
-                </v-container>
-            </v-col>
+        <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+          <LineChart :data="getMeanGPsData[2]" :chartOptions="multipleChartOptions[1]" class="chart-bg">
+          </LineChart>
+        </v-container>
 
-            <v-col :cols="mobile ? 12 : 6" class="pa-0">
-                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                    <LineChart :data="getMeanGPsData[0]" :chartOptions="multipleChartOptions[3]" class="chart-bg">
-                    </LineChart>
-                </v-container>
+        <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+          <LineChart :data="getMeanIntermediateData" :chartOptions="multipleChartOptions[2]" class="chart-bg">
+          </LineChart>
+        </v-container>
+      </v-col>
 
-                <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                    <LineChart :data="getMeanGPsData[1]" :chartOptions="multipleChartOptions[4]" class="chart-bg">
-                    </LineChart>
-                </v-container>
+      <v-col :cols="mobile ? 12 : 6" class="pa-0">
+        <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+          <LineChart :data="getMeanGPsData[0]" :chartOptions="multipleChartOptions[3]" class="chart-bg">
+          </LineChart>
+        </v-container>
 
-            </v-col>
-        </v-row>
+        <v-container :class="mobile ? 'pa-0' : 'pa-2'">
+          <LineChart :data="getMeanGPsData[1]" :chartOptions="multipleChartOptions[4]" class="chart-bg">
+          </LineChart>
+        </v-container>
 
-    </v-container>
+      </v-col>
+    </v-row>
+
+  </v-container>
 </template>
 
 <script setup>
@@ -146,7 +149,7 @@ export default {
       wbt: "getRelationTimeFrom"
     }),
     ...mapState(useRennstrukturAnalyseState, {
-      outliers: "getOutlierCountries" 
+      outliers: "getOutlierCountries"
     }),
     ...mapState(useRennstrukturAnalyseState, {
       getAnalysis: "getAnalysisData"
@@ -154,7 +157,7 @@ export default {
     ...mapState(useRennstrukturAnalyseState, {    //Used for general information about competition
       competitionData: 'getCompetitionData'
     }),
-    ...mapState(useRennstrukturAnalyseState, { 
+    ...mapState(useRennstrukturAnalyseState, {
       boatClassData: "getBoatClassData"
     }),
 

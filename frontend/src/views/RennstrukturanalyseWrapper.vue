@@ -32,11 +32,10 @@
                         erlaubt die Betrachtung des Rennverlaufes
                         ein oder mehrerer Rennen basierend auf Ergebnis- und GPS-Daten.
                     </v-tooltip>
-                    <!-- FIX EMAIL -->
-                    <a>
+                    <a :href="emailLink" v-show="display == 'SINGLE'">
                         <v-icon color="grey" class="ml-2 v-icon--size-large">mdi-email-outline
                         </v-icon>
-                    </a>
+                     </a>
                     <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
                     <v-icon @click="exportTableData()" color="grey" class="ml-2 v-icon--size-large"
                         v-if="display == 'SINGLE'">mdi-table-arrow-right
@@ -47,13 +46,7 @@
                 </v-col>
                 <v-divider></v-divider>
 
-                <!--LOADING-->
-                <v-progress-circular v-if="loading" class="pa-0 mt-3" indeterminate color="blue"
-                    size="40"></v-progress-circular>
-
-                <!--Show Views -->
-                <router-view v-if="!loading"/>
-
+                <router-view/>
 
             </v-container>
 
@@ -72,6 +65,7 @@ import 'chartjs-adapter-moment';
 <script>
 import { useRennstrukturAnalyseState } from "@/stores/baseStore";
 import { mapState } from "pinia";
+import { mapActions } from "pinia";
 import { useGlobalState } from "@/stores/globalStore";
 
 export default {
@@ -83,7 +77,8 @@ export default {
         ...mapState(useRennstrukturAnalyseState, {
             loading: "getLoadingState",
             filterState: "getFilterState",
-            display: "getDisplay"
+            display: "getDisplay",
+            emailLink: "getEmailLink"
         }),
     },
 
@@ -101,6 +96,10 @@ export default {
 
     },
     methods: {
+        ...mapActions(useRennstrukturAnalyseState, [
+            'exportTableData',
+            'exportRaces'
+            ]),
         setFilterState() {
             this.filterOpen = !this.filterOpen;
             const store = useRennstrukturAnalyseState()
@@ -111,6 +110,9 @@ export default {
             this.mobile = this.windowWidth < 890
             let navbarHeight = window.innerWidth < 890 ? '71.25px' : '160px';
             document.documentElement.style.setProperty('--navbar-height', navbarHeight);
+        },
+        openPrintDialog() {
+            window.print();
         },
     },
     watch: {

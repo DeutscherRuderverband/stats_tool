@@ -365,7 +365,7 @@ export default {
         "year": this.selectedYear,
         "competition_type": this.selectedCompetition
       }
-      return store.postFormData(data).then(() => {
+      return store.fetchCompetitionData(data).then(() => {
         console.log("Form data sent...")
         store.setToLoadingState(false)
       }).catch(error => {
