@@ -359,21 +359,23 @@ export default {
     },
     submitFormData() {
       const store = useRennstrukturAnalyseState()
-      store.setToLoadingState()
+      store.setToLoadingState(true)
+      this.$router.push({ name: 'rennstrukturanalyse-single' })
       const data = {
         "year": this.selectedYear,
         "competition_type": this.selectedCompetition
       }
-      //console.log(data)
       return store.postFormData(data).then(() => {
         console.log("Form data sent...")
+        store.setToLoadingState(false)
       }).catch(error => {
         console.error(error)
       });
     },
     submitMultipleFormData() {
       const store = useRennstrukturAnalyseState()
-      store.setToLoadingState()
+      store.setToLoadingState(true)
+      this.$router.push({ name: 'rennstrukturanalyse-multiple' })
       const groups = []
       for (const panel of this.panels) {
         const groupData = {
@@ -393,6 +395,7 @@ export default {
       }
       return store.postMultipleFormData(data).then(() => {
         console.log("Multiple Form data sent...")
+        store.setToLoadingState(false)
       }).catch(error => {
         console.error(error)
       });

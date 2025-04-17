@@ -762,7 +762,6 @@ export const useRennstrukturAnalyseState = defineStore({
                     this.data.analysis = response.data
                     this.display = "SINGLE"
                     //this.data.multiple = null
-                    this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
@@ -774,7 +773,6 @@ export const useRennstrukturAnalyseState = defineStore({
                     this.data.multiple.chartOptions = createMultipleChartOptions(response.data.groups)
                     this.display = "MULTIPLE"
                     //this.data.analysis = null
-                    this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
@@ -784,7 +782,6 @@ export const useRennstrukturAnalyseState = defineStore({
                 .then(response => {
                     this.data.raceData[0] = response.data
                     this.data.raceData[0].chartOptions = createChartOptions(response.data.race_boats)
-                    this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
@@ -793,7 +790,6 @@ export const useRennstrukturAnalyseState = defineStore({
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
                 .then(response => {
                     this.data.analysis = response.data
-                    this.loadingState = false
                     this.display = "SINGLE"
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
@@ -802,8 +798,8 @@ export const useRennstrukturAnalyseState = defineStore({
         setFilterState(filterState) {
             this.filterOpen = !filterState
         },
-        setToLoadingState() {
-            this.loadingState = true
+        setToLoadingState(bool) {
+            this.loadingState = bool
         },
         setDisplay(view) {
             //EMPTY, SINGLE, MULTIPLE

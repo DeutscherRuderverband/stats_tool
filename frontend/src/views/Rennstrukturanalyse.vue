@@ -585,6 +585,7 @@ export default {
       const store = useRennstrukturAnalyseState()
       store.setRelationTimeFrom(newValue)
     },
+    /*
     $route: {
       immediate: true,
       deep: true,
@@ -668,6 +669,7 @@ export default {
         }
       }
     }
+      */
   }
 }
 

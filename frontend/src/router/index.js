@@ -11,6 +11,10 @@ import HilfeView from "@/views/HilfeView.vue";
 import MitwirkendeView from "@/views/MitwirkendeView.vue";
 import LoginView from "@/views/LoginView.vue";
 import PageNotFoundView from '@/views/PageNotFoundView.vue';
+import RennstrukturanalyseEmpty from '../views/RennstrukturanalyseEmpty.vue';
+import RennstrukturanalyseSingle from '../views/RennstrukturanalyseSingle.vue';
+import RennstrukturanalyseMultiple from '../views/RennstrukturanalyseMultiple.vue';
+import RennstrukturanalyseWrapper from '../views/RennstrukturanalyseWrapper.vue';
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,10 +30,26 @@ const router = createRouter({
             component: Berichte
         },
         {
-            path: '/rennstrukturanalyse/:comp_id?/:event_id?/:race_id?',
-            name: 'rennstrukturanalyse',
-            component: Rennstrukturanalyse
-        },
+            path: '/rennstrukturanalyse',
+            component: RennstrukturanalyseWrapper,
+            children: [
+              {
+                path: '',
+                name: 'rennstrukturanalyse-empty',
+                component: RennstrukturanalyseEmpty
+              },
+              {
+                path: 'single/:comp_id?/:event_id?/:race_id?',
+                name: 'rennstrukturanalyse-single',
+                component: RennstrukturanalyseSingle
+              },
+              {
+                path: 'multiple',
+                name: 'rennstrukturanalyse-multiple',
+                component: RennstrukturanalyseMultiple
+              }
+            ]
+          }, 
         {
             path: '/athleten',
             name: 'athleten',
