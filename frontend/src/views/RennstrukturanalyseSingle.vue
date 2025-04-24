@@ -316,23 +316,7 @@ export default {
     this.checkScreen();
 
     this.radios = this.wbt;
-
-    const store = useRennstrukturAnalyseState();
-
-    // Handle ?competition_id
-    const comp_id = this.$route.query.competition_id;
-    if (comp_id) {
-      console.log("Lade Wettkampf (initial):", comp_id);
-      store.fetchCompetitionData({ competition_id: comp_id });
-      store.setDisplay("SINGLE");
-    }
-
-    // Handle ?race_id
-    const race_id = this.$route.query.race_id;
-    if (race_id) {
-      console.log("Lade Rennen (initial):", race_id);
-      store.fetchRaceData(race_id);
-    }
+    
   },
   methods: {
     formatMilliseconds(ms) {
@@ -406,7 +390,7 @@ export default {
 
           const isEqual =
             current.length === desired.length &&
-            current.every((title, i) => title === desired[i]);
+            current.every((title, i) => title == desired[i]);
 
           if (!isEqual) {
             this.breadCrumbs.splice(0, this.breadCrumbs.length, ...crumbs);
@@ -422,7 +406,7 @@ export default {
         //single/comp
         if (compId && !eventId) {
 
-          let comp = (this.getAnalysis ?? []).find(obj => obj.id == compId);
+          let comp = (this.getAnalysis ?? []).find(obj => obj.id === compId);
 
           if (comp) {
             addBreadCrumbs(comp, null)
@@ -447,11 +431,18 @@ export default {
         else if (eventId && compId) {
 
           let comp = (this.getAnalysis ?? []).find(obj => obj.id == compId);
+          if (comp && this.events.length === 0) {
+            this.events = comp.events
+          }
           let event = (this.events ?? []).find(obj => obj.id == eventId);
+          if (event && this.races.length === 0) {
+            this.races = event.races
+          }
 
           if (comp && event) {
             addBreadCrumbs(comp, event);
-          } else {
+          } 
+          else {
             try {
               const data = { competition_id: compId };
               await store.fetchCompetitionData(data);

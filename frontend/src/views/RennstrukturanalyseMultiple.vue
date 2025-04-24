@@ -8,6 +8,17 @@
   <!-- MULTIPLE -->
   <v-container v-if="!loading" class="px-0 pt-4">
 
+    <div v-if="!boatClassData">
+      <v-container class="pa-0 mt-3">
+        <v-alert type="info" variant="tonal" :width="mobile ? '100%' : '50%'">
+            Bitte wähle ein Jahr und ein Event in dem Filter auf der linken Seite.
+        </v-alert>
+    </v-container>
+
+    </div>
+
+    <div v-else>
+
     <v-row>
       <v-col cols="6" class="pt-3 align-center">
         <h2>Vergleich Rennstruktur {{ boatClassData.boat_class }}</h2>
@@ -111,6 +122,7 @@
       </v-col>
     </v-row>
 
+  </div>
   </v-container>
 </template>
 

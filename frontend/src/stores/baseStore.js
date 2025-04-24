@@ -232,11 +232,14 @@ export const useRennstrukturAnalyseState = defineStore({
             return data
         },
         getBoatClassData(state) {
-            return {
-                "boat_class": state.data.multiple.boat_class,
-                "wbt": formatMilliseconds(state.data.multiple.world_best_time),
-                "wbt_oz": formatMilliseconds(state.data.multiple.oz_best_time),
+            if (state.data.multiple?.boat_class) {
+                return {
+                    "boat_class": state.data.multiple.boat_class,
+                    "wbt": formatMilliseconds(state.data.multiple.world_best_time),
+                    "wbt_oz": formatMilliseconds(state.data.multiple.oz_best_time),
+                }
             }
+            return null;
         },
         
         getOutlierCountries(state) {

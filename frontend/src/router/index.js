@@ -1,7 +1,6 @@
 import {createRouter, createWebHistory} from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import Berichte from "@/views/Berichte.vue";
-import Rennstrukturanalyse from "@/views/Rennstrukturanalyse.vue";
 import AthletenView from "@/views/AthletenView.vue";
 import TeamsView from "@/views/TeamsView.vue";
 import MedaillenspiegelView from "@/views/MedaillenspiegelView.vue";
