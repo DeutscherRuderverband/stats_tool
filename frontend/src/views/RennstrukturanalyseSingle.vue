@@ -206,33 +206,33 @@
           <v-row class="pt-0 mt-0">
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[0]" :chartOptions="singleChartOptions[0]" class="chart-bg">
+                <LineChart :data="getGPsData[0]" :chartOptions="chartMetadata[0]" class="chart-bg">
                 </LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[2]" :chartOptions="singleChartOptions[1]" class="chart-bg">
+                <LineChart :data="getGPsData[2]" :chartOptions="chartMetadata[1]" class="chart-bg">
                 </LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getIntermediateData[1]" :chartOptions="singleChartOptions[2]" class="chart-bg">
+                <LineChart :data="getIntermediateData[1]" :chartOptions="chartMetadata[2]" class="chart-bg">
                 </LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getIntermediateData[2]" :chartOptions="singleChartOptions[6]" class="chart-bg">
+                <LineChart :data="getIntermediateData[2]" :chartOptions="chartMetadata[6]" class="chart-bg">
                 </LineChart>
               </v-container>
             </v-col>
             <v-col :cols="mobile ? 12 : 6" class="pa-0">
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getGPsData[1]" :chartOptions="singleChartOptions[3]" class="chart-bg">
+                <LineChart :data="getGPsData[1]" :chartOptions="chartMetadata[3]" class="chart-bg">
                 </LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="getIntermediateData[0]" :chartOptions="singleChartOptions[4]" class="chart-bg">
+                <LineChart :data="getIntermediateData[0]" :chartOptions="chartMetadata[4]" class="chart-bg">
                 </LineChart>
               </v-container>
               <v-container :class="mobile ? 'pa-0' : 'pa-2'">
-                <LineChart :data="deficitMeters" :chartOptions="singleChartOptions[5]" class="chart-bg">
+                <LineChart :data="deficitMeters" :chartOptions="chartMetadata[5]" class="chart-bg">
                 </LineChart>
               </v-container>
             </v-col>
@@ -260,43 +260,29 @@ ChartJS.register(Tooltip, Legend, TimeScale);
 import { useRennstrukturAnalyseState } from "@/stores/baseStore";
 import { mapState } from "pinia";
 import router from "@/router";
-import { useGlobalState } from "@/stores/globalStore";
 
 export default {
-  computed: {
-    ...mapState(useGlobalState, {
-      headerReduced: "getHeaderReducedState"
-    }),
-
+  computed: { 
     ...mapState(useRennstrukturAnalyseState, {
       loading: "getLoadingState",
-      filterState: "getFilterState",
-      display: "getDisplay",
       wbt: "getRelationTimeFrom",
       outliers: "getOutlierCountries",
       getAnalysis: "getAnalysisData",
       competitionData: "getCompetitionData",
-      boatClassData: "getBoatClassData",
 
       // Table data
-      multipleTableData: "getMultipleTableData",
       tableData: "getTableData",
 
       // Chart data
       getGPsData: "getGPSChartData",
-      getMeanGPsData: "getMeanGPSChartData",
       getIntermediateData: "getIntermediateChartData",
-      getMeanIntermediateData: "getMeanIntermediateChartData",
       deficitMeters: "getDeficitInMeters",
-      getMeanPacingProfiles: "getMeanPacingProfiles",
 
       // Global chart options
       getChartOptions: "getSingleOptions",
-      getMultipleChartOptions: "getMultipleOptions",
 
       // Chart options for graphs
-      singleChartOptions: "getSingleChartOptions",
-      multipleChartOptions: "getMultipleChartOptions"
+      chartMetadata: "getChartMetadata",
     }),
 
     currentView() {
@@ -320,13 +306,8 @@ export default {
     return {
       breadCrumbs: [],
       mobile: false,
-      showEmailIcon: false,
-      emailLink: '',
-      showTooltip: false,
       events: [],
       races: [],
-      lastCompId: null,
-      lastEventId: null,
       radios: "wbt",
     }
   },
@@ -334,7 +315,6 @@ export default {
     window.addEventListener('resize', this.checkScreen);
     this.checkScreen();
 
-    this.filterOpen = this.filterState;
     this.radios = this.wbt;
 
     const store = useRennstrukturAnalyseState();
@@ -361,32 +341,14 @@ export default {
       }
       return new Date(ms).toISOString().slice(14, -2);
     },
-    openPrintDialog() {
-      window.print();
-    },
-    exportTableData() {
-      const store = useRennstrukturAnalyseState()
-      store.exportTableData()
-    },
-    exportRaces() {
-      const store = useRennstrukturAnalyseState()
-      store.exportRaces()
-    },
-    setFilterState() {
-      this.filterOpen = !this.filterOpen;
-      const store = useRennstrukturAnalyseState()
-      store.setFilterState(this.filterState)
-    },
     getEvents(competition, displayName, compId) {
       router.push("/rennstrukturanalyse/single/" + compId)
-      this.lastCompId = compId
       competition.sort((a, b) => a.boat_class.localeCompare(b.boat_class))
       this.events = competition
       this.breadCrumbs.push({ title: displayName })
     },
     getRaces(events, displayName, eventId) {
       router.push(this.$route.fullPath + "/" + eventId)
-      this.lastEventId = eventId
       this.races = events
       this.breadCrumbs.push({ title: displayName })
     },
@@ -464,6 +426,9 @@ export default {
 
           if (comp) {
             addBreadCrumbs(comp, null)
+            if (this.events.length === 0) {
+              this.events = comp.events
+            }
           }
           else {
             try {
@@ -480,7 +445,7 @@ export default {
 
         //single/comp/event
         else if (eventId && compId) {
-  
+
           let comp = (this.getAnalysis ?? []).find(obj => obj.id == compId);
           let event = (this.events ?? []).find(obj => obj.id == eventId);
 
@@ -503,7 +468,6 @@ export default {
 
         //race
         if (raceId) {
-          console.log(4)
           if (raceId == this.competitionData.raceId) return;
           else {
             store.setToLoadingState(true)
@@ -512,10 +476,10 @@ export default {
           }
         }
 
-    }
+      }
 
+    }
   }
-}
 }
 
 </script>

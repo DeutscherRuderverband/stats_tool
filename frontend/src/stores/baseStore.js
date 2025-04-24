@@ -720,7 +720,7 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         
         //Chart options
-        getSingleChartOptions(state) {
+        getChartMetadata(state) {
             const number_of_boats = state.data.raceData[0].race_boats.length;
             return [
                 getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false, undefined, undefined, undefined, true),
@@ -732,7 +732,7 @@ export const useRennstrukturAnalyseState = defineStore({
                 getChartOptions(state, 'Rennstruktur', 'Strecke [m]', 'Normalisierte Geschwindigkeit', false, undefined, undefined, undefined, true)
             ]
         },
-        getMultipleChartOptions(state) {
+        getMultipleChartMetadata(state) {
             return [
                 getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, undefined, false),
                 getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined, undefined, undefined, undefined, false),
