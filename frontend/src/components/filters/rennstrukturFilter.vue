@@ -365,12 +365,17 @@ export default {
         "year": this.selectedYear,
         "competition_type": this.selectedCompetition
       }
-      return store.fetchCompetitionData(data).then(() => {
-        console.log("Form data sent...")
-        store.setToLoadingState(false)
-      }).catch(error => {
-        console.error(error)
-      });
+      return store.fetchCompetitionData(data)
+        .then(() => {
+          console.log("Form data sent...");
+        })
+        .catch(error => {
+          console.error(error);
+        })
+        .finally(() => {
+          store.setToLoadingState(false);
+        });
+
     },
     submitMultipleFormData() {
       const store = useRennstrukturAnalyseState()
@@ -393,12 +398,16 @@ export default {
         "boat_class": this.selectedBoatClass,
         "groups": groups
       }
-      return store.postMultipleFormData(data).then(() => {
-        console.log("Multiple Form data sent...")
-        store.setToLoadingState(false)
-      }).catch(error => {
-        console.error(error)
-      });
+      return store.postMultipleFormData(data)
+        .then(() => {
+          console.log("Multiple Form data sent...")
+        })
+        .catch(error => {
+          console.error(error)
+        })
+        .finally(() => {
+          store.setToLoadingState(false);
+        });
     },
 
     addPanel() {

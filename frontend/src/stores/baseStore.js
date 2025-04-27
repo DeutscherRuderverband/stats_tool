@@ -779,9 +779,9 @@ export const useRennstrukturAnalyseState = defineStore({
                     this.data.multiple = response.data
                     this.data.multiple.chartOptions = createMultipleChartOptions(response.data.groups)
                     this.display = "MULTIPLE"
-                    //this.data.analysis = null
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
+                    this.data.multiple = null;
                 })
         },
         async fetchRaceData(raceId) {
