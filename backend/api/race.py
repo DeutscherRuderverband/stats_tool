@@ -1,3 +1,4 @@
+import os
 import datetime
 import itertools
 import math
@@ -349,7 +350,12 @@ def getOzBestTime(boat_class: str, year: int) -> int:
     """
     column_name = _getOlympicCycle(year)
     try:
-        df = pd.read_csv('/usr/src/app/wbt.csv', sep=',', index_col=0)
+        base_dir = os.path.dirname(__file__)              
+        csv_path = os.path.join(base_dir, '..', 'wbt.csv')
+        csv_path = os.path.abspath(csv_path) 
+
+
+        df = pd.read_csv(csv_path, sep=',', index_col=0)
         elite_boat_class = getEliteBoatClass(boat_class)
         best_time = df.loc[elite_boat_class, column_name]
         return _convertToMs(best_time)
