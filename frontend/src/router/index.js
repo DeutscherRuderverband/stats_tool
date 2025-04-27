@@ -46,6 +46,10 @@ const router = createRouter({
                 path: 'multiple',
                 name: 'rennstrukturanalyse-multiple',
                 component: RennstrukturanalyseMultiple
+              },
+              {
+                path: ':catchAll(.*)',
+                redirect: '/rennstrukturanalyse'
               }
             ]
           }, 
