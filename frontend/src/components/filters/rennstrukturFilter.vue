@@ -359,21 +359,28 @@ export default {
     },
     submitFormData() {
       const store = useRennstrukturAnalyseState()
-      store.setToLoadingState()
+      store.setToLoadingState(true)
+      this.$router.push({ name: 'rennstrukturanalyse-single' })
       const data = {
         "year": this.selectedYear,
         "competition_type": this.selectedCompetition
       }
-      //console.log(data)
-      return store.postFormData(data).then(() => {
-        console.log("Form data sent...")
-      }).catch(error => {
-        console.error(error)
-      });
+      return store.fetchCompetitionData(data)
+        .then(() => {
+          console.log("Form data sent...");
+        })
+        .catch(error => {
+          console.error(error);
+        })
+        .finally(() => {
+          store.setToLoadingState(false);
+        });
+
     },
     submitMultipleFormData() {
       const store = useRennstrukturAnalyseState()
-      store.setToLoadingState()
+      store.setToLoadingState(true)
+      this.$router.push({ name: 'rennstrukturanalyse-multiple' })
       const groups = []
       for (const panel of this.panels) {
         const groupData = {
@@ -391,11 +398,16 @@ export default {
         "boat_class": this.selectedBoatClass,
         "groups": groups
       }
-      return store.postMultipleFormData(data).then(() => {
-        console.log("Multiple Form data sent...")
-      }).catch(error => {
-        console.error(error)
-      });
+      return store.postMultipleFormData(data)
+        .then(() => {
+          console.log("Multiple Form data sent...")
+        })
+        .catch(error => {
+          console.error(error)
+        })
+        .finally(() => {
+          store.setToLoadingState(false);
+        });
     },
 
     addPanel() {

@@ -59,31 +59,12 @@ function createChartOptions(boats) {
     }
 }
 
-function getRaceDataLabels(groups) {
-    for (let group of groups) {
-        if (Object.keys(group.stats_race_data).length > 0) {
-            return ['0', ...Object.keys(group.stats_race_data)];
-        }
+function getChartLabels(min = 0, max = 2000, steps = 500) {
+    const range = []
+    for(let i = min; i<= max; i+= steps) {
+        range.push(i)
     }
-    return ['0', '2000'];
-}
-
-function getGpsDataLabels(boats) {
-    for (let boat of boats) {
-        if (Object.keys(boat.race_data).length > 0) {
-            return ['0', ...Object.keys(boat.race_data)];
-        }
-    }
-    return ['0', '2000'];
-}
-
-function getIntermediateLabels(groups) {
-    for (let group of groups) {
-        if (Object.keys(group.stats).length > 0) {
-            return Object.keys(group.stats);
-        }
-    }
-    return ['0', '2000'];
+    return range
 }
 
 function createMultipleChartOptions(groups) {
@@ -105,7 +86,14 @@ function getChartOptions(state, title, x_title, y_title, y_reverse = false, y_st
                 title: {
                     display: true,
                     text: x_title
-                }
+                },
+                grid: {
+                    lineWidth: (ctx) => {
+                      // Thicker lines at 500m intervals
+                      const tick = ctx.tick.label;
+                      return tick % 500 === 0 ? 2 : 0.5;
+                    },
+                },
             },
             y: {
                 title: {
@@ -172,6 +160,7 @@ export const useRennstrukturAnalyseState = defineStore({
     state: () => ({
         filterOpen: false,
         loadingState: false,
+        emailLink: '',
         display: "EMPTY",
         relation_time_from: "wbt",
         compData: [],
@@ -243,11 +232,14 @@ export const useRennstrukturAnalyseState = defineStore({
             return data
         },
         getBoatClassData(state) {
-            return {
-                "boat_class": state.data.multiple.boat_class,
-                "wbt": formatMilliseconds(state.data.multiple.world_best_time),
-                "wbt_oz": formatMilliseconds(state.data.multiple.oz_best_time),
+            if (state.data.multiple?.boat_class) {
+                return {
+                    "boat_class": state.data.multiple.boat_class,
+                    "wbt": formatMilliseconds(state.data.multiple.world_best_time),
+                    "wbt_oz": formatMilliseconds(state.data.multiple.oz_best_time),
+                }
             }
+            return null;
         },
         
         getOutlierCountries(state) {
@@ -258,6 +250,9 @@ export const useRennstrukturAnalyseState = defineStore({
         },
         getRelationTimeFrom(state) {
             return state.relation_time_from
+        },
+        getEmailLink(state) {
+            return state.emailLink
         },
 
 
@@ -369,7 +364,8 @@ export const useRennstrukturAnalyseState = defineStore({
                 {text: '1000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
                 {text: '1500m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
                 {text: '2000m', tooltip: "Zeit (Platzierung); Pace (rel. Pace); Schläge/Minute (Meter/Schlag); Speed"},
-                {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"}
+                {text: 'Relationszeit', tooltip: "zu aktueller Bestzeit"},
+                {text: 'Rennstruktur', tooltip: null}
             ]
             tableData.push(tableHead)
 
@@ -450,6 +446,9 @@ export const useRennstrukturAnalyseState = defineStore({
                     else {
                         rowData.push('-')
                     }
+
+                    //Rennstruktur
+                    rowData.push(dataObj.pacing_profile)
                 
                     tableData.push(rowData);
                 }
@@ -517,7 +516,7 @@ export const useRennstrukturAnalyseState = defineStore({
             });
 
             return {
-                labels: getGpsDataLabels(raceBoats),  // Add 0 in x-axis
+                labels: getChartLabels(undefined, undefined, 50),  // Add 0 in x-axis
                 datasets,
             };
         },
@@ -543,7 +542,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     colorIndex++
                 });
                 return {
-                    labels: getGpsDataLabels(state.data.raceData[0].race_boats),
+                    labels: getChartLabels(undefined, undefined, 50),
                     datasets
                 };
             })
@@ -589,13 +588,13 @@ export const useRennstrukturAnalyseState = defineStore({
                     colorIndex++
                 });
                 return {
-                    labels: getRaceDataLabels(state.data.multiple.groups),
+                    labels: getChartLabels(undefined, undefined, 50),
                     datasets
                 };
             })
         },
         getIntermediateChartData(state) {
-            const intermediateDataKeys = ["rank", "time [millis]"];
+            const intermediateDataKeys = ["rank", "time [millis]", "rel_speed [%]"];
             // get reference boat to calculate difference
             const raceData = state.data.raceData[0];
             const raceBoats = raceData.race_boats;
@@ -609,6 +608,7 @@ export const useRennstrukturAnalyseState = defineStore({
             ));
 
             return intermediateDataKeys.map(key => {
+                let chartLabels = getChartLabels(undefined, undefined, 500)
                 const datasets = raceBoats.map((boat, index) => {
                     const label = boat.name;
                     const color = COLORS[index % 6];
@@ -621,12 +621,15 @@ export const useRennstrukturAnalyseState = defineStore({
                         //(Time - reference boat time) / 1000
                         data = Object.entries(boat.intermediates).map(([distance, value]) => (value[key] - (winnerTeamTimes[distance] ?? 0)) / 1000 );
                     }
-                    else if (key == "rank") {
+                    else if (key == 'rank') {
                         data = Object.values(boat.intermediates).map(distanceObj => distanceObj[key]);
+                    }
+                    else {
+                        data = Object.values(boat.intermediates).map(distanceObj => distanceObj[key]).slice(1);
+                        chartLabels = getChartLabels(500, undefined, 500)
                     }
                     return {label, backgroundColor: color , borderColor: color, data, hidden};
                 });
-                const chartLabels = Object.keys(raceBoats[0].intermediates)
                 return {
                     labels: chartLabels,
                     datasets
@@ -634,7 +637,6 @@ export const useRennstrukturAnalyseState = defineStore({
             })
         },
         getMeanIntermediateChartData(state) {
-            const labels = getIntermediateLabels(state.data.multiple.groups)
             const datasets = [];
             let colorIndex = 0;
             const dataKeys = ["mean", "lower_bound", "upper_bound"];
@@ -672,13 +674,12 @@ export const useRennstrukturAnalyseState = defineStore({
 
             })
             return {
-                labels: labels,
+                labels: getChartLabels(500, undefined, 500),
                 datasets
             }
 
         },
-        getPacingProfiles(state) {
-            const labels = getIntermediateLabels(state.data.multiple.groups)
+        getMeanPacingProfiles(state) {
             const datasets = [];
             let colorIndex = 0;
             const dataKeys = ["mean", "lower_bound", "upper_bound"];
@@ -716,13 +717,13 @@ export const useRennstrukturAnalyseState = defineStore({
 
             })
             return {
-                labels: labels,
+                labels: getChartLabels(500, undefined, 500),
                 datasets
             }
         },
-
+        
         //Chart options
-        getSingleChartOptions(state) {
+        getChartMetadata(state) {
             const number_of_boats = state.data.raceData[0].race_boats.length;
             return [
                 getChartOptions(state, "Geschwindigkeit", 'Strecke [m]', 'Geschwindigkeit [m/sek]', false, undefined, undefined, undefined, true),
@@ -730,10 +731,11 @@ export const useRennstrukturAnalyseState = defineStore({
                 getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to} in sek`, 'Strecke [m]', 'Rückstand [sek]', false, undefined, undefined, undefined, true ),
                 getChartOptions(state, 'Schlagfrequenz', 'Strecke [m]', 'Schlagfrequenz [1/min]', false, undefined, undefined, undefined, true),
                 getChartOptions(state, "Platzierung", 'Strecke [m]', 'Platzierung', true, 1, 1, number_of_boats, true),
-                getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to} in m`, 'Strecke [m]', 'Differenz [m]', false, undefined, undefined, undefined, true )
+                getChartOptions(state, `Differenz zu ${state.data.raceData[0].chartOptions.difference_to} in m`, 'Strecke [m]', 'Differenz [m]', false, undefined, undefined, undefined, true ),
+                getChartOptions(state, 'Rennstruktur', 'Strecke [m]', 'Normalisierte Geschwindigkeit', false, undefined, undefined, undefined, true)
             ]
         },
-        getMultipleChartOptions(state) {
+        getMultipleChartMetadata(state) {
             return [
                 getChartOptions(state, "Rennstruktur", 'Strecke [m]', 'Normalisierte Geschschwindigkeit', false, undefined, undefined, undefined, false),
                 getChartOptions(state, "Vortrieb", 'Strecke [m]', 'Vortrieb [m/Schlag]', undefined, undefined, undefined, undefined, false),
@@ -761,27 +763,25 @@ export const useRennstrukturAnalyseState = defineStore({
                     console.error(`Request failed: ${error}`)
                 })
         },
-        async postFormData(data) {
+        async fetchCompetitionData(data) { 
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
                 .then(response => {
                     this.data.analysis = response.data
                     this.display = "SINGLE"
-                    //this.data.multiple = null
-                    this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
         },
+
         async postMultipleFormData(data) {
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_race_boat_groups`, {data})
                 .then(response => {
                     this.data.multiple = response.data
                     this.data.multiple.chartOptions = createMultipleChartOptions(response.data.groups)
                     this.display = "MULTIPLE"
-                    //this.data.analysis = null
-                    this.loadingState = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
+                    this.data.multiple = null;
                 })
         },
         async fetchRaceData(raceId) {
@@ -789,17 +789,6 @@ export const useRennstrukturAnalyseState = defineStore({
                 .then(response => {
                     this.data.raceData[0] = response.data
                     this.data.raceData[0].chartOptions = createChartOptions(response.data.race_boats)
-                    this.loadingState = false
-                }).catch(error => {
-                    console.error(`Request failed: ${error}`)
-                })
-        },
-        async fetchCompetitionData(data) {          //Difference to postFormData?
-            await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/race_analysis_filter_results`, {data})
-                .then(response => {
-                    this.data.analysis = response.data
-                    this.loadingState = false
-                    this.display = "SINGLE"
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
@@ -807,12 +796,16 @@ export const useRennstrukturAnalyseState = defineStore({
         setFilterState(filterState) {
             this.filterOpen = !filterState
         },
-        setToLoadingState() {
-            this.loadingState = true
+        setToLoadingState(bool) {
+            this.loadingState = bool
         },
         setDisplay(view) {
             //EMPTY, SINGLE, MULTIPLE
             this.display = view
+        },
+        setEmailLink(link) {
+            this.emailLink = link
+
         },
         setRelationTimeFrom(value) {
             this.relation_time_from = value

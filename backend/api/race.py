@@ -300,19 +300,23 @@ def calculateConfidenceIntervall(sample_data: list) -> tuple:
 
 def getPacingProfile(t1: float, t2: float, t3: float, t4: float) -> str:
     """Identify Pacing Profile based on 500m times."""
-    pacing_profile = "Other"
-    t_average = (t1 + t2 + t3 + t4) / 4
-    if _isEven(t1, t_average) and _isEven(t2, t_average) and _isEven(t3, t_average) and _isEven(t4, t_average):
-        pacing_profile = "Even"
-    elif t1 < t4 and t4 < min(t2, t3):
-        pacing_profile = "Reverse J-Shape"
-    elif t4 < t1 and t1 < min(t2, t3):
-        pacing_profile = "J-Shape"
-    elif t1 < t2 and t2 < min(t3, t4):
-        pacing_profile = "Negative"
-    elif t4 < t3 and t3 < min(t1, t2):
-        pacing_profile = "Positive"
-    return pacing_profile
+    try:
+        t_average = (t1 + t2 + t3 + t4) / 4
+        if _isEven(t1, t_average) and _isEven(t2, t_average) and _isEven(t3, t_average) and _isEven(t4, t_average):
+            pacing_profile = "Even"
+        elif t1 < t4 and t4 < min(t2, t3):
+            pacing_profile = "Reverse J-Shape"
+        elif t4 < t1 and t1 < min(t2, t3):
+            pacing_profile = "J-Shape"
+        elif t1 < t2 and t2 < min(t3, t4):
+            pacing_profile = "Negative"
+        elif t4 < t3 and t3 < min(t1, t2):
+            pacing_profile = "Positive"
+        else:
+            pacing_profile = "Other"
+        return pacing_profile
+    except Exception:
+        return "-"
 
 def _isEven(ta: float, t_average: float) -> bool:
     """Check if time 'ta' is within a 1% difference from average time 't_average'."""
@@ -345,8 +349,9 @@ def getOzBestTime(boat_class: str, year: int) -> int:
     """
     column_name = _getOlympicCycle(year)
     try:
-        df = pd.read_csv('/usr/src/app/wbt.csv', sep=';', index_col=0)
-        best_time = df.loc[boat_class, column_name]
+        df = pd.read_csv('/usr/src/app/wbt.csv', sep=',', index_col=0)
+        elite_boat_class = getEliteBoatClass(boat_class)
+        best_time = df.loc[elite_boat_class, column_name]
         return _convertToMs(best_time)
     except:
         return 0
@@ -360,13 +365,20 @@ def _convertToMs(time: str) -> int:
 
 def getWorldBestTime(boat_class: str, session) -> int:
     """Get the world best time of a boat class in ms"""
-    statement = select(model.Boat_Class).where(model.Boat_Class.abbreviation == boat_class)
+    elite_boat_class = getEliteBoatClass(boat_class)
+    statement = select(model.Boat_Class).where(model.Boat_Class.abbreviation == elite_boat_class)
     boat_class_object = session.execute(statement).scalars().first()
     world_best_race_boat = boat_class_object.world_best_race_boat
     if world_best_race_boat:
         return world_best_race_boat.result_time_ms
     else:
         return 0
+    
+def getEliteBoatClass(boat_class: str) -> str:
+    """Get the abbreviation of the elite boat class, e. g. BM1x -> M1x"""
+    if boat_class.startswith(('B', 'J')):
+        return boat_class[1:]
+    return boat_class
 
 
 def getAthletes(race_boat_athletes: model.Association_Race_Boat_Athlete) -> dict:

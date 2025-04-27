@@ -1,7 +1,6 @@
 import {createRouter, createWebHistory} from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import Berichte from "@/views/Berichte.vue";
-import Rennstrukturanalyse from "@/views/Rennstrukturanalyse.vue";
 import AthletenView from "@/views/AthletenView.vue";
 import TeamsView from "@/views/TeamsView.vue";
 import MedaillenspiegelView from "@/views/MedaillenspiegelView.vue";
@@ -11,6 +10,10 @@ import HilfeView from "@/views/HilfeView.vue";
 import MitwirkendeView from "@/views/MitwirkendeView.vue";
 import LoginView from "@/views/LoginView.vue";
 import PageNotFoundView from '@/views/PageNotFoundView.vue';
+import RennstrukturanalyseEmpty from '../views/RennstrukturanalyseEmpty.vue';
+import RennstrukturanalyseSingle from '../views/RennstrukturanalyseSingle.vue';
+import RennstrukturanalyseMultiple from '../views/RennstrukturanalyseMultiple.vue';
+import RennstrukturanalyseWrapper from '../views/RennstrukturanalyseWrapper.vue';
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,10 +29,30 @@ const router = createRouter({
             component: Berichte
         },
         {
-            path: '/rennstrukturanalyse/:comp_id?/:event_id?/:race_id?',
-            name: 'rennstrukturanalyse',
-            component: Rennstrukturanalyse
-        },
+            path: '/rennstrukturanalyse',
+            component: RennstrukturanalyseWrapper,
+            children: [
+              {
+                path: '',
+                name: 'rennstrukturanalyse-empty',
+                component: RennstrukturanalyseEmpty
+              },
+              {
+                path: 'single/:comp_id?/:event_id?/:race_id?',
+                name: 'rennstrukturanalyse-single',
+                component: RennstrukturanalyseSingle
+              },
+              {
+                path: 'multiple',
+                name: 'rennstrukturanalyse-multiple',
+                component: RennstrukturanalyseMultiple
+              },
+              {
+                path: ':catchAll(.*)',
+                redirect: '/rennstrukturanalyse'
+              }
+            ]
+          }, 
         {
             path: '/athleten',
             name: 'athleten',
