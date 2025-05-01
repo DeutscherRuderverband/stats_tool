@@ -140,7 +140,7 @@ export const useBerichteState = defineStore({
                 "hoffnungslauf": null,
                 "vorlauf": null,
             },
-            "ranks": ["1", "2", "3", "4-6"],
+            "ranks": [1, 2, 3, 4, 5, 6],
         }],
         data: {
             "results": null,
@@ -253,7 +253,7 @@ export const useBerichteState = defineStore({
                             item[0],
                             formatMilliseconds(Number(data["wbt"])),
                             formatMilliseconds(Number(data["mean"])),
-                            formatMilliseconds(Number(data["delta"])),
+                            formatMilliseconds(Number(data["stddev"])),
                             data["count"]
                         ])
                         }

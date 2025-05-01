@@ -173,7 +173,7 @@ export default {
     initializeFilter(data) {
       this.startYear = Object.values(data.years[0])[0];
       this.endYear = Object.values(data.years[1])[0];
-      this.yearShortCutOptions = [`Zeitraum von ${this.startYear} bis ${this.endYear}`, "Aktuelles Jahr", "Aktueller OZ", "Letzter OZ"]
+      this.yearShortCutOptions = [`Gesamter Zeitraum`, "Aktuelles Jahr", "Aktueller OZ", "Letzter OZ"]
       this.selectedYearShortCutOptions = [0]
 
       this.optionsStartYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.startYear + i)
@@ -270,7 +270,7 @@ export default {
       if (placement.length !== 0) {
         formData["placement"] = placement
       }
-
+      
       const store = useBerichteState()
       store.setSelectedBoatClass(this.selectedBoatClasses[0])
 
@@ -295,6 +295,7 @@ export default {
       formData["competition_type"] = this.selectedCompTypes.join(", ")
       formData["race_phase_type"] = this.selectedRuns.map(item => this.optionsRuns[item]).join(", ")
       formData["race_phase_subtype"] = this.selectedRunsFineSelection.join(", ")
+      formData["placement"] = this.selectedRanks.map(item => this.optionsRanks[item]).join(", ")
       store.setLastFilterConfig(formData)
     },
     clearFormInputs() {

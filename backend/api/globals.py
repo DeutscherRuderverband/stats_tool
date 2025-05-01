@@ -24,8 +24,6 @@ RELEVANT_CMP_TYPE_ABBREVATIONS = [
     "WCH", 
     "OG",
     "ECH",
-    "OPQR",
-    "FOQR",
     #U19, U23
     "U23WCH", 
     "JWCH",
@@ -42,16 +40,18 @@ RELEVANT_CMP_TYPE_ABBREVATIONS = [
 SECONDARY_CMP_TYPE_ABBREVIATIONS = [
     "CONT NF",
     "EO",
+    "FOQR",
+    "FPQR",
     "ID_NF",
     "MASTER_NF",
     "OE F",
     "OE_NF",
+    "OPQR",
     "UNI_F",
     "UNI_NF",
     "WRIC",
     "WRMR",
     "YOG"
-    "FPQR"
 ]
 
 BOATCLASSES_BY_GENDER_AGE_WEIGHT = {

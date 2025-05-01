@@ -233,6 +233,7 @@ def get_matrix() -> dict:
         select(
             func.avg(model.Intermediate_Time.result_time_ms).label("mean"),
             func.min(model.Intermediate_Time.result_time_ms).label("min"),
+            func.stddev_samp(model.Intermediate_Time.result_time_ms).label("stddev"),
             func.count(model.Intermediate_Time.race_boat_id).label("cnt"),
             model.Boat_Class.additional_id_.label('id')
         )
@@ -286,6 +287,7 @@ def get_matrix() -> dict:
             'mean': time.mean,
             'delta': float(time.mean) - float(wbt),
             'count': time.cnt,
+            'stddev': time.stddev,
             'used_wbt': used_wbt
         }
     return result
