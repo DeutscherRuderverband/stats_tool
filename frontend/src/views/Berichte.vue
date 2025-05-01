@@ -54,8 +54,8 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
           <div v-else>
           <v-row>
             <v-col :cols="mobile ? 12 : (currentView == 'Alle' ? 8 : 5)" class="py-0 pt-1">
-              <h2 v-if="currentView != 'Alle'">{{ data.boat_classes }}</h2>
-              <v-alert type="error" variant="tonal" class="my-2" v-if="data.results === 0 && currentView != 'Alle'">
+              <h2 v-if="currentView != 'Alle'">{{ tableData.boat_classes }}</h2>
+              <v-alert type="error" variant="tonal" class="my-2" v-if="tableData.results === 0 && currentView != 'Alle'">
                 <v-row>
                   <v-col cols="12">
                     <p>Leider keine Ergebnisse gefunden.</p>
@@ -65,7 +65,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
               <v-alert type="success" variant="tonal" class="my-2" v-else>
                 <v-row>
                   <v-col cols="12">
-                    <p><b>{{ currentView == 'Alle' ? matrixResults : data.results }} Datensätze |
+                    <p><b>{{ currentView == 'Alle' ? matrixResults : tableData.results }} Datensätze |
                         Von {{ filterConf.interval[0] }} bis {{ filterConf.interval[1] }}</b></p>
                     <p><b>Events</b>: {{ filterConf.competition_type }}</p>
                     <p><b>Läufe</b>: {{ filterConf.race_phase_type }}</p>
@@ -74,43 +74,43 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
                   </v-col>
                 </v-row>
               </v-alert>
-              <v-table class="tableStyles" density="compact" v-if="currentView != 'Alle' && data.results > 0">
+              <v-table class="tableStyles" density="compact" v-if="currentView != 'Alle' && tableData.results > 0">
                 <tbody class="nth-grey">
                   <tr>
                     <th>Weltbestzeit</th>
                     <td>{{
-                      data.world_best_time_boat_class ?
-                        `${formatMilliseconds(data.world_best_time_boat_class)}` : "–"
+                      tableData.world_best_time_boat_class ?
+                        `${formatMilliseconds(tableData.world_best_time_boat_class)}` : "–"
                     }}
                     </td>
                   </tr>
                   <tr>
                     <th>Beste im Zeitraum</th>
-                    <td>{{ formatMilliseconds(data.best_in_period) }}</td>
+                    <td>{{ formatMilliseconds(tableData.best_in_period) }}</td>
                   </tr>
                   <tr>
                     <th>Ø Geschwindigkeit (m/s)</th>
-                    <td>{{ data["mean"]["m/s"] }}</td>
+                    <td>{{ tableData["mean"]["m/s"] }}</td>
                   </tr>
                   <tr>
                     <th>Ø t über 500m</th>
-                    <td>{{ formatMilliseconds(data["mean"]["pace 500m"]) }}</td>
+                    <td>{{ formatMilliseconds(tableData["mean"]["pace 500m"]) }}</td>
                   </tr>
                   <tr>
                     <th>Ø t über 1000m</th>
-                    <td>{{ formatMilliseconds(data["mean"]["pace 1000m"]) }}</td>
+                    <td>{{ formatMilliseconds(tableData["mean"]["pace 1000m"]) }}</td>
                   </tr>
                   <tr>
                     <th>Ø t über 2000m</th>
-                    <td>{{ formatMilliseconds(data["mean"]["mm:ss,00"]) }}</td>
+                    <td>{{ formatMilliseconds(tableData["mean"]["mm:ss,00"]) }}</td>
                   </tr>
                   <tr>
                     <th>Standardabweichung</th>
-                    <td>{{ formatMilliseconds(data.std_dev) }}</td>
+                    <td>{{ formatMilliseconds(tableData.std_dev) }}</td>
                   </tr>
                   <tr>
                     <th>Median</th>
-                    <td>{{ formatMilliseconds(data.median) }}</td>
+                    <td>{{ formatMilliseconds(tableData.median) }}</td>
                   </tr>
                   <tr>
                     <th></th>
@@ -118,28 +118,28 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
                   </tr>
                   <tr>
                     <th>Abstufung schnellste</th>
-                    <td>(n={{ data["gradation_fastest"]["results"] }})
-                      {{ formatMilliseconds(data["gradation_fastest"]["time"]) }}
+                    <td>(n={{ tableData["gradation_fastest"]["results"] }})
+                      {{ formatMilliseconds(tableData["gradation_fastest"]["time"]) }}
                     </td>
                   </tr>
                   <tr>
                     <th>Abstufung mittel</th>
-                    <td>(n={{ data["gradation_medium"]["results"] }}) {{
-                      formatMilliseconds(data["gradation_medium"]["time"])
+                    <td>(n={{ tableData["gradation_medium"]["results"] }}) {{
+                      formatMilliseconds(tableData["gradation_medium"]["time"])
                     }}
                     </td>
                   </tr>
                   <tr>
                     <th>Abstufung langsam</th>
-                    <td>(n={{ data["gradation_slow"]["results"] }}) {{
-                      formatMilliseconds(data["gradation_slow"]["time"])
+                    <td>(n={{ tableData["gradation_slow"]["results"] }}) {{
+                      formatMilliseconds(tableData["gradation_slow"]["time"])
                     }}
                     </td>
                   </tr>
                   <tr>
                     <th>Abstufung langsamste</th>
-                    <td>(n={{ data["gradation_slowest"]["results"] }})
-                      {{ formatMilliseconds(data["gradation_slowest"]["time"]) }}
+                    <td>(n={{ tableData["gradation_slowest"]["results"] }})
+                      {{ formatMilliseconds(tableData["gradation_slowest"]["time"]) }}
                     </td>
                   </tr>
                 </tbody>
@@ -176,7 +176,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
               </v-table>
             </v-col>
 
-            <v-col :cols="mobile ? 12 : 7" class="pa-0" v-if="currentView != 'Alle' && data.results > 0">
+            <v-col :cols="mobile ? 12 : 7" class="pa-0" v-if="currentView != 'Alle' && tableData.results > 0">
               <v-container style="width: 100%" class="pa-2">
                 <BarChart :height="'100%'" :width="'100%'" :data="getBarChartData" :chartOptions="barChartOptions"
                   class="chart-bg">
@@ -259,6 +259,7 @@ export default {
     return {
       mobile: false,
       filterOpen: false,
+      /*
       data: {
         "results": null,
         "boat_class": "",
@@ -311,7 +312,7 @@ export default {
         }
 
       }
-
+      */
 
     }
   },
@@ -325,9 +326,11 @@ export default {
         store.setFilterState(oldVal)
       }
     },
+    /*
     tableData: function (newVal,) {
       this.data = newVal
     }
+      */
   }
 }
 </script>
