@@ -49,13 +49,13 @@
           v-model="formValid2" lazy-validation>
           <!-- Gender-->
           <v-chip-group multiple color="blue" v-model="selectedGenders">
-            <v-chip v-for="genderType in optionsGender">{{ genderType }}
+            <v-chip v-for="genderType in optionsGender">{{ genderType.charAt(0).toUpperCase() + genderType.slice(1) }}
             </v-chip>
           </v-chip-group>
 
-          <!-- Gender-->
+          <!-- Age Group -->
           <v-chip-group multiple color="blue" v-model="selectedAges">
-            <v-chip v-for="ageGroup in optionsAges">{{ ageGroup }}
+            <v-chip v-for="ageGroup in optionsAges">{{ ageGroup.charAt(0).toUpperCase() + ageGroup.slice(1) }}
             </v-chip>
           </v-chip-group>
 
