@@ -200,7 +200,7 @@ def get_race_analysis_filter_results() -> dict:
             event['races'] = sorted(races, key=lambda d: d["race_nr"])
             events.append(event)
 
-        comp['events'] = events
+        comp['events'] = sorted(events, key=lambda d: d["boat_class"])
         competitions.append(comp)
 
     return competitions

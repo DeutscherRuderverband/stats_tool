@@ -34,7 +34,7 @@
                   style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
                   class="pa-2 mx-1" v-for="competition in getAnalysis" :key="competition" :title="competition.name"
                   :subtitle="competition.start + ' | ' + competition.venue"
-                  @click="getEvents(competition.events, competition.name, competition.id)"></v-list-item>
+                  @click="router.push(this.$route.fullPath + '/' + competition.id)"></v-list-item>
               </div>
             </v-list>
 
@@ -60,7 +60,7 @@
                 <v-list-item min-height="50"
                   style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
                   class="pa-1 mx-1" v-for="event in events" :key="event" :title="event.name"
-                  @click="getRaces(event.races, event.name, event.id)"></v-list-item>
+                  @click="router.push(this.$route.fullPath + '/' + event.id)"></v-list-item>
               </div>
             </v-list>
 
@@ -86,7 +86,7 @@
                 <v-list-item min-height="50"
                   style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
                   class="pa-2 mx-1" v-for="race in races" :key="race" :title="race.name"
-                  @click="loadRaceAnalysis(race.name, race.id)"></v-list-item>
+                  @click="router.push(this.$route.fullPath + `?race_id=${race.id}`)"></v-list-item>
               </div>
             </v-list>
 
@@ -288,14 +288,11 @@ export default {
     currentView() {
       if (this.$route.query.race_id) {
         return "ANALYSIS"
-        // Bread crumbs length 3
       }
       if (this.$route.path.match(/\/single\/[^/]+\/[^/]+/)) {
-        //Bread crumbs length 2
         return "RACES"
       }
       if (this.$route.path.match(/\/single\/[^/]+/)) {
-        // Bread crumb length 1
         return "EVENTS"
       }
       return "COMPETITIONS"
@@ -324,28 +321,6 @@ export default {
         return '00:00.00';
       }
       return new Date(ms).toISOString().slice(14, -2);
-    },
-    getEvents(competition, displayName, compId) {
-      router.push("/rennstrukturanalyse/single/" + compId)
-      competition.sort((a, b) => a.boat_class.localeCompare(b.boat_class))
-      this.events = competition
-      this.breadCrumbs.push({ title: displayName })
-    },
-    getRaces(events, displayName, eventId) {
-      router.push(this.$route.fullPath + "/" + eventId)
-      this.races = events
-      this.breadCrumbs.push({ title: displayName })
-    },
-    async loadRaceAnalysis(raceName, raceId) {
-      const store = useRennstrukturAnalyseState()
-      store.setToLoadingState(true)
-      const newPath = this.$route.fullPath + `?race_id=${raceId}`
-      router.push(newPath)
-      await store.fetchRaceData(raceId)
-      const subject = "Wettkampfergebnisse"
-      const body = `Sieh dir diese Wettkampfergebnisse an: http://${window.location.host + newPath}`
-      store.setEmailLink(`mailto:?subject=${subject}&body=${body}`)
-      store.setToLoadingState(false)
     },
     checkScreen() {
       this.windowWidth = window.innerWidth;
@@ -459,11 +434,15 @@ export default {
 
         //race
         if (raceId) {
-          if (raceId == this.competitionData.raceId) return;
+          if (raceId == this.competitionData?.raceId) return;
           else {
             store.setToLoadingState(true)
             await store.fetchRaceData(raceId);
             store.setToLoadingState(false)
+
+            const subject = "Wettkampfergebnisse"
+            const body = `Sieh dir diese Wettkampfergebnisse an: http://${window.location.host + this.$route.fullPath}`
+            store.setEmailLink(`mailto:?subject=${subject}&body=${body}`)
           }
         }
 
