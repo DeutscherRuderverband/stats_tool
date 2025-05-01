@@ -35,9 +35,9 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
             Analysen über längere Zeiträume und weitere Filterkriterien erstellen.
           </v-tooltip>
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
-          <v-icon v-if="matrixVisible" @click="exportMatrixTableData()" color="grey"
+          <v-icon v-if="currentView == 'Alle' && currentView != 'Empty'" @click="exportMatrixTableData()" color="grey"
             class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
-          <v-icon v-if="!matrixVisible" @click="exportBoatClassTableData()" color="grey"
+          <v-icon v-if="currentView != 'Alle' &&  currentView != 'Empty'" @click="exportBoatClassTableData()" color="grey"
             class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
         </v-col>
         <v-divider></v-divider>
@@ -46,10 +46,16 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
           <div class="text-center" style="color: #1369b0">Lade Ergebnisse...</div>
         </v-container>
         <v-container class="pa-0 mt-2 pb-8" v-else>
+          <div v-if="currentView=='Empty'">
+            <v-alert type="info" variant="tonal" :width="mobile ? '100%' : '50%'">
+              Bitte wähle einen Zeitraum und Events in dem Filter auf der linken Seite.
+            </v-alert>
+          </div>
+          <div v-else>
           <v-row>
-            <v-col :cols="mobile ? 12 : (matrixVisible ? 8 : 5)" class="py-0 pt-1">
-              <h2 v-if="!matrixVisible">{{ data.boat_classes }}</h2>
-              <v-alert type="error" variant="tonal" class="my-2" v-if="data.results === 0 && !matrixVisible">
+            <v-col :cols="mobile ? 12 : (currentView == 'Alle' ? 8 : 5)" class="py-0 pt-1">
+              <h2 v-if="currentView != 'Alle'">{{ data.boat_classes }}</h2>
+              <v-alert type="error" variant="tonal" class="my-2" v-if="data.results === 0 && currentView != 'Alle'">
                 <v-row>
                   <v-col cols="12">
                     <p>Leider keine Ergebnisse gefunden.</p>
@@ -59,7 +65,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
               <v-alert type="success" variant="tonal" class="my-2" v-else>
                 <v-row>
                   <v-col cols="12">
-                    <p><b>{{ matrixVisible ? matrixResults : data.results }} Datensätze |
+                    <p><b>{{ currentView == 'Alle' ? matrixResults : data.results }} Datensätze |
                         Von {{ filterConf.interval[0] }} bis {{ filterConf.interval[1] }}</b></p>
                     <p><b>Events</b>: {{ filterConf.competition_type }}</p>
                     <p><b>Läufe</b>: {{ filterConf.race_phase_type }}</p>
@@ -68,7 +74,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
                   </v-col>
                 </v-row>
               </v-alert>
-              <v-table class="tableStyles" density="compact" v-if="!matrixVisible && data.results > 0">
+              <v-table class="tableStyles" density="compact" v-if="currentView != 'Alle' && data.results > 0">
                 <tbody class="nth-grey">
                   <tr>
                     <th>Weltbestzeit</th>
@@ -139,7 +145,8 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
                 </tbody>
               </v-table>
             </v-col>
-            <v-col :cols="mobile ? 12 : 8" v-if="matrixVisible" class="py-0">
+
+            <v-col :cols="mobile ? 12 : 8" v-if="currentView == 'Alle'" class="py-0">
               <v-table class="tableStyles" density="compact">
                 <thead>
                   <tr>
@@ -151,7 +158,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
                   </tr>
                 </thead>
                 <tbody class="nth-grey">
-                  <template v-for="row in matrixData">
+                  <template v-for="row in matrixTableData">
                     <tr v-if="(typeof row === 'string')" class="subheader">
                       <th><b>{{ row }}</b></th>
                       <td></td>
@@ -169,7 +176,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
               </v-table>
             </v-col>
 
-            <v-col :cols="mobile ? 12 : 7" class="pa-0" v-if="!matrixVisible && data.results > 0">
+            <v-col :cols="mobile ? 12 : 7" class="pa-0" v-if="currentView != 'Alle' && data.results > 0">
               <v-container style="width: 100%" class="pa-2">
                 <BarChart :height="'100%'" :width="'100%'" :data="getBarChartData" :chartOptions="barChartOptions"
                   class="chart-bg">
@@ -182,6 +189,7 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
             </v-col>
 
           </v-row>
+          </div>
         </v-container>
       </v-container>
     </v-layout>
@@ -195,43 +203,23 @@ import { useGlobalState } from "@/stores/globalStore";
 
 export default {
   computed: {
-    ...mapState(useGlobalState, {
-      headerReduced: "getHeaderReducedState"
-    }),
-    ...mapState(useBerichteState, {
-      tableData: "getTableData"
-    }),
-    ...mapState(useBerichteState, {
-      matrixResults: "getMatrixTableResults"
-    }),
-    ...mapState(useBerichteState, {
-      matrixTableData: 'getMatrixTableData'
-    }),
-    ...mapState(useBerichteState, {
-      getBarChartData: "getBarChartData"
-    }),
-    ...mapState(useBerichteState, {
-      barChartOptions: "getBarChartOptions"
-    }),
-    ...mapState(useBerichteState, {
-      filterConf: "getFilterConfig"
-    }),
-    ...mapState(useBerichteState, {
-      getScatterChartData: "getScatterChartData"
-    }),
-    ...mapState(useBerichteState, {
-      scatterChartOptions: "getScatterChartOptions"
-    }),
-    ...mapState(useBerichteState, {
-      filterState: "getFilterState"
-    }),
-    ...mapState(useBerichteState, {
-      matrixVisible: "getSelectedBoatClass"
-    }),
-    ...mapState(useBerichteState, {
-      loading: "getLoadingState"
-    })
-  },
+  ...mapState(useGlobalState, {
+    headerReduced: "getHeaderReducedState"
+  }),
+  ...mapState(useBerichteState, {
+    tableData: "getTableData",
+    matrixResults: "getMatrixTableResults",
+    matrixTableData: "getMatrixTableData",
+    getBarChartData: "getBarChartData",
+    barChartOptions: "getBarChartOptions",
+    filterConf: "getFilterConfig",
+    getScatterChartData: "getScatterChartData",
+    scatterChartOptions: "getScatterChartOptions",
+    filterState: "getFilterState",
+    currentView: "getSelectedBoatClass",
+    loading: "getLoadingState"
+  })
+},
   methods: {
     openPrintDialog() {
       window.print();
@@ -271,9 +259,6 @@ export default {
     return {
       mobile: false,
       filterOpen: false,
-      matrixData: {
-
-      },
       data: {
         "results": null,
         "boat_class": "",
@@ -342,9 +327,6 @@ export default {
     },
     tableData: function (newVal,) {
       this.data = newVal
-    },
-    matrixTableData: function (newVal,) {
-      this.matrixData = newVal
     }
   }
 }

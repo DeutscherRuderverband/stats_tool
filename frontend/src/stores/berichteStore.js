@@ -7,7 +7,7 @@ export const useBerichteState = defineStore({
     id: "berichte",
     state: () => ({
         filterOpen: false,
-        loading: true,
+        loading: false,
         matrixTableExport: [],
         lastFilterConfig: {
           "interval": [0, 0],
@@ -15,7 +15,7 @@ export const useBerichteState = defineStore({
           "boat_class": "",
           "race_phase_type": "",
         },
-        selectedBoatClass: "Alle",
+        selectedBoatClass: "Empty",
         filterOptions: [{
             "years": [{"start_year": 0}, {"end_year": 0}],
             "boat_classes": {
@@ -264,7 +264,7 @@ export const useBerichteState = defineStore({
             return rowValues
         },
         getSelectedBoatClass(state) {
-            return state.selectedBoatClass === "Alle"
+            return state.selectedBoatClass
         },
         getBarChartData(state) {
             if (state.data.plot_data.histogram.length === 0) {

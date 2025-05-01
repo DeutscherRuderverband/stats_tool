@@ -215,21 +215,6 @@ export default {
       const tempObj = Object.values(data.runs)
       this.optionsRunsFineSelection = tempObj.reduce((acc, obj) => obj ? acc.concat(Object.keys(obj)) : acc, []);
 
-      if (this.startYear && this.endYear) {
-        const store = useBerichteState()
-        const data = {
-          "interval": [this.startYear, this.endYear],
-          "competition_type": this.compTypes.filter(item =>
-              this.selectedCompTypes.includes(item.display_name)).map(item => item.id),
-          "boat_class": this.boatClasses[this.selectedBoatClasses],
-          "race_phase_type": this.selectedRuns.map(item => this.optionsRuns[item]),
-        }
-        store.postFormDataMatrix(data)
-        data["competition_type"] = this.selectedCompTypes.join(", ")
-        data["race_phase_type"] = this.selectedRuns.map(item => this.optionsRuns[item]).join(", ")
-        data["race_phase_subtype"] = this.selectedRunsFineSelection.join(", ")
-        store.setLastFilterConfig(data)
-      }
     },
     async onSubmit() {
       const {valid} = await this.$refs.filterForm.validate()
