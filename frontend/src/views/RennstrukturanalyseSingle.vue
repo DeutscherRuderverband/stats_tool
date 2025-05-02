@@ -54,17 +54,6 @@
               </v-alert>
             </v-container>
 
-            <!--
-            <v-list density="compact">
-              <div
-                :style="{ 'display': 'grid', 'grid-template-columns': (mobile ? '1fr' : 'repeat(2, 1fr)'), 'grid-gap': '0.5rem' }">
-                <v-list-item min-height="50"
-                  style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
-                  class="pa-1 mx-1" v-for="event in events" :key="event" :title="event.boat_class"
-                  @click="router.push(this.$route.fullPath + '/' + event.id)"></v-list-item>
-              </div>
-            </v-list>
-            -->
             <div :style="{ display: 'flex', flexDirection: mobile ? 'column' : 'row', gap: '1rem', alignItems: 'flex-start'}">
               <div v-for="(column, colIndex) in categorizeEvents(events)" :key="colIndex"
                 :style="{flex: 1, display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem', width: '100%' }">
@@ -75,10 +64,7 @@
                 </v-list-item>
               </div>
             </div>
-
-
-
-
+            
           </v-col>
         </v-container>
       </div>
