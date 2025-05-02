@@ -1,6 +1,6 @@
 <template>
 
-    <v-container class="pa-0 mt-3">
+    <v-container class="pa-0 mt-2">
         <v-alert type="info" variant="tonal" :width="mobile ? '100%' : '50%'">
             Bitte wähle ein Jahr und ein Event in dem Filter auf der linken Seite.
         </v-alert>

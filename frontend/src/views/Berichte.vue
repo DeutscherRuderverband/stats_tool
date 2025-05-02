@@ -259,61 +259,6 @@ export default {
     return {
       mobile: false,
       filterOpen: false,
-      /*
-      data: {
-        "results": null,
-        "boat_class": "",
-        "start_date": 0,
-        "end_date": 0,
-        "world_best_time_boat_class": 0,
-        "best_in_period": 0,
-        "mean": {
-          "mm:ss,00": 0,
-          "m/s": 0,
-          "pace 500m": 0,
-          "pace 1000m": 0
-        },
-        "std_dev": 0,
-        "median": 0,
-        "gradation_fastest": {
-          "no_of_samples": 0,
-          "time": 0
-        },
-        "gradation_medium": {
-          "no_of_samples": 0,
-          "time": 0
-        },
-        "gradation_slow": {
-          "no_of_samples": 0,
-          "time": 0
-        },
-        "gradation_slowest": {
-          "no_of_samples": 0,
-          "time": 0
-        },
-        "plot_data": {
-          "histogram": {
-            "labels":
-              [],
-            "data": []
-          },
-          "scatterPlot": {
-            "labels": [],
-            "data": []
-          },
-          "scatter_1_sd_high": {
-            "labels": [],
-            "data": []
-          },
-          "scatter_1_sd_low": {
-            "labels": [],
-            "data": []
-          }
-        }
-
-      }
-      */
-
     }
   },
   watch: {
@@ -325,12 +270,7 @@ export default {
         const store = useBerichteState()
         store.setFilterState(oldVal)
       }
-    },
-    /*
-    tableData: function (newVal,) {
-      this.data = newVal
     }
-      */
   }
 }
 </script>

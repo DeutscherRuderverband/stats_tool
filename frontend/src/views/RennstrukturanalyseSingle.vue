@@ -54,15 +54,30 @@
               </v-alert>
             </v-container>
 
+            <!--
             <v-list density="compact">
               <div
                 :style="{ 'display': 'grid', 'grid-template-columns': (mobile ? '1fr' : 'repeat(2, 1fr)'), 'grid-gap': '0.5rem' }">
                 <v-list-item min-height="50"
                   style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
-                  class="pa-1 mx-1" v-for="event in events" :key="event" :title="event.name"
+                  class="pa-1 mx-1" v-for="event in events" :key="event" :title="event.boat_class"
                   @click="router.push(this.$route.fullPath + '/' + event.id)"></v-list-item>
               </div>
             </v-list>
+            -->
+            <div :style="{ display: 'flex', flexDirection: mobile ? 'column' : 'row', gap: '1rem', alignItems: 'flex-start'}">
+              <div v-for="(column, colIndex) in categorizeEvents(events)" :key="colIndex"
+                :style="{flex: 1, display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem', width: '100%' }">
+                <h3>{{ column.name }}</h3>
+                <v-list-item min-height="50" v-for="event in column.events" :key="event.id" :title="event.name" class="pa-1 mx-1"
+                  style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed"
+                  @click="router.push($route.fullPath + '/' + event.id)">
+                </v-list-item>
+              </div>
+            </div>
+
+
+
 
           </v-col>
         </v-container>
@@ -331,7 +346,42 @@ export default {
     setRelationTimeFrom(value) {
       const store = useRennstrukturAnalyseState()
       store.setRelationTimeFrom(value)
-    }
+    },
+    sortEvents(events) {
+      const getPriority = (e) => {
+        if (e.boat_class.startsWith('P')) return 0;
+        if (e.boat_class.startsWith('L')) return 1;
+        return 2;
+      };
+
+      return events.sort((a, b) => {
+        const diff = getPriority(a) - getPriority(b);
+        if (diff !== 0) return diff;
+        return a.boat_class.localeCompare(b.boat_class);
+      });
+    },
+    categorizeEvents(events) {
+      const categories = [
+        {name: "Men's Events", events: []},
+        {name: "Women's Events", events: []},
+        {name: "Open Events", events: []}
+      ]
+
+      for (let event of events) {
+        if (event.boat_class.includes('Mix')) {
+          categories[2].events.push(event)
+        }
+        else if (event.boat_class.includes('W')) {
+          categories[1].events.push(event)
+        }
+        else {
+          categories[0].events.push(event)
+        }
+        categories[0].events = this.sortEvents(categories[0].events);
+        categories[1].events = this.sortEvents(categories[1].events);
+      }
+      return categories
+    },
   },
   watch: {
     radios(newValue) {
