@@ -366,7 +366,7 @@ export default {
         categories[0].events = this.sortEvents(categories[0].events);
         categories[1].events = this.sortEvents(categories[1].events);
       }
-      return categories
+      return categories.filter(cat => cat.events.length > 0);
     },
   },
   watch: {
