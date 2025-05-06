@@ -421,9 +421,7 @@ export default {
 
           if (comp) {
             addBreadCrumbs(comp, null)
-            if (this.events.length === 0) {
-              this.events = comp.events
-            }
+            this.events = comp.events
           }
           else {
             try {
@@ -442,11 +440,11 @@ export default {
         else if (eventId && compId) {
 
           let comp = (this.getAnalysis ?? []).find(obj => obj.id == compId);
-          if (comp && this.events.length === 0) {
+          if (comp) {
             this.events = comp.events
           }
           let event = (this.events ?? []).find(obj => obj.id == eventId);
-          if (event && this.races.length === 0) {
+          if (event) {
             this.races = event.races
           }
 
