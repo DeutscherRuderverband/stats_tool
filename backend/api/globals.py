@@ -73,7 +73,7 @@ BOATCLASSES_BY_GENDER_AGE_WEIGHT = {
             'coxed_four': ("BM4+", "U23 Men's Coxed Four", "e784fbb3-b45f-45d5-be67-0699cdba4553"),
             'four': ("BM4-", "U23 Men's Four", "2fc7bcd7-3ccc-49eb-ab18-50ab09ae501d"),
             'eight': ("BM8+", "U23 Men's Eight", "2a2a5aa7-8592-4684-99ce-4f02679061e6"),
-            'lw_single': ("BLM1x", "U23 Lightweight Men's Single Sculls", "2a2a5aa7-8592-4684-99ce-4f02679061e6"),
+            'lw_single': ("BLM1x", "U23 Lightweight Men's Single Sculls", "a3fffabb-8d13-499c-b381-b74da92fd320"),
             'lw_double': ("BLM2x", "U23 Lightweight Men's Double Sculls", "cc8022e2-3ee1-463a-bddf-aa115d68e704"),
             'lw_quad': ("BLM4x", "U23 Lightweight Men's Quadruple Sculls", "8df04fba-76af-40c4-ac38-73f377bfb258"),
             'lw_pair': ("BLM2-", "U23 Lightweight Men's Pair", "3830f652-0963-4d75-a081-a4ef4553a10c"),
