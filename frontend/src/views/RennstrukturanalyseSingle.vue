@@ -34,7 +34,7 @@
                   style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
                   class="pa-2 mx-1" v-for="competition in getAnalysis" :key="competition" :title="competition.name"
                   :subtitle="competition.start + ' | ' + competition.venue"
-                  @click="router.push(this.$route.fullPath + '/' + competition.id)"></v-list-item>
+                  @click="router.push($route.fullPath + '/' + competition.id)"></v-list-item>
               </div>
             </v-list>
 
@@ -87,7 +87,7 @@
                 <v-list-item min-height="50"
                   style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed;"
                   class="pa-2 mx-1" v-for="race in races" :key="race" :title="race.name"
-                  @click="router.push(this.$route.fullPath + `?race_id=${race.id}`)"></v-list-item>
+                  @click="router.push($route.fullPath + `?race_id=${race.id}`)"></v-list-item>
               </div>
             </v-list>
 
