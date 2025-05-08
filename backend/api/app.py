@@ -246,7 +246,7 @@ def get_matrix() -> dict:
         .join(model.Competition_Type.competition_category)
         .where(
             model.Intermediate_Time.distance_meter == 2000,
-            model.Intermediate_Time.is_outlier == False, 
+            #model.Intermediate_Time.is_outlier == False, 
             model.Intermediate_Time.result_time_ms != 0
         )
         .group_by(
