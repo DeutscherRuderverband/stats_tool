@@ -244,12 +244,12 @@ export const useBerichteState = defineStore({
 
             let rowValues = []
             Object.entries(subHeaders).forEach(([key, value], idx) => {
-                rowValues.push(key)
+                let categoryEntries = [key]
                 for (const item of value) {
                     if (item !== undefined && item.length > 1) {
                         const data = state.matrixData[item[2]]
                         if (data !== undefined) {
-                            rowValues.push([
+                            categoryEntries.push([
                             item[0],
                             formatMilliseconds(Number(data["wbt"])),
                             formatMilliseconds(Number(data["mean"])),
@@ -259,6 +259,10 @@ export const useBerichteState = defineStore({
                         }
                     }
                 }
+                if (categoryEntries.length > 1) {
+                    rowValues.push(...categoryEntries)
+                }
+
             })
             state.matrixTableExport = rowValues
             return rowValues
@@ -505,7 +509,7 @@ export const useBerichteState = defineStore({
         },
         async postFormData(data) {
             this.loading = true
-            this.selectedBoatClass = data.boat_classes
+            this.selectedBoatClass = data.boat_class
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_report_boat_class`, {data})
                 .then(response => {
                     this.data = response.data

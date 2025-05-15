@@ -20,7 +20,7 @@
         <v-window v-model="tab">
             <!-- SINGLE RACE -->
             <v-window-item value="one">
-                <v-form class="mt-3">
+                <v-form class="mt-3" ref="singleForm" @submit.prevent="onSubmitSingle" lazy-validation>
                     <v-chip-group filter color="blue" v-model="selectedYearShortCutOptions">
                         <v-chip v-for="yearShortCut in yearShortCutOptions" v-if="yearShortCutOptions">{{ yearShortCut
                             }}
@@ -109,7 +109,7 @@
 
             <!-- MULIPLE RACES -->
             <v-window-item value="two">
-                <v-form class="mt-3">
+                <v-form class="mt-3" ref="multipleForm" @submit.prevent="onSubmitMultiple" lazy-validation>
                     <v-chip-group filter color="blue" v-model="selectedYearShortCutOptions">
                         <v-chip v-for="yearShortCut in yearShortCutOptions" v-if="yearShortCutOptions">{{ yearShortCut
                             }}
@@ -334,7 +334,6 @@ export default {
         const setFilterValues = async () => {
             await store.fetchReportFilterOptions()
             const data = this.reportFilterOptions[0]
-            console.log(this.reportFilterOptions)
 
             //Years
             this.startYear = data.years[0].start_year
@@ -435,6 +434,87 @@ export default {
             }
             this.allSelected = !this.allSelected;
         },
+        async onSubmitSingle() {
+            const { valid } = await this.$refs.singleForm.validate()
+            if (valid) {
+                this.hideFilter()
+                this.submitSingle()
+            } else {
+                alert("Bitte überprüfen Sie die Eingaben.")
+            }
+        },
+        async onSubmitMultiple() {
+            const { valid } = await this.$refs.multipleForm.validate()
+            if (valid) {
+                this.hideFilter()
+                this.submitMultiple()
+            } else {
+                alert("Bitte überprüfen Sie die Eingaben.")
+            }
+        },
+        submitSingle() {
+            const formData = this.buildFormData(this.selectedBoatClass);
+
+            const store = useBerichteState()
+            store.postFormData(formData)
+                .then(() => {console.log("data sent...")})
+                .catch(error => {console.error(error)})
+
+            store.setLastFilterConfig(this.buildFilterConfig(formData));
+        },
+        submitMultiple() {
+            const formData = this.buildFormData(this.multipleBoatClass);
+            const store = useBerichteState()
+            store.postFormDataMatrix(formData)
+                .then(() => {console.log("data sent...")})
+                .catch(error => {console.error(error)})
+                
+            store.setLastFilterConfig(this.buildFilterConfig(formData));
+
+        },
+        getRacePhaseSubtypes(selectedKeys, runsData) {
+            // find run keys for race_phase_subtype
+            // TODO: This makes no sense, no difference between phases
+            return selectedKeys.reduce((acc, key) => {
+                const value = Object.values(runsData).find(obj => obj.hasOwnProperty(key));
+                if (value && Array.isArray(value[key])) {
+                    return acc.concat(value[key]);
+                } else if (value) {
+                    return acc.concat(value[key]);
+                } else {
+                    return acc;
+                }
+            }, []);
+        },
+        buildFormData(boatClass) {
+            const racePhaseSubtypes = this.getRacePhaseSubtypes(this.selectedRunsFineSelection, this.runsData);
+
+            const formData = {
+                interval: [this.startYear, this.endYear],
+                competition_type: this.compTypes
+                    .filter(item => this.selectedCompTypes.includes(item.display_name))
+                    .map(item => item.id),
+                boat_class: boatClass,
+                race_phase_type: this.selectedRuns.map(item => this.optionsRuns[item]),
+                race_phase_subtype: [...new Set(racePhaseSubtypes)],
+            };
+
+            const placement = this.selectedRanks.map(item => this.optionsRanks[item]);
+            if (placement.length > 0) {
+                formData.placement = placement;
+            }
+
+            return formData;
+        },
+        buildFilterConfig(formData) {
+            return {
+                ...formData,
+                competition_type: this.selectedCompTypes.join(", "),
+                race_phase_type: this.selectedRuns.map(item => this.optionsRuns[item]).join(", "),
+                race_phase_subtype: this.selectedRunsFineSelection.join(", "),
+                placement: this.selectedRanks.map(item => this.optionsRanks[item]).join(", ")
+            };
+        }
 
 
     },

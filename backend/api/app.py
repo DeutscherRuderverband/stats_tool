@@ -214,7 +214,7 @@ def get_matrix() -> dict:
     """
     filter_key_mapping = {
         'gender': model.Event.gender_id,  # list
-        'boat_class': model.Boat_Class.id,  # list
+        'boat_class': model.Boat_Class.abbreviation,  # list
         'interval': model.Competition.year,  # tuple
         'competition_type': model.Competition_Type.additional_id_,  # list
         'race_phase_type': model.Race.phase_type,  # list
@@ -247,7 +247,8 @@ def get_matrix() -> dict:
         .where(
             model.Intermediate_Time.distance_meter == 2000,
             #model.Intermediate_Time.is_outlier == False, 
-            model.Intermediate_Time.result_time_ms != 0
+            model.Intermediate_Time.result_time_ms != 0,
+            model.Boat_Class.abbreviation.in_(request.json["data"].get('boat_class', None))
         )
         .group_by(
             model.Boat_Class.id
@@ -625,7 +626,7 @@ def get_report_boat_class():
             model.Race.date >= start_date,
             model.Race.date <= end_date,
             model.Event.boat_class_id == model.Boat_Class.id,
-            model.Boat_Class.additional_id_ == boat_class,
+            model.Boat_Class.abbreviation == boat_class,
             model.Competition_Type.additional_id_.in_(competition_types)
         ))
     )
