@@ -374,6 +374,19 @@ export default {
       const store = useRennstrukturAnalyseState()
       store.setRelationTimeFrom(newValue)
     },
+    getAnalysis: {
+      immediate: true,
+      // skip competition view if there is only one comp
+      handler(competitions) {
+        if (
+          this.currentView === 'COMPETITIONS' &&
+          competitions &&
+          competitions.length === 1
+        ) {
+          this.$router.replace(this.$route.fullPath + '/' + competitions[0].id)
+        }
+      }
+    },
     $route: {
       immediate: true,
       deep: true,
