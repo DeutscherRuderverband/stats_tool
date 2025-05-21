@@ -518,7 +518,7 @@ export const useBerichteState = defineStore({
                     console.error(`Request failed: ${error}`)
                 })
         },
-        async postFormDataMatrix(data) {
+        async postFormDataMultiple(data) {
             this.selectedBoatClass = "Alle"
             this.loading = true
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/matrix`, {data})
@@ -528,6 +528,10 @@ export const useBerichteState = defineStore({
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
+        },
+        async postFormDataMatrix(data) {
+            console.log("postFormDataMatrix")
+            console.log(data )
         },
         setFilterState(filterState) {
             this.filterOpen = !filterState

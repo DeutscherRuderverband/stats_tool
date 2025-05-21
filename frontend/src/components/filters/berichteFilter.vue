@@ -202,12 +202,13 @@
                         <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
                     </v-container>
 
-
+                    
                 </v-form>
             </v-window-item>
 
             <!-- Matrix RACES -->
             <v-window-item value="three">
+                <v-form class="mt-3" ref="matrixForm" @submit.prevent="onSubmitMatrix" lazy-validation>
                 <!-- year -->
                 <v-select class="pt-4" clearable density="comfortable" label="Jahr" :items="optionsYear"
                     v-model="matrixYear" variant="outlined" :rules="[v => !!v || 'Wähle ein Jahr']">
@@ -246,8 +247,10 @@
                     v-model="selectedBoatClass" variant="outlined"></v-select>
 
                 <v-container class="pt-6 pa-0 pb-100 mb-100 text-right">
-                    <v-btn color="blue" class="mx-2">Bestätigen</v-btn>
+                    <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
                 </v-container>
+
+                </v-form>
 
 
             </v-window-item>
@@ -452,6 +455,16 @@ export default {
                 alert("Bitte überprüfen Sie die Eingaben.")
             }
         },
+        async onSubmitMatrix() {
+            const { valid } = await this.$refs.matrixForm.validate()
+            if (valid) {
+                this.hideFilter()
+                this.submitMatrix()
+            } else {
+                alert("Bitte überprüfen Sie die Eingaben.")
+            }
+
+        },
         submitSingle() {
             const formData = this.buildFormData(this.selectedBoatClass);
 
@@ -465,12 +478,27 @@ export default {
         submitMultiple() {
             const formData = this.buildFormData(this.multipleBoatClass);
             const store = useBerichteState()
-            store.postFormDataMatrix(formData)
+            store.postFormDataMultiple(formData)
                 .then(() => {console.log("data sent...")})
                 .catch(error => {console.error(error)})
                 
             store.setLastFilterConfig(this.buildFilterConfig(formData));
 
+        },
+        submitMatrix() {
+            const formData = {
+                year: this.matrixYear,
+                competition_type: this.matrixCompetition,
+                boat_class: this.selectedBoatClass
+            }
+            const store = useBerichteState()
+            /*
+            store.postFormDataMatrix(formData)
+                .then(() => {console.log("data sent...")})
+                .catch(error => {console.error(error)})
+
+            */    
+            console.log("Submit Matrix")
         },
         getRacePhaseSubtypes(selectedKeys, runsData) {
             // find run keys for race_phase_subtype

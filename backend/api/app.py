@@ -293,6 +293,26 @@ def get_matrix() -> dict:
         }
     return result
 
+
+@app.route('/competition_matrix', methods=['POST'])
+@jwt_required()
+def get_competition_matrix() -> dict:
+    session = Scoped_Session()
+
+    year = request.json["data"]["year"]
+    competition_type = request.json["data"]["year"]
+    boat_class = request.json["data"]["boat_class"]
+
+
+    ## TODO
+    #wbt
+    # wbt date
+    # Platz 1, 2, 3, 6, 8
+    # Quali FA
+    # n
+
+    return {}
+
 #Comment
 @app.route('/get_race_boat_groups', methods=['POST'])
 @jwt_required()
