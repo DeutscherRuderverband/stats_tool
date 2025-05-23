@@ -23,7 +23,7 @@
                 <v-form class="mt-3" ref="singleForm" @submit.prevent="onSubmitSingle" lazy-validation>
                     <v-chip-group filter color="blue" v-model="selectedYearShortCutOptions">
                         <v-chip v-for="yearShortCut in yearShortCutOptions" v-if="yearShortCutOptions">{{ yearShortCut
-                            }}
+                        }}
                         </v-chip>
                     </v-chip-group>
 
@@ -53,7 +53,7 @@
                     <!-- Age Group -->
                     <v-chip-group multiple color="blue" v-model="selectedAges">
                         <v-chip v-for="ageGroup in optionsAges">{{ ageGroup.charAt(0).toUpperCase() + ageGroup.slice(1)
-                            }}
+                        }}
                         </v-chip>
                     </v-chip-group>
 
@@ -87,10 +87,6 @@
                         :rules="[v => v.length > 0 || 'Wähle mindestens eine Laufkategorie']">
                     </v-select>
 
-
-
-
-
                     <v-label class="pt-1">Platzierung (optional)</v-label>
                     <v-chip-group filter color="blue" multiple v-model="selectedRanks">
                         <v-chip v-for="rank in optionsRanks">{{ rank }}</v-chip>
@@ -103,7 +99,6 @@
                         <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
                     </v-container>
 
-
                 </v-form>
             </v-window-item>
 
@@ -112,7 +107,7 @@
                 <v-form class="mt-3" ref="multipleForm" @submit.prevent="onSubmitMultiple" lazy-validation>
                     <v-chip-group filter color="blue" v-model="selectedYearShortCutOptions">
                         <v-chip v-for="yearShortCut in yearShortCutOptions" v-if="yearShortCutOptions">{{ yearShortCut
-                            }}
+                        }}
                         </v-chip>
                     </v-chip-group>
 
@@ -142,7 +137,7 @@
                     <!-- Age Group -->
                     <v-chip-group multiple color="blue" v-model="selectedAges">
                         <v-chip v-for="ageGroup in optionsAges">{{ ageGroup.charAt(0).toUpperCase() + ageGroup.slice(1)
-                            }}
+                        }}
                         </v-chip>
                     </v-chip-group>
 
@@ -154,13 +149,12 @@
                             <v-list-item title="Select All" @click="toggleSelectAll()">
                                 <template v-slot:prepend>
                                     <v-checkbox-btn
-                                        :indeterminate="(multipleBoatClass.length != 0 && !allSelected) || (allSelected && multipleBoatClass.length != optionsBoatClass.length) "
+                                        :indeterminate="(multipleBoatClass.length != 0 && !allSelected) || (allSelected && multipleBoatClass.length != optionsBoatClass.length)"
                                         :model-value="allSelected"></v-checkbox-btn>
                                 </template>
                             </v-list-item>
                             <v-divider class="mt-2"></v-divider>
                         </template>
-
 
                     </v-select>
 
@@ -176,7 +170,6 @@
                                 </template>
                             </v-list-item>
                         </template>
-
                     </v-select>
 
                     <v-chip-group class="pt-2" filter color="blue" multiple v-model="selectedRuns">
@@ -202,56 +195,36 @@
                         <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
                     </v-container>
 
-                    
                 </v-form>
             </v-window-item>
 
             <!-- Matrix RACES -->
             <v-window-item value="three">
                 <v-form class="mt-3" ref="matrixForm" @submit.prevent="onSubmitMatrix" lazy-validation>
-                <!-- year -->
-                <v-select class="pt-4" clearable density="comfortable" label="Jahr" :items="optionsYear"
-                    v-model="matrixYear" variant="outlined" :rules="[v => !!v || 'Wähle ein Jahr']">
-                </v-select>
+                    <!-- year -->
+                    <v-select class="pt-4" clearable density="comfortable" label="Jahr" :items="optionsYear"
+                        v-model="matrixYear" variant="outlined" :rules="[v => !!v || 'Wähle ein Jahr']">
+                    </v-select>
 
-                <!-- Competitions -->
-                <v-select class="pt-3" density="comfortable" label="Event" :items="optionsCompTypes"
-                    v-model="matrixCompetition" variant="outlined">
-                    <template v-slot:append-item>
-                        <v-divider class="mt-2"></v-divider>
-                        <v-list-item :title="competitionToggleText" @click="toggleSecondaryCompetitions()">
-                            <template v-slot:prepend>
-                                <v-icon :icon="showMore ? 'mdi-chevron-down' : 'mdi-chevron-up'">
-                                </v-icon>
-                            </template>
-                        </v-list-item>
-                    </template>
-                </v-select>
+                    <!-- Competitions -->
+                    <v-select class="pt-3" density="comfortable" label="Event" :items="optionsCompTypes"
+                        v-model="matrixCompetition" variant="outlined">
+                        <template v-slot:append-item>
+                            <v-divider class="mt-2"></v-divider>
+                            <v-list-item :title="competitionToggleText" @click="toggleSecondaryCompetitions()">
+                                <template v-slot:prepend>
+                                    <v-icon :icon="showMore ? 'mdi-chevron-down' : 'mdi-chevron-up'">
+                                    </v-icon>
+                                </template>
+                            </v-list-item>
+                        </template>
+                    </v-select>
 
-                <!-- Gender -->
-                <v-chip-group multiple color="blue" v-model="selectedGenders">
-                    <v-chip v-for="genderType in optionsGender">{{ genderType.charAt(0).toUpperCase() +
-                        genderType.slice(1) }}
-                    </v-chip>
-                </v-chip-group>
-
-                <!-- Age Group -->
-                <v-chip-group multiple color="blue" v-model="selectedAges">
-                    <v-chip v-for="ageGroup in optionsAges">{{ ageGroup.charAt(0).toUpperCase() + ageGroup.slice(1)
-                        }}
-                    </v-chip>
-                </v-chip-group>
-
-                <!-- Bootsklasse -->
-                <v-select class="pt-3" density="comfortable" label="Bootsklasse" :items="optionsBoatClass"
-                    v-model="selectedBoatClass" variant="outlined"></v-select>
-
-                <v-container class="pt-6 pa-0 pb-100 mb-100 text-right">
-                    <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
-                </v-container>
+                    <v-container class="pt-6 pa-0 pb-100 mb-100 text-right">
+                        <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
+                    </v-container>
 
                 </v-form>
-
 
             </v-window-item>
         </v-window>
@@ -341,7 +314,7 @@ export default {
             //Years
             this.startYear = data.years[0].start_year
             this.endYear = data.years[1].end_year
-            this.matrixYear = data.years[0].start_year
+            this.matrixYear = this.endYear
             this.yearShortCutOptions = [`Gesamter Zeitraum`, "Aktuelles Jahr", "Aktueller OZ", "Letzter OZ"]
             this.optionsYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.endYear - i)
             this.selectedYearShortCutOptions = [0]
@@ -489,16 +462,11 @@ export default {
             const formData = {
                 year: this.matrixYear,
                 competition_type: this.matrixCompetition,
-                boat_class: this.selectedBoatClass
             }
             const store = useBerichteState()
-            /*
             store.postFormDataMatrix(formData)
                 .then(() => {console.log("data sent...")})
                 .catch(error => {console.error(error)})
-
-            */    
-            console.log("Submit Matrix")
         },
         getRacePhaseSubtypes(selectedKeys, runsData) {
             // find run keys for race_phase_subtype

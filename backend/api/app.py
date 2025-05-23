@@ -1,6 +1,7 @@
 import os
 import datetime
 import json
+import re
 from secrets import token_hex
 from collections import OrderedDict
 from statistics import stdev, median, mean
@@ -300,18 +301,103 @@ def get_competition_matrix() -> dict:
     session = Scoped_Session()
 
     year = request.json["data"]["year"]
-    competition_type = request.json["data"]["year"]
-    boat_class = request.json["data"]["boat_class"]
+    competition_type = request.json["data"]["competition_type"]
 
+    # Subquery für die Fahrzeiten der Plätze 1-3, 6 in Finale A
+    finale_a_times = (
+        select(
+            model.Race.event_id,
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 1).label("Fahrzeit_Gold"),
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 2).label("Fahrzeit_Silber"),
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 3).label("Fahrzeit_Bronze"),
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 6).label("Fahrzeit_Platz_6"),
+        )
+        .join(model.Race_Boat.race)
+        .where(
+            model.Race.phase_type == "final",
+            model.Race.phase_number == 1
+        )  # Finale A explizit filtern!
+        .group_by(model.Race.event_id)
+        .subquery()
+    )
 
-    ## TODO
-    #wbt
-    # wbt date
-    # Platz 1, 2, 3, 6, 8
-    # Quali FA
-    # n
+    # Subquery für Platz 8
+    finale_b_times = (
+        select(
+            model.Race.event_id,
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 2).label("Fahrzeit_Platz_8"),
+        )
+        .join(model.Race_Boat.race)
+        .where(
+            model.Race.phase_type == "final",
+            model.Race.phase_number == 2
+        )  # Finale B explizit filtern!
+        .group_by(model.Race.event_id)
+        .subquery()
+    )
 
-    return {}
+    statement = (
+        select(
+            model.Boat_Class.abbreviation.label("Bootsklasse"),
+            model.Competition.id,
+            model.Competition.name,
+            finale_a_times.c.Fahrzeit_Gold,
+            finale_a_times.c.Fahrzeit_Silber,
+            finale_a_times.c.Fahrzeit_Bronze,
+            finale_a_times.c.Fahrzeit_Platz_6,
+            finale_b_times.c.Fahrzeit_Platz_8
+            )
+        .join(model.Event.competition)
+        .join(model.Event.boat_class)
+        .join(model.Competition.competition_type)
+        .outerjoin(finale_a_times, finale_a_times.c.event_id == model.Event.id)
+        .outerjoin(finale_b_times, finale_b_times.c.event_id == model.Event.id)
+        .where(
+            model.Competition.year == year,
+            model.Competition_Type.abbreviation == competition_type
+        )
+    )
+
+    result = session.execute(statement)
+
+    keys = result.keys()
+    data_as_dict = [dict(zip(keys, row)) for row in result]
+
+    # Separate table for wbt
+    wbt_statement = (
+        select(
+            model.Race_Boat.result_time_ms.label("Bestzeit"),
+            model.Boat_Class.abbreviation.label("Bootsklasse"),
+            model.Race.date.label("Wbt_date")
+        )
+            .outerjoin(model.Boat_Class.world_best_race_boat)
+            .outerjoin(model.Race_Boat.race)
+        ) 
+
+    wbt_result = session.execute(wbt_statement).fetchall()
+
+    # Map: Bootsklasse → (Bestzeit, Datum)
+    wbt_lookup = {
+        row.Bootsklasse: (row.Bestzeit, row.Wbt_date)
+        for row in wbt_result if row.Bootsklasse
+    }
+
+    for row in data_as_dict:
+        boatclass = re.sub(r'^[BJ](?=\w)', '', row.get("Bootsklasse"))
+        bestzeit, wbt_date = wbt_lookup.get(boatclass, (None, None))
+
+        def rel(zeit):
+            return round(bestzeit / zeit, 3) if zeit and bestzeit else None
+
+        row["Rel_Gold"] = rel(row.get("Fahrzeit_Gold"))
+        row["Rel_Silber"] = rel(row.get("Fahrzeit_Silber"))
+        row["Rel_Bronze"] = rel(row.get("Fahrzeit_Bronze"))
+        row["Rel_Platz_6"] = rel(row.get("Fahrzeit_Platz_6"))
+        row["Rel_Platz_8"] = rel(row.get("Fahrzeit_Platz_8"))
+        row["WBT"] = bestzeit
+        row["Datum_WBT"] = wbt_date
+
+    return data_as_dict
 
 #Comment
 @app.route('/get_race_boat_groups', methods=['POST'])
