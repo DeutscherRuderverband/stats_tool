@@ -610,7 +610,7 @@ def get_race(race_id: int) -> dict:
     venue = race.event.competition.venue
 
     #World Best Times
-    best_oz_time =  r.getOzBestTime(race.event.boat_class.abbreviation, datetime.datetime.today().year)
+    best_oz_time =  r.getOzBestTime(race.event.boat_class.abbreviation, race.date.year if race.date else datetime.datetime.today().year)
     world_best_time_ms = r.getWorldBestTime(race.event.boat_class.abbreviation, session)
 
     best_of_last_4_years_ms =  r.result_time_best_of_year_interval(
