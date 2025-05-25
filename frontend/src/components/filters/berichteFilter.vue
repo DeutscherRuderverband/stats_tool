@@ -262,7 +262,7 @@ export default {
 
             //Gender
             optionsGender: [],
-            selectedGenders: [0],
+            selectedGenders: [0,1],
 
             //Age Group
             optionsAges: [],
@@ -271,8 +271,8 @@ export default {
             //Boat class
             optionsBoatClass: [],
             selectedBoatClass: "M1x",
-            multipleBoatClass: ['M1x'],
-            allSelected: false,
+            multipleBoatClass: [],
+            allSelected: true,
 
             // competition type
             compTypes: [], // list of dicts with objects containing displayName, id and key
@@ -328,6 +328,7 @@ export default {
 
             //Boat class
             this.updateBoatClass()
+            this.multipleBoatClass = this.optionsBoatClass
 
             //competitions
             this.compTypes = data.competition_categories
