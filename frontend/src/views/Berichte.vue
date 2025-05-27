@@ -42,9 +42,9 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
             Analysen über längere Zeiträume und weitere Filterkriterien erstellen.
           </v-tooltip>
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
-          <v-icon v-if="currentView == 'Alle' && currentView != 'Empty'" @click="exportMatrixTableData()" color="grey"
+          <v-icon v-if="currentView == 'Alle'" @click="exportMatrixTableData()" color="grey"
             class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
-          <v-icon v-if="currentView != 'Alle' &&  currentView != 'Empty'" @click="exportBoatClassTableData()"
+          <v-icon v-if="currentView != 'Alle' &&  currentView != 'Empty' && currentView != 'Matrix'" @click="exportBoatClassTableData()"
             color="grey" class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
         </v-col>
         <v-divider></v-divider>
