@@ -1,6 +1,7 @@
 import os
 import datetime
 import json
+import re
 from secrets import token_hex
 from collections import OrderedDict
 from statistics import stdev, median, mean
@@ -214,7 +215,7 @@ def get_matrix() -> dict:
     """
     filter_key_mapping = {
         'gender': model.Event.gender_id,  # list
-        'boat_class': model.Boat_Class.id,  # list
+        'boat_class': model.Boat_Class.abbreviation,  # list
         'interval': model.Competition.year,  # tuple
         'competition_type': model.Competition_Type.additional_id_,  # list
         'race_phase_type': model.Race.phase_type,  # list
@@ -246,8 +247,9 @@ def get_matrix() -> dict:
         .join(model.Competition_Type.competition_category)
         .where(
             model.Intermediate_Time.distance_meter == 2000,
-            model.Intermediate_Time.is_outlier == False, 
-            model.Intermediate_Time.result_time_ms != 0
+            #model.Intermediate_Time.is_outlier == False, 
+            model.Intermediate_Time.result_time_ms != 0,
+            model.Boat_Class.abbreviation.in_(request.json["data"].get('boat_class', None))
         )
         .group_by(
             model.Boat_Class.id
@@ -291,6 +293,111 @@ def get_matrix() -> dict:
             'used_wbt': used_wbt
         }
     return result
+
+
+@app.route('/competition_matrix', methods=['POST'])
+@jwt_required()
+def get_competition_matrix() -> dict:
+    session = Scoped_Session()
+
+    year = request.json["data"]["year"]
+    competition_type = request.json["data"]["competition_type"]
+
+    # Subquery für die Fahrzeiten der Plätze 1-3, 6 in Finale A
+    finale_a_times = (
+        select(
+            model.Race.event_id,
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 1).label("Fahrzeit_Gold"),
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 2).label("Fahrzeit_Silber"),
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 3).label("Fahrzeit_Bronze"),
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 6).label("Fahrzeit_Platz_6"),
+        )
+        .join(model.Race_Boat.race)
+        .where(
+            model.Race.phase_type == "final",
+            model.Race.phase_number == 1
+        )  # Finale A explizit filtern!
+        .group_by(model.Race.event_id)
+        .subquery()
+    )
+
+    # Subquery für Platz 8
+    finale_b_times = (
+        select(
+            model.Race.event_id,
+            func.min(model.Race_Boat.result_time_ms).filter(model.Race_Boat.rank == 2).label("Fahrzeit_Platz_8"),
+        )
+        .join(model.Race_Boat.race)
+        .where(
+            model.Race.phase_type == "final",
+            model.Race.phase_number == 2
+        )  # Finale B explizit filtern!
+        .group_by(model.Race.event_id)
+        .subquery()
+    )
+
+    statement = (
+        select(
+            model.Boat_Class.abbreviation.label("Bootsklasse"),
+            model.Competition.id,
+            model.Competition.name,
+            finale_a_times.c.Fahrzeit_Gold,
+            finale_a_times.c.Fahrzeit_Silber,
+            finale_a_times.c.Fahrzeit_Bronze,
+            finale_a_times.c.Fahrzeit_Platz_6,
+            finale_b_times.c.Fahrzeit_Platz_8
+            )
+        .join(model.Event.competition)
+        .join(model.Event.boat_class)
+        .join(model.Competition.competition_type)
+        .outerjoin(finale_a_times, finale_a_times.c.event_id == model.Event.id)
+        .outerjoin(finale_b_times, finale_b_times.c.event_id == model.Event.id)
+        .where(
+            model.Competition.year == year,
+            model.Competition_Type.abbreviation == competition_type
+        )
+    )
+
+    result = session.execute(statement)
+
+    keys = result.keys()
+    data_as_dict = [dict(zip(keys, row)) for row in result]
+
+    # Separate table for wbt
+    wbt_statement = (
+        select(
+            model.Race_Boat.result_time_ms.label("Bestzeit"),
+            model.Boat_Class.abbreviation.label("Bootsklasse"),
+            model.Race.date.label("Wbt_date")
+        )
+            .outerjoin(model.Boat_Class.world_best_race_boat)
+            .outerjoin(model.Race_Boat.race)
+        ) 
+
+    wbt_result = session.execute(wbt_statement).fetchall()
+
+    # Map: Bootsklasse → (Bestzeit, Datum)
+    wbt_lookup = {
+        row.Bootsklasse: (row.Bestzeit, row.Wbt_date)
+        for row in wbt_result if row.Bootsklasse
+    }
+
+    for row in data_as_dict:
+        boatclass = re.sub(r'^[BJ](?=\w)', '', row.get("Bootsklasse"))
+        bestzeit, wbt_date = wbt_lookup.get(boatclass, (None, None))
+
+        def rel(zeit):
+            return round(bestzeit / zeit, 3) if zeit and bestzeit else None
+
+        row["Rel_Gold"] = rel(row.get("Fahrzeit_Gold"))
+        row["Rel_Silber"] = rel(row.get("Fahrzeit_Silber"))
+        row["Rel_Bronze"] = rel(row.get("Fahrzeit_Bronze"))
+        row["Rel_Platz_6"] = rel(row.get("Fahrzeit_Platz_6"))
+        row["Rel_Platz_8"] = rel(row.get("Fahrzeit_Platz_8"))
+        row["WBT"] = bestzeit
+        row["Datum_WBT"] = wbt_date
+
+    return data_as_dict
 
 #Comment
 @app.route('/get_race_boat_groups', methods=['POST'])
@@ -503,7 +610,7 @@ def get_race(race_id: int) -> dict:
     venue = race.event.competition.venue
 
     #World Best Times
-    best_oz_time =  r.getOzBestTime(race.event.boat_class.abbreviation, datetime.datetime.today().year)
+    best_oz_time =  r.getOzBestTime(race.event.boat_class.abbreviation, race.date.year if race.date else datetime.datetime.today().year)
     world_best_time_ms = r.getWorldBestTime(race.event.boat_class.abbreviation, session)
 
     best_of_last_4_years_ms =  r.result_time_best_of_year_interval(
@@ -625,7 +732,7 @@ def get_report_boat_class():
             model.Race.date >= start_date,
             model.Race.date <= end_date,
             model.Event.boat_class_id == model.Boat_Class.id,
-            model.Boat_Class.additional_id_ == boat_class,
+            model.Boat_Class.abbreviation == boat_class,
             model.Competition_Type.additional_id_.in_(competition_types)
         ))
     )

@@ -20,13 +20,20 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
   </v-btn>
   <v-card style="box-shadow: none; z-index: 1">
     <v-layout>
-      <v-navigation-drawer v-model="filterOpen" temporary
-        v-bind:style='{ "margin-top": (mobile ? "71.25px" : (headerReduced ? "81px" : "159px")) }'
-        style="background-color: white; border: none" width="600">
+      <v-navigation-drawer v-model="filterOpen" temporary :style="{
+        marginTop: mobile ? '71.25px' : (headerReduced ? '81px' : '159px'),
+        height: mobile
+          ? 'calc(100vh - 71.25px)'
+          : (headerReduced ? 'calc(100vh - 81px)' : 'calc(100vh - 159px)'),
+        overflowY: 'auto',
+        backgroundColor: 'white',
+        border: 'none'
+      }" width="600">
         <berichte-filter />
       </v-navigation-drawer>
 
       <v-container :class="mobile ? 'px-5 py-2 main-container' : 'px-10 py-0 main-container'">
+        <!-- Heading -->
         <v-col cols="12" class="d-flex flex-row px-0" style="align-items: center">
           <h1>Berichte</h1>
           <v-icon id="tooltip-analysis-icon" color="grey" class="ml-2 v-icon--size-large">mdi-information-outline
@@ -35,160 +42,207 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
             Analysen über längere Zeiträume und weitere Filterkriterien erstellen.
           </v-tooltip>
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
-          <v-icon v-if="currentView == 'Alle' && currentView != 'Empty'" @click="exportMatrixTableData()" color="grey"
+          <v-icon v-if="currentView == 'Alle'" @click="exportMatrixTableData()" color="grey"
             class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
-          <v-icon v-if="currentView != 'Alle' &&  currentView != 'Empty'" @click="exportBoatClassTableData()" color="grey"
-            class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
+          <v-icon v-if="currentView != 'Alle' &&  currentView != 'Empty' && currentView != 'Matrix'" @click="exportBoatClassTableData()"
+            color="grey" class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
         </v-col>
         <v-divider></v-divider>
+
         <v-container v-if="loading" class="d-flex flex-column align-center">
           <v-progress-circular indeterminate color="blue" size="40" class="mt-15"></v-progress-circular>
           <div class="text-center" style="color: #1369b0">Lade Ergebnisse...</div>
         </v-container>
+
         <v-container class="pa-0 mt-2 pb-8" v-else>
+          <!-- Empty -->
           <div v-if="currentView=='Empty'">
             <v-alert type="info" variant="tonal" :width="mobile ? '100%' : '50%'">
               Bitte wähle einen Zeitraum und Events in dem Filter auf der linken Seite.
             </v-alert>
           </div>
           <div v-else>
-          <v-row>
-            <v-col :cols="mobile ? 12 : (currentView == 'Alle' ? 8 : 5)" class="py-0 pt-1">
-              <h2 v-if="currentView != 'Alle'">{{ tableData.boat_classes }}</h2>
-              <v-alert type="error" variant="tonal" class="my-2" v-if="tableData.results === 0 && currentView != 'Alle'">
-                <v-row>
-                  <v-col cols="12">
-                    <p>Leider keine Ergebnisse gefunden.</p>
-                  </v-col>
-                </v-row>
-              </v-alert>
-              <v-alert type="success" variant="tonal" class="my-2" v-else>
-                <v-row>
-                  <v-col cols="12">
-                    <p><b>{{ currentView == 'Alle' ? matrixResults : tableData.results }} Datensätze |
-                        Von {{ filterConf.interval[0] }} bis {{ filterConf.interval[1] }}</b></p>
-                    <p><b>Events</b>: {{ filterConf.competition_type }}</p>
-                    <p><b>Läufe</b>: {{ filterConf.race_phase_type }}</p>
-                    <p><b>Läufe (erweitert)</b>: {{ filterConf.race_phase_subtype }}</p>
-                    <p><b>Platzierung</b>: {{ filterConf.placement ? filterConf.placement : 'alle' }}</p>
-                  </v-col>
-                </v-row>
-              </v-alert>
-              <v-table class="tableStyles" density="compact" v-if="currentView != 'Alle' && tableData.results > 0">
-                <tbody class="nth-grey">
-                  <tr>
-                    <th>Weltbestzeit</th>
-                    <td>{{
-                      tableData.world_best_time_boat_class ?
-                        `${formatMilliseconds(tableData.world_best_time_boat_class)}` : "–"
-                    }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>Beste im Zeitraum</th>
-                    <td>{{ formatMilliseconds(tableData.best_in_period) }}</td>
-                  </tr>
-                  <tr>
-                    <th>Ø Geschwindigkeit (m/s)</th>
-                    <td>{{ tableData["mean"]["m/s"] }}</td>
-                  </tr>
-                  <tr>
-                    <th>Ø t über 500m</th>
-                    <td>{{ formatMilliseconds(tableData["mean"]["pace 500m"]) }}</td>
-                  </tr>
-                  <tr>
-                    <th>Ø t über 1000m</th>
-                    <td>{{ formatMilliseconds(tableData["mean"]["pace 1000m"]) }}</td>
-                  </tr>
-                  <tr>
-                    <th>Ø t über 2000m</th>
-                    <td>{{ formatMilliseconds(tableData["mean"]["mm:ss,00"]) }}</td>
-                  </tr>
-                  <tr>
-                    <th>Standardabweichung</th>
-                    <td>{{ formatMilliseconds(tableData.std_dev) }}</td>
-                  </tr>
-                  <tr>
-                    <th>Median</th>
-                    <td>{{ formatMilliseconds(tableData.median) }}</td>
-                  </tr>
-                  <tr>
-                    <th></th>
-                    <td style="font-style: italic;">Bedingungen</td>
-                  </tr>
-                  <tr>
-                    <th>Abstufung schnellste</th>
-                    <td>(n={{ tableData["gradation_fastest"]["results"] }})
-                      {{ formatMilliseconds(tableData["gradation_fastest"]["time"]) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>Abstufung mittel</th>
-                    <td>(n={{ tableData["gradation_medium"]["results"] }}) {{
-                      formatMilliseconds(tableData["gradation_medium"]["time"])
-                    }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>Abstufung langsam</th>
-                    <td>(n={{ tableData["gradation_slow"]["results"] }}) {{
-                      formatMilliseconds(tableData["gradation_slow"]["time"])
-                    }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>Abstufung langsamste</th>
-                    <td>(n={{ tableData["gradation_slowest"]["results"] }})
-                      {{ formatMilliseconds(tableData["gradation_slowest"]["time"]) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </v-table>
-            </v-col>
 
-            <v-col :cols="mobile ? 12 : 8" v-if="currentView == 'Alle'" class="py-0">
-              <v-table class="tableStyles" density="compact">
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>WB [t]</th>
-                    <th>Ø [t]</th>
-                    <th>SD [min]</th>
-                    <th>n</th>
-                  </tr>
-                </thead>
-                <tbody class="nth-grey">
-                  <template v-for="row in matrixTableData">
-                    <tr v-if="(typeof row === 'string')" class="subheader">
-                      <th><b>{{ row }}</b></th>
-                      <td></td>
-                      <td></td>
-                      <td></td>
-                      <td></td>
-                    </tr>
-                    <tr v-else>
-                      <td v-for="item in row">
-                        {{ item }}
+            <!-- Single Boat Class -->
+            <v-row v-if="currentView != 'Alle' && currentView != 'Matrix'">
+              <v-col :cols="mobile ? 12 : 5" class="py-0 pt-1">
+                <h2>{{ tableData.boat_classes }}</h2>
+
+                <v-alert type="error" variant="tonal" class="my-2" v-if="tableData.results === 0">
+                  <v-row>
+                    <v-col cols="12">
+                      <p>Leider keine Ergebnisse gefunden.</p>
+                    </v-col>
+                  </v-row>
+                </v-alert>
+
+                <v-alert type="success" variant="tonal" class="my-2" v-else>
+                  <v-row>
+                    <v-col cols="12">
+                      <p><b>{{tableData.results }} Datensätze |
+                          Von {{ filterConf.interval[0] }} bis {{ filterConf.interval[1] }}</b></p>
+                      <p><b>Events</b>: {{ filterConf.competition_type }}</p>
+                      <p><b>Läufe</b>: {{ filterConf.race_phase_type }}</p>
+                      <p><b>Läufe (erweitert)</b>: {{ filterConf.race_phase_subtype }}</p>
+                      <p><b>Platzierung</b>: {{ filterConf.placement ? filterConf.placement : 'alle' }}</p>
+                    </v-col>
+                  </v-row>
+                </v-alert>
+                <v-table class="tableStyles" density="compact" v-if="tableData.results > 0">
+                  <tbody class="nth-grey">
+                    <tr>
+                      <th>Weltbestzeit</th>
+                      <td>{{
+                        tableData.world_best_time_boat_class ?
+                        `${formatMilliseconds(tableData.world_best_time_boat_class)}` : "–"
+                        }}
                       </td>
                     </tr>
-                  </template>
-                </tbody>
-              </v-table>
-            </v-col>
+                    <tr>
+                      <th>Beste im Zeitraum</th>
+                      <td>{{ formatMilliseconds(tableData.best_in_period) }}</td>
+                    </tr>
+                    <tr>
+                      <th>Ø Geschwindigkeit (m/s)</th>
+                      <td>{{ tableData["mean"]["m/s"] }}</td>
+                    </tr>
+                    <tr>
+                      <th>Ø t über 500m</th>
+                      <td>{{ formatMilliseconds(tableData["mean"]["pace 500m"]) }}</td>
+                    </tr>
+                    <tr>
+                      <th>Ø t über 1000m</th>
+                      <td>{{ formatMilliseconds(tableData["mean"]["pace 1000m"]) }}</td>
+                    </tr>
+                    <tr>
+                      <th>Ø t über 2000m</th>
+                      <td>{{ formatMilliseconds(tableData["mean"]["mm:ss,00"]) }}</td>
+                    </tr>
+                    <tr>
+                      <th>Standardabweichung</th>
+                      <td>{{ formatMilliseconds(tableData.std_dev) }}</td>
+                    </tr>
+                    <tr>
+                      <th>Median</th>
+                      <td>{{ formatMilliseconds(tableData.median) }}</td>
+                    </tr>
+                    <tr>
+                      <th></th>
+                      <td style="font-style: italic;">Bedingungen</td>
+                    </tr>
+                    <tr>
+                      <th>Abstufung schnellste</th>
+                      <td>(n={{ tableData["gradation_fastest"]["results"] }})
+                        {{ formatMilliseconds(tableData["gradation_fastest"]["time"]) }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Abstufung mittel</th>
+                      <td>(n={{ tableData["gradation_medium"]["results"] }}) {{
+                        formatMilliseconds(tableData["gradation_medium"]["time"])
+                        }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Abstufung langsam</th>
+                      <td>(n={{ tableData["gradation_slow"]["results"] }}) {{
+                        formatMilliseconds(tableData["gradation_slow"]["time"])
+                        }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Abstufung langsamste</th>
+                      <td>(n={{ tableData["gradation_slowest"]["results"] }})
+                        {{ formatMilliseconds(tableData["gradation_slowest"]["time"]) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </v-table>
+              </v-col>
 
-            <v-col :cols="mobile ? 12 : 7" class="pa-0" v-if="currentView != 'Alle' && tableData.results > 0">
-              <v-container style="width: 100%" class="pa-2">
-                <BarChart :height="'100%'" :width="'100%'" :data="getBarChartData" :chartOptions="barChartOptions"
-                  class="chart-bg">
-                </BarChart>
-              </v-container>
-              <v-container style="width: 100%" class="pa-2">
-                <ScatterChart :height="'100%'" :width="'100%'" :data="getScatterChartData"
-                  :chartOptions="scatterChartOptions" class="chart-bg"></ScatterChart>
-              </v-container>
-            </v-col>
+              <v-col :cols="mobile ? 12 : 7" class="pa-0" v-if="tableData.results > 0">
+                <v-container style="width: 100%" class="pa-2">
+                  <BarChart :height="'100%'" :width="'100%'" :data="getBarChartData" :chartOptions="barChartOptions"
+                    class="chart-bg">
+                  </BarChart>
+                </v-container>
+                <v-container style="width: 100%" class="pa-2">
+                  <ScatterChart :height="'100%'" :width="'100%'" :data="getScatterChartData"
+                    :chartOptions="scatterChartOptions" class="chart-bg"></ScatterChart>
+                </v-container>
+              </v-col>
 
-          </v-row>
+            </v-row>
+
+            <!-- Multiple Boat Classes -->
+            <v-row v-if="currentView == 'Alle'">
+              <v-col :cols="mobile ? 12 : 8" class="py-0 pt-1">
+                <v-alert type="success" variant="tonal" class="my-2">
+                  <p><b>{{matrixResults}} Datensätze |
+                      Von {{ filterConf.interval[0] }} bis {{ filterConf.interval[1] }}</b></p>
+                  <p><b>Events</b>: {{ filterConf.competition_type }}</p>
+                  <p><b>Läufe</b>: {{ filterConf.race_phase_type }}</p>
+                  <p><b>Läufe (erweitert)</b>: {{ filterConf.race_phase_subtype }}</p>
+                  <p><b>Platzierung</b>: {{ filterConf.placement ? filterConf.placement : 'alle' }}</p>
+                </v-alert>
+              </v-col>
+
+              <v-col :cols="mobile ? 12 : 8" class="py-0">
+                <v-table class="tableStyles" density="compact">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>WB [t]</th>
+                      <th>Ø [t]</th>
+                      <th>SD [min]</th>
+                      <th>n</th>
+                    </tr>
+                  </thead>
+                  <tbody class="nth-grey">
+                    <template v-for="row in matrixTableData">
+                      <tr v-if="(typeof row === 'string')" class="subheader">
+                        <th><b>{{ row }}</b></th>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr v-else>
+                        <td v-for="item in row">
+                          {{ item }}
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </v-table>
+              </v-col>
+
+            </v-row>
+
+
+            <!-- Matrix-->
+            <div v-if="currentView=='Matrix'">
+              <h2 class="pb-2">{{matrixCompetitions.join(", ")}}</h2>
+            
+            <v-table class="tableStyles" density="compact">
+              <thead>
+                <tr>
+                  <th v-for="header in getMatrixTable[0]" :key="header">{{ header }}</th>
+                </tr>
+              </thead>
+              <tbody class="nth-grey">
+                <template v-for="row in getMatrixTable.slice(1)">
+                  <tr>
+                    <td v-for="item in row">
+                      {{ item }}
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </v-table>
+            </div>
+            
+
           </div>
         </v-container>
       </v-container>
@@ -209,7 +263,9 @@ export default {
   ...mapState(useBerichteState, {
     tableData: "getTableData",
     matrixResults: "getMatrixTableResults",
-    matrixTableData: "getMatrixTableData",
+    matrixCompetitions: "getMatrixCompetitions",
+    matrixTableData: "getMultipleTableData",
+    getMatrixTable: "getMatrixTable",
     getBarChartData: "getBarChartData",
     barChartOptions: "getBarChartOptions",
     filterConf: "getFilterConfig",

@@ -1,7 +1,32 @@
 import axios from "axios";
 import {defineStore} from "pinia";
 
-const formatMilliseconds = ms => new Date(ms).toISOString().slice(14, -2);
+//const formatMilliseconds = ms => new Date(ms).toISOString().slice(14, -2);
+
+const formatMilliseconds = ms => {
+    try {
+        if (ms == null || isNaN(ms)) return "-";
+        return new Date(ms).toISOString().slice(14, -2);
+    } catch {
+        return "-";
+    }
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+const formatPercent = (number) => {
+  if (number === null || number === undefined || isNaN(number)) return "-";
+  const percent = (number * 100).toFixed(1); // z.B. 87.5%
+  return `${percent}%`;
+};
 
 export const useBerichteState = defineStore({
     id: "berichte",
@@ -199,7 +224,8 @@ export const useBerichteState = defineStore({
                 }
             }
         },
-        matrixData: null,
+        multipleData: null,
+        matrixData: null
     }),
     getters: {
         getFilterState(state) {
@@ -218,17 +244,17 @@ export const useBerichteState = defineStore({
             return state.loading
         },
         getMatrixTableResults(state) {
-            if (state.matrixData === null) {
+            if (state.multipleData === null) {
                 return null
             }
-            const dataVals = Object.values(state.matrixData)
+            const dataVals = Object.values(state.multipleData)
             return dataVals.length !== 0 ? dataVals.reduce((acc, item) => acc + item["count"], 0) : 0;
         },
         getLastFilterConfig(state) {
             return state.lastFilterConfig
         },
-        getMatrixTableData(state) {
-            if (state.matrixData === null) {
+        getMultipleTableData(state) {
+            if (state.multipleData === null) {
                 return null;
             }
             const subHeaders = {
@@ -244,12 +270,12 @@ export const useBerichteState = defineStore({
 
             let rowValues = []
             Object.entries(subHeaders).forEach(([key, value], idx) => {
-                rowValues.push(key)
+                let categoryEntries = [key]
                 for (const item of value) {
                     if (item !== undefined && item.length > 1) {
-                        const data = state.matrixData[item[2]]
+                        const data = state.multipleData[item[2]]
                         if (data !== undefined) {
-                            rowValues.push([
+                            categoryEntries.push([
                             item[0],
                             formatMilliseconds(Number(data["wbt"])),
                             formatMilliseconds(Number(data["mean"])),
@@ -259,9 +285,50 @@ export const useBerichteState = defineStore({
                         }
                     }
                 }
+                if (categoryEntries.length > 1) {
+                    rowValues.push(...categoryEntries)
+                }
+
             })
             state.matrixTableExport = rowValues
             return rowValues
+        },
+        getMatrixTable(state) {
+            const headers = [
+                "Bootsklasse", "WBT", "Datum WBT",
+                "Fahrzeit Gold", "Relationszeit Gold",
+                "Fahrzeit Silber", "Relationszeit Silber",
+                "Fahrzeit Bronze", "Relationszeit Bronze",
+                "Fahrzeit Platz 6", "Relationszeit Platz 6",
+                "Fahrzeit Platz 8", "Relationszeit Platz 8",
+                "Wettbewerb"
+            ];
+
+            const table = state.matrixData.map(row => ([
+                row.Bootsklasse ?? "-",
+                formatMilliseconds(row.WBT),
+                formatDate(row.Datum_WBT),
+                formatMilliseconds(row.Fahrzeit_Gold),
+                formatPercent(row.Rel_Gold),
+                formatMilliseconds(row.Fahrzeit_Silber),
+                formatPercent(row.Rel_Silber),
+                formatMilliseconds(row.Fahrzeit_Bronze),
+                formatPercent(row.Rel_Bronze),
+                formatMilliseconds(row.Fahrzeit_Platz_6),
+                formatPercent(row.Rel_Platz_6),
+                formatMilliseconds(row.Fahrzeit_Platz_8),
+                formatPercent(row.Rel_Platz_8),
+                row.name ?? "-"
+            ]));
+
+            return [headers, ...table];
+        },
+        getMatrixCompetitions(state) {
+            const names = state.matrixData
+                .map(row => row.name)
+                .filter(Boolean);
+
+            return [...new Set(names)];
         },
         getSelectedBoatClass(state) {
             return state.selectedBoatClass
@@ -505,7 +572,7 @@ export const useBerichteState = defineStore({
         },
         async postFormData(data) {
             this.loading = true
-            this.selectedBoatClass = data.boat_classes
+            this.selectedBoatClass = data.boat_class
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_report_boat_class`, {data})
                 .then(response => {
                     this.data = response.data
@@ -514,13 +581,24 @@ export const useBerichteState = defineStore({
                     console.error(`Request failed: ${error}`)
                 })
         },
-        async postFormDataMatrix(data) {
+        async postFormDataMultiple(data) {
             this.selectedBoatClass = "Alle"
             this.loading = true
             await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/matrix`, {data})
                 .then(response => {
-                    this.matrixData = response.data
+                    this.multipleData = response.data
                     this.loading = false
+                }).catch(error => {
+                    console.error(`Request failed: ${error}`)
+                })
+        },
+        async postFormDataMatrix(data) {
+            this.selectedBoatClass = "Matrix"
+            this.loading = true
+            await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/competition_matrix`, {data})
+                .then(response => {
+                        this.matrixData = response.data
+                        this.loading = false
                 }).catch(error => {
                     console.error(`Request failed: ${error}`)
                 })
