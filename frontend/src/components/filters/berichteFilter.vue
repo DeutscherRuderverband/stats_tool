@@ -63,7 +63,7 @@
 
                     <v-select class="pt-3" chips multiple density="comfortable" label="Event(s)"
                         :items="optionsCompTypes" v-model="selectedCompTypes" variant="outlined"
-                        :rules="[v => v.length > 0 || 'Wähle mindestens eine Wettkampfklasse']">
+                        :rules="[v => v.length > 0 || 'Wähle eine Bootsklasse']">
                         <template v-slot:append-item>
                             <v-divider class="mt-2"></v-divider>
                             <v-list-item :title="competitionToggleText" @click="toggleSecondaryCompetitions()">
@@ -143,7 +143,8 @@
 
                     <!-- Bootsklasse-->
                     <v-select class="pt-3" multiple density="comfortable" label="Bootsklasse" :items="optionsBoatClass"
-                        v-model="multipleBoatClass" variant="outlined">
+                        v-model="multipleBoatClass" variant="outlined"
+                        :rules="[v => v.length > 0 || 'Wähle mindestens eine Bootsklasse']">
 
                         <template v-slot:prepend-item>
                             <v-list-item title="Select All" @click="toggleSelectAll()">
