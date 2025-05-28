@@ -192,8 +192,8 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
                   <thead>
                     <tr>
                       <th></th>
-                      <th>WB [t]</th>
-                      <th>Ø [t]</th>
+                      <th>WBT [min]</th>
+                      <th>Ø Zeit [min]</th>
                       <th>SD [min]</th>
                       <th>n</th>
                     </tr>
