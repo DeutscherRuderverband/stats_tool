@@ -430,7 +430,7 @@ export default {
         //single/comp
         if (compId && !eventId) {
 
-          let comp = (this.getAnalysis ?? []).find(obj => obj.id === compId);
+          let comp = (this.getAnalysis ?? []).find(obj => obj.id == compId);
 
           if (comp) {
             addBreadCrumbs(comp, null)
