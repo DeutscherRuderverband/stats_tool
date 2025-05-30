@@ -159,6 +159,7 @@
 
                     </v-select>
 
+                    <!-- Events / Competitions-->
                     <v-select class="pt-3" chips multiple density="comfortable" label="Event(s)"
                         :items="optionsCompTypes" v-model="selectedCompTypes" variant="outlined"
                         :rules="[v => v.length > 0 || 'Wähle mindestens eine Wettkampfklasse']">
@@ -202,14 +203,33 @@
             <!-- Matrix RACES -->
             <v-window-item value="three">
                 <v-form class="mt-3" ref="matrixForm" @submit.prevent="onSubmitMatrix" lazy-validation>
-                    <!-- year -->
-                    <v-select class="pt-4" clearable density="comfortable" label="Jahr" :items="optionsYear"
-                        v-model="matrixYear" variant="outlined" :rules="[v => !!v || 'Wähle ein Jahr']">
-                    </v-select>
 
-                    <!-- Competitions -->
-                    <v-select class="pt-3" density="comfortable" label="Event" :items="optionsCompTypes"
-                        v-model="matrixCompetition" variant="outlined">
+                    <v-chip-group filter color="blue" v-model="selectedYearShortCutOptions">
+                        <v-chip v-for="yearShortCut in yearShortCutOptions" v-if="yearShortCutOptions">{{ yearShortCut
+                        }}
+                        </v-chip>
+                    </v-chip-group>
+
+                    <!-- Years -->
+                    <v-container class="pa-0 d-flex pt-3">
+                        <v-col cols="6" class="pa-0 pr-2">
+                            <v-select clearable label="Von" :items="optionsYear" variant="outlined" v-model="startYear"
+                                density="comfortable"
+                                :rules="[v => !!v || 'Wähle ein Jahr als Anfangswert',
+                                (v) => parseInt(v) <= parseInt(endYear) || 'Zeitraum Anfang darf nicht nach dem Ende liegen.']"></v-select>
+                        </v-col>
+                        <v-col cols="6" class="pa-0 pl-2">
+                            <v-select clearable label="Bis" :items="optionsYear" v-model="endYear" variant="outlined"
+                                density="comfortable"
+                                :rules="[v => !!v || 'Wähle ein Jahr als Endwert',
+                                (v) => parseInt(v) >= parseInt(startYear) || 'Zeitraum Ende darf nicht vor dem Anfang liegen.']"></v-select>
+                        </v-col>
+                    </v-container>
+
+                    <!-- Events / Competitions-->
+                    <v-select class="pt-3" chips multiple density="comfortable" label="Event(s)"
+                        :items="optionsCompTypes" v-model="selectedCompTypes" variant="outlined"
+                        :rules="[v => v.length > 0 || 'Wähle mindestens eine Wettkampfklasse']">
                         <template v-slot:append-item>
                             <v-divider class="mt-2"></v-divider>
                             <v-list-item :title="competitionToggleText" @click="toggleSecondaryCompetitions()">
@@ -256,7 +276,6 @@ export default {
             // year
             startYear: 0,
             endYear: 0,
-            matrixYear: 0,
             optionsYear: [],
             yearShortCutOptions: [],
             selectedYearShortCutOptions: [],
@@ -279,7 +298,6 @@ export default {
             compTypes: [], // list of dicts with objects containing displayName, id and key
             optionsCompTypes: [],
             selectedCompTypes: ["WCH", "OG", "WCp 1", "WCp 2", "WCp 3", "JWCH", "U23WCH"],
-            matrixCompetition: "WCH",
             secondaryCompetitions: [],
             showMore: true,
             competitionToggleText: "Zeige mehr",
@@ -315,7 +333,6 @@ export default {
             //Years
             this.startYear = data.years[0].start_year
             this.endYear = data.years[1].end_year
-            this.matrixYear = this.endYear
             this.yearShortCutOptions = [`Gesamter Zeitraum`, "Aktuelles Jahr", "Aktueller OZ", "Letzter OZ"]
             this.optionsYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.endYear - i)
             this.selectedYearShortCutOptions = [0]
@@ -462,13 +479,14 @@ export default {
         },
         submitMatrix() {
             const formData = {
-                year: this.matrixYear,
-                competition_type: this.matrixCompetition,
+                interval: [this.startYear, this.endYear],
+                competition_type: this.selectedCompTypes,
             }
             const store = useBerichteState()
             store.postFormDataMatrix(formData)
                 .then(() => {console.log("data sent...")})
                 .catch(error => {console.error(error)})
+            store.setLastFilterConfig(this.buildFilterConfig(this.buildFormData(this.multipleBoatClass)));
         },
         getRacePhaseSubtypes(selectedKeys, runsData) {
             // find run keys for race_phase_subtype
