@@ -222,8 +222,15 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
 
 
             <!-- Matrix-->
-            <div v-if="currentView=='Matrix'">
-             <!-- FILTER BOX -->
+            <div v-if="currentView == 'Matrix'">
+              <v-alert type="success" variant="tonal" class="my-2">
+                <v-row>
+                  <v-col cols="12">
+                    <p><b>Von {{ filterConf.interval[0] }} bis {{ filterConf.interval[1] }}</b></p>
+                    <p><b>Events</b>: {{ filterConf.competition_type }}</p>
+                  </v-col>
+                </v-row>
+              </v-alert>
 
               <v-table class="tableStyles" density="compact">
                 <thead>
@@ -232,18 +239,24 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
                   </tr>
                 </thead>
                 <tbody class="nth-grey">
-                  <tr v-for="row in getMatrixTable.slice(1)">
-                    <td v-for="item in row">
-                      <template v-if="Array.isArray(item)">
-                        <template v-for="element in item">
-                          <p>{{ element }}</p>
+                  <template v-for="row in getMatrixTable.slice(1)">
+                    <tr v-if="(typeof row === 'string')" class="subheader">
+                      <td :colspan="getMatrixTable[0].length"><b>{{ row }}</b></td>
+                    </tr>
+                    <tr v-else>
+                      <td v-for="item in row">
+                        <template v-if="Array.isArray(item)">
+                          <template v-for="element in item">
+                            <p>{{ element }}</p>
+                          </template>
                         </template>
-                      </template>
-                      <template v-else>
-                        {{ item }}
-                      </template>
-                    </td>
-                  </tr>
+                        <template v-else>
+                          {{ item }}
+                        </template>
+                      </td>
+                    </tr>
+                  </template>
+
                 </tbody>
               </v-table>
             </div>

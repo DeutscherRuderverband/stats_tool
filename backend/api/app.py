@@ -300,8 +300,6 @@ def get_matrix() -> dict:
 def get_competition_matrix() -> dict:
     session = Scoped_Session()
 
-    print(request.json["data"])
-
     start_year = request.json["data"]["interval"][0]
     end_year = request.json["data"]["interval"][1]
     competition_types = request.json["data"]["competition_type"]
@@ -354,6 +352,7 @@ def get_competition_matrix() -> dict:
             func.stddev(finale_a_times.c.Fahrzeit_Platz_6).label("STD_Fahrzeit_Platz_6"),
             func.avg(finale_b_times.c.Fahrzeit_Platz_8).label("Fahrzeit_Platz_8"),
             func.stddev(finale_b_times.c.Fahrzeit_Platz_8).label("STD_Fahrzeit_Platz_8"),
+            func.count(model.Event.id).label("n")
             )
         .join(model.Event.competition)
         .join(model.Event.boat_class)

@@ -486,6 +486,7 @@ export default {
             store.postFormDataMatrix(formData)
                 .then(() => {console.log("data sent...")})
                 .catch(error => {console.error(error)})
+            store.setLastFilterConfig(this.buildFilterConfig(this.buildFormData(this.multipleBoatClass)));
         },
         getRacePhaseSubtypes(selectedKeys, runsData) {
             // find run keys for race_phase_subtype
