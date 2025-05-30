@@ -300,8 +300,11 @@ def get_matrix() -> dict:
 def get_competition_matrix() -> dict:
     session = Scoped_Session()
 
-    year = request.json["data"]["year"]
-    competition_type = request.json["data"]["competition_type"]
+    print(request.json["data"])
+
+    start_year = request.json["data"]["interval"][0]
+    end_year = request.json["data"]["interval"][1]
+    competition_types = request.json["data"]["competition_type"]
 
     # Subquery für die Fahrzeiten der Plätze 1-3, 6 in Finale A
     finale_a_times = (
@@ -339,13 +342,18 @@ def get_competition_matrix() -> dict:
     statement = (
         select(
             model.Boat_Class.abbreviation.label("Bootsklasse"),
-            model.Competition.id,
-            model.Competition.name,
-            finale_a_times.c.Fahrzeit_Gold,
-            finale_a_times.c.Fahrzeit_Silber,
-            finale_a_times.c.Fahrzeit_Bronze,
-            finale_a_times.c.Fahrzeit_Platz_6,
-            finale_b_times.c.Fahrzeit_Platz_8
+            #model.Competition.id,
+            #model.Competition.name,
+            func.avg(finale_a_times.c.Fahrzeit_Gold).label("Fahrzeit_Gold"),
+            func.stddev(finale_a_times.c.Fahrzeit_Gold).label("STD_Fahrzeit_Gold"),
+            func.avg(finale_a_times.c.Fahrzeit_Silber).label("Fahrzeit_Silber"),
+            func.stddev(finale_a_times.c.Fahrzeit_Silber).label("STD_Fahrzeit_Silber"),
+            func.avg(finale_a_times.c.Fahrzeit_Bronze).label("Fahrzeit_Bronze"),
+            func.stddev(finale_a_times.c.Fahrzeit_Bronze).label("STD_Fahrzeit_Bronze"),
+            func.avg(finale_a_times.c.Fahrzeit_Platz_6).label("Fahrzeit_Platz_6"),
+            func.stddev(finale_a_times.c.Fahrzeit_Platz_6).label("STD_Fahrzeit_Platz_6"),
+            func.avg(finale_b_times.c.Fahrzeit_Platz_8).label("Fahrzeit_Platz_8"),
+            func.stddev(finale_b_times.c.Fahrzeit_Platz_8).label("STD_Fahrzeit_Platz_8"),
             )
         .join(model.Event.competition)
         .join(model.Event.boat_class)
@@ -353,9 +361,11 @@ def get_competition_matrix() -> dict:
         .outerjoin(finale_a_times, finale_a_times.c.event_id == model.Event.id)
         .outerjoin(finale_b_times, finale_b_times.c.event_id == model.Event.id)
         .where(
-            model.Competition.year == year,
-            model.Competition_Type.abbreviation == competition_type
+            model.Competition.year >= start_year,
+            model.Competition.year <= end_year,
+            model.Competition_Type.abbreviation.in_(competition_types)
         )
+        .group_by(model.Boat_Class.abbreviation)
     )
 
     result = session.execute(statement)
@@ -389,11 +399,19 @@ def get_competition_matrix() -> dict:
         def rel(zeit):
             return round(bestzeit / zeit, 3) if zeit and bestzeit else None
 
+        def rel_std(avg_sec: float, std_sec: float) -> float:
+            return bestzeit / (avg_sec ** 2) * std_sec if avg_sec and std_sec and bestzeit else None
+
         row["Rel_Gold"] = rel(row.get("Fahrzeit_Gold"))
+        row["STD_Rel_Gold"] = rel_std(row.get("Fahrzeit_Gold"), row.get("STD_Fahrzeit_Gold"))
         row["Rel_Silber"] = rel(row.get("Fahrzeit_Silber"))
+        row["STD_Rel_Silber"] = rel_std(row.get("Fahrzeit_Gold"), row.get("STD_Fahrzeit_Silber"))
         row["Rel_Bronze"] = rel(row.get("Fahrzeit_Bronze"))
+        row["STD_Rel_Bronze"] = rel_std(row.get("Fahrzeit_Gold"), row.get("STD_Fahrzeit_Bronze"))
         row["Rel_Platz_6"] = rel(row.get("Fahrzeit_Platz_6"))
+        row["STD_Rel_Platz_6"] = rel_std(row.get("Fahrzeit_Gold"), row.get("STD_Fahrzeit_Platz_6"))
         row["Rel_Platz_8"] = rel(row.get("Fahrzeit_Platz_8"))
+        row["STD_Rel_Platz_8"] = rel_std(row.get("Fahrzeit_Gold"), row.get("STD_Fahrzeit_Platz_8"))
         row["WBT"] = bestzeit
         row["Datum_WBT"] = wbt_date
 

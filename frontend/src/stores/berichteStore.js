@@ -5,12 +5,16 @@ import {defineStore} from "pinia";
 
 const formatMilliseconds = ms => {
     try {
-        if (ms == null || isNaN(ms)) return "-";
-        return new Date(ms).toISOString().slice(14, -2);
+        if (ms == null) return "-";
+        // Convert string input to number, also handles numbers directly
+        const msNum = typeof ms === "string" ? parseFloat(ms) : ms;
+        if (isNaN(msNum)) return "-";
+        return new Date(msNum).toISOString().slice(14, -2);
     } catch {
         return "-";
     }
 };
+
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
@@ -294,31 +298,30 @@ export const useBerichteState = defineStore({
             return rowValues
         },
         getMatrixTable(state) {
+            console.log(state.matrixData)
             const headers = [
                 "Bootsklasse", "WBT", "Datum WBT",
-                "Fahrzeit Gold", "Relationszeit Gold",
-                "Fahrzeit Silber", "Relationszeit Silber",
-                "Fahrzeit Bronze", "Relationszeit Bronze",
-                "Fahrzeit Platz 6", "Relationszeit Platz 6",
-                "Fahrzeit Platz 8", "Relationszeit Platz 8",
-                "Wettbewerb"
+                "Gold [min] ±SD", "Relationszeit Gold",
+                "Silber [min] ±SD", "Relationszeit Silber",
+                "Bronze [min] ±SD", "Relationszeit Bronze",
+                "Top 6 [min] ±SD", "Relationszeit Platz 6",
+                "Top 8 [min] ±SD", "Relationszeit Platz 8"
             ];
 
             const table = state.matrixData.map(row => ([
                 row.Bootsklasse ?? "-",
                 formatMilliseconds(row.WBT),
                 formatDate(row.Datum_WBT),
-                formatMilliseconds(row.Fahrzeit_Gold),
-                formatPercent(row.Rel_Gold),
-                formatMilliseconds(row.Fahrzeit_Silber),
-                formatPercent(row.Rel_Silber),
-                formatMilliseconds(row.Fahrzeit_Bronze),
-                formatPercent(row.Rel_Bronze),
-                formatMilliseconds(row.Fahrzeit_Platz_6),
-                formatPercent(row.Rel_Platz_6),
-                formatMilliseconds(row.Fahrzeit_Platz_8),
-                formatPercent(row.Rel_Platz_8),
-                row.name ?? "-"
+                [formatMilliseconds(row.Fahrzeit_Gold), formatMilliseconds(row.STD_Fahrzeit_Gold)],
+                [formatPercent(row.Rel_Gold), formatPercent(row.STD_Rel_Gold)],
+                [formatMilliseconds(row.Fahrzeit_Silber), formatMilliseconds(row.STD_Fahrzeit_Silber)],
+                [formatPercent(row.Rel_Silber), formatPercent(row.STD_Rel_Silber)],
+                [formatMilliseconds(row.Fahrzeit_Bronze), formatMilliseconds(row.STD_Fahrzeit_Bronze)],
+                [formatPercent(row.Rel_Bronze), formatPercent(row.STD_Rel_Bronze)],
+                [formatMilliseconds(row.Fahrzeit_Platz_6), formatMilliseconds(row.STD_Fahrzeit_Platz_6)],
+                [formatPercent(row.Rel_Platz_6), formatPercent(row.STD_Rel_Platz_6)],
+                [formatMilliseconds(row.Fahrzeit_Platz_6), formatMilliseconds(row.STD_Fahrzeit_Platz_8)],
+                [formatPercent(row.Rel_Platz_8), formatPercent(row.STD_Rel_Platz_8)],
             ]));
 
             return [headers, ...table];

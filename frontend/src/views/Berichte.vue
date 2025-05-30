@@ -44,8 +44,9 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
           <v-icon @click="openPrintDialog()" color="grey" class="ml-2 v-icon--size-large">mdi-printer</v-icon>
           <v-icon v-if="currentView == 'Alle'" @click="exportMatrixTableData()" color="grey"
             class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
-          <v-icon v-if="currentView != 'Alle' &&  currentView != 'Empty' && currentView != 'Matrix'" @click="exportBoatClassTableData()"
-            color="grey" class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
+          <v-icon v-if="currentView != 'Alle' &&  currentView != 'Empty' && currentView != 'Matrix'"
+            @click="exportBoatClassTableData()" color="grey"
+            class="ml-2 v-icon--size-large">mdi-table-arrow-right</v-icon>
         </v-col>
         <v-divider></v-divider>
 
@@ -222,26 +223,31 @@ ChartJS.register(LinearScale, PointElement, Tooltip, Legend, TimeScale);
 
             <!-- Matrix-->
             <div v-if="currentView=='Matrix'">
-              <h2 class="pb-2">{{matrixCompetitions.join(", ")}}</h2>
-            
-            <v-table class="tableStyles" density="compact">
-              <thead>
-                <tr>
-                  <th v-for="header in getMatrixTable[0]" :key="header">{{ header }}</th>
-                </tr>
-              </thead>
-              <tbody class="nth-grey">
-                <template v-for="row in getMatrixTable.slice(1)">
+             <!-- FILTER BOX -->
+
+              <v-table class="tableStyles" density="compact">
+                <thead>
                   <tr>
+                    <th v-for="header in getMatrixTable[0]" :key="header">{{ header }}</th>
+                  </tr>
+                </thead>
+                <tbody class="nth-grey">
+                  <tr v-for="row in getMatrixTable.slice(1)">
                     <td v-for="item in row">
-                      {{ item }}
+                      <template v-if="Array.isArray(item)">
+                        <template v-for="element in item">
+                          <p>{{ element }}</p>
+                        </template>
+                      </template>
+                      <template v-else>
+                        {{ item }}
+                      </template>
                     </td>
                   </tr>
-                </template>
-              </tbody>
-            </v-table>
+                </tbody>
+              </v-table>
             </div>
-            
+
 
           </div>
         </v-container>
