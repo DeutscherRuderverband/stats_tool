@@ -445,7 +445,9 @@ export default {
           else {
             try {
               const data = { competition_id: compId };
+              store.setToLoadingState(true);
               await store.fetchCompetitionData(data);
+              store.setToLoadingState(false);
               comp = (this.getAnalysis ?? []).find(obj => obj.id == compId);
               this.events = comp?.events ?? [];
               addBreadCrumbs(comp, null);
@@ -473,7 +475,9 @@ export default {
           else {
             try {
               const data = { competition_id: compId };
+              store.setToLoadingState(true);
               await store.fetchCompetitionData(data);
+              store.setToLoadingState(false);
               comp = (this.getAnalysis ?? []).find(obj => obj.id == compId);
               this.events = comp?.events ?? [];
               event = (comp?.events ?? []).find(obj => obj.id == eventId);
@@ -492,7 +496,6 @@ export default {
             store.setToLoadingState(true)
             await store.fetchRaceData(raceId);
             store.setToLoadingState(false)
-
             const subject = "Wettkampfergebnisse"
             const body = `Sieh dir diese Wettkampfergebnisse an: http://${window.location.host + this.$route.fullPath}`
             store.setEmailLink(`mailto:?subject=${subject}&body=${body}`)
