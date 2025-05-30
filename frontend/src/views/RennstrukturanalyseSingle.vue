@@ -58,13 +58,14 @@
               <div v-for="(column, colIndex) in categorizeEvents(events)" :key="colIndex"
                 :style="{flex: 1, display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem', width: '100%' }">
                 <h3>{{ column.name }}</h3>
-                <v-list-item min-height="50" v-for="event in column.events" :key="event.id" :title="event.name" class="pa-1 mx-1"
+                <v-list-item min-height="50" v-for="event in column.events" :key="event.id" :title="event.name"
+                  class="pa-1 mx-1"
                   style="background-color: whitesmoke; border-radius: 5px; border-left: 8px solid #5cc5ed"
                   @click="router.push($route.fullPath + '/' + event.id)">
                 </v-list-item>
               </div>
             </div>
-            
+
           </v-col>
         </v-container>
       </div>
@@ -97,7 +98,7 @@
 
       <!-- Single Rennstrukturanalyse -->
       <div v-else-if="currentView === 'ANALYSIS'">
-        <v-container class="px-0 py-2">
+        <v-container class="px-0 py-2" v-if="getChartOptions && competitionData">
           <v-row no-gutters>
             <v-col cols="6" class="pt-3">
               <h2>{{ `${competitionData.display_name} (${competitionData.boat_class})` }}</h2>
@@ -239,6 +240,11 @@
             </v-col>
           </v-row>
 
+        </v-container>
+        <v-container v-else class="pa-0 mt-3">
+          <v-alert type="info" variant="tonal" :width="mobile ? '100%' : '50%'">
+            Hierzu liegen leider keine Daten vor.
+          </v-alert>
         </v-container>
       </div>
 
