@@ -148,7 +148,7 @@ def extract_data_from_pdf_url(urls: list) -> tuple[dict, list]:
     * list containing the urls of all failed requests
     """
     final_data, failed_reqs, errors, empty_files = {}, [], 0, 0
-    tmp_file = None
+    tmp_path = None
 
     for url in urls:
         try:
