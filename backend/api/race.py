@@ -196,8 +196,7 @@ def is_valid_race_data(race_data: model.Race_Data) -> bool:
 def _iter_strokes_from_race_data(race_data_list: Iterable[model.Race_Data]):
     for race_data in race_data_list:
         is_valid_stroke = (
-            race_data.is_outlier == False
-            and race_data.stroke != None
+            race_data.stroke != None
         )
         if is_valid_stroke:
             yield race_data.stroke
