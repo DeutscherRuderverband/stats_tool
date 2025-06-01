@@ -22,7 +22,7 @@ import tempfile
 import os
 
 #from utils_general import write_to_json
-from utils_pdf import (handle_table_partitions, get_data_loc, print_stats, find_distance_column,
+from .utils_pdf import (handle_table_partitions, get_data_loc, print_stats, find_distance_column,
                        clean_df, get_string_loc, check_speed_stroke, reset_axis, clean_str)
 import logging
 
@@ -148,6 +148,7 @@ def extract_data_from_pdf_url(urls: list) -> tuple[dict, list]:
     * list containing the urls of all failed requests
     """
     final_data, failed_reqs, errors, empty_files = {}, [], 0, 0
+    tmp_file = None
 
     for url in urls:
         try:
@@ -187,7 +188,12 @@ def extract_data_from_pdf_url(urls: list) -> tuple[dict, list]:
 
         finally:
             # Clean up the temporary file
-            os.remove(tmp_path)
+            if tmp_path:
+                try:
+                    os.remove(tmp_path)
+                except OSError as e:
+                    logger.warning(f"Failed to delete temp file {tmp_path}: {e}")
+            
 
     # create extraction statistics
     # total = len(pdf_urls) - empty_files

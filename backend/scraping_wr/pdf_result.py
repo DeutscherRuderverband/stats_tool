@@ -21,7 +21,7 @@ import tempfile
 import os
 
 #from .utils_general import write_to_json
-from utils_pdf import (clean, clean_df, get_string_loc, handle_table_partitions,
+from .utils_pdf import (clean, clean_df, get_string_loc, handle_table_partitions,
                        clean_str, print_stats)
 import logging
 
@@ -160,6 +160,7 @@ def extract_data_from_pdf_urls(urls: list) -> tuple[dict, list]:
     """
 
     final_data, data, failed_requests, errors, empty_files = {}, [], [], 0, 0
+    tmp_path = None
 
     for url in urls:
         boat_data, tables = {}, []
@@ -186,7 +187,11 @@ def extract_data_from_pdf_urls(urls: list) -> tuple[dict, list]:
 
         finally:
             # Clean up the temporary file
-            os.remove(tmp_path)
+            if tmp_path:
+                try:
+                    os.remove(tmp_path)
+                except OSError as e:
+                    logger.warning(f"Failed to delete temp file {tmp_path}: {e}")
 
 
         if tables:
