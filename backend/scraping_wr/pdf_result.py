@@ -16,8 +16,11 @@ import camelot
 import re
 from typing import Union
 import json
+import requests
+import tempfile
+import os
 
-from .utils_general import write_to_json
+#from .utils_general import write_to_json
 from .utils_pdf import (clean, clean_df, get_string_loc, handle_table_partitions,
                        clean_str, print_stats)
 import logging
@@ -157,15 +160,39 @@ def extract_data_from_pdf_urls(urls: list) -> tuple[dict, list]:
     """
 
     final_data, data, failed_requests, errors, empty_files = {}, [], [], 0, 0
+    tmp_path = None
 
     for url in urls:
         boat_data, tables = {}, []
         try:
-            tables = camelot.read_pdf(url, flavor="stream", pages="all", column_tol=2)
+            #Download PDF bytes
+            response = requests.get(url, timeout=20)
+            if response.status_code != 200:
+                logger.error(f"Failed to download PDF from {url}, status code {response.status_code}")
+                failed_requests.append(url)
+                continue
+
+            #Save PDF to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                tmp_file.write(response.content)
+                tmp_path = tmp_file.name
+
+            # Read file with camelot
+            tables = camelot.read_pdf(tmp_path, flavor="stream", pages="all", column_tol=2)
+
         except NotImplementedError:
             logger.error(f" PDF not accessible – ignore file...")
         except Exception as e:
             logger.error(f" Error occurred: {e}")
+
+        finally:
+            # Clean up the temporary file
+            if tmp_path:
+                try:
+                    os.remove(tmp_path)
+                except OSError as e:
+                    logger.warning(f"Failed to delete temp file {tmp_path}: {e}")
+
 
         if tables:
             try:
@@ -236,13 +263,34 @@ def extract_data_from_pdf_urls(urls: list) -> tuple[dict, list]:
 # write_to_json(data=final_extracted_data, filename="result_data")
 # write_to_json(data=final_failed_requests, filename="result_data_failed")
 
-'''
+
 # Use this to test selected files
+"""
 pdf_urls = [
     "https://d3fpn4c9813ycf.cloudfront.net/pdfDocuments/WCH_2017/WCH_2017_ROWMNOCOX4------------HEAT000100--_C73X2157.pdf",
 ]
 pdf_data, failed_req = extract_data_from_pdf_urls(urls=pdf_urls)
 
-write_to_json(data=pdf_data, filename="result_data")
-write_to_json(data=failed_req, filename="result_data_failed")
+print(pdf_data)
+print(failed_req)
+"""
+
+
+
 '''
+import requests
+
+#url = "https://d3fpn4c9813ycf.cloudfront.net/pdfDocuments/WCH_2017/WCH_2017_ROWMNOCOX4------------HEAT000100--_C73X2157.pdf"
+pdf_path = "downloaded.pdf"
+
+# Download the file
+response = requests.get("https://d3fpn4c9813ycf.cloudfront.net/pdfDocuments/ECH_2025_1/ECH_2025_1_ROWMSCULL1-L----------HEAT000100--_C77X6526.PDF")
+with open(pdf_path, "wb") as f:
+    f.write(response.content)
+
+# Now try reading it with Camelot or just checking the header
+with open(pdf_path, "rb") as f:
+    print(f.read(8))  # Should print b'%PDF-1.'
+
+'''
+

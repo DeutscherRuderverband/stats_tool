@@ -52,11 +52,14 @@ function createCSV(content, title) {
 
 function createChartOptions(boats) {
     const firstBoat = boats.find(boat => boat.rank == 1)
-    return {
+    if (firstBoat) {
+        return {
         boats: boats.map(boat => boat.name),
         difference_to: firstBoat.name,
         boats_in_chart: boats.map(boat => boat.name)
+        }
     }
+    return null;
 }
 
 function getChartLabels(min = 0, max = 2000, steps = 500) {
@@ -787,10 +790,10 @@ export const useRennstrukturAnalyseState = defineStore({
         async fetchRaceData(raceId) {
             await axios.get(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_race/${raceId}/`)
                 .then(response => {
-                    this.data.raceData[0] = response.data
-                    this.data.raceData[0].chartOptions = createChartOptions(response.data.race_boats)
+                this.data.raceData[0] = response.data
+                this.data.raceData[0].chartOptions = createChartOptions(response.data.race_boats)
                 }).catch(error => {
-                    console.error(`Request failed: ${error}`)
+                console.error(`Request failed: ${error}`)
                 })
         },
         setFilterState(filterState) {

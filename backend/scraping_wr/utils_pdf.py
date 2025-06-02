@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # constants
 COUNTRY_CODES = {
     "AFG": "Afghanistan",
+    "AIN": "Individual Neutral Athletes",
     "ALB": "Albanien",
     "ALG": "Algerien",
     "AND": "Andorra",

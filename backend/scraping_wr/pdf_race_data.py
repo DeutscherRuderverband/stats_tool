@@ -17,7 +17,11 @@ import itertools
 import pandas as pd
 from typing import Union
 
-from .utils_general import write_to_json
+import requests
+import tempfile
+import os
+
+#from utils_general import write_to_json
 from .utils_pdf import (handle_table_partitions, get_data_loc, print_stats, find_distance_column,
                        clean_df, get_string_loc, check_speed_stroke, reset_axis, clean_str)
 import logging
@@ -144,11 +148,24 @@ def extract_data_from_pdf_url(urls: list) -> tuple[dict, list]:
     * list containing the urls of all failed requests
     """
     final_data, failed_reqs, errors, empty_files = {}, [], 0, 0
+    tmp_path = None
 
     for url in urls:
         try:
+            #Download PDF bytes
+            response = requests.get(url, timeout=20)
+            if response.status_code != 200:
+                logger.error(f"Failed to download PDF from {url}, status code {response.status_code}")
+                failed_reqs.append(url)
+                continue
+
+            #Save PDF to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                tmp_file.write(response.content)
+                tmp_path = tmp_file.name
+
             # read data via camelot
-            tables = camelot.read_pdf(url, flavor="stream", pages="all")
+            tables = camelot.read_pdf(tmp_path, flavor="stream", pages="all")
             # handle data that is spread across multiple pages, linebreaks and empty columns
             df = handle_table_partitions(tables=tables, results=False)
             # extract relevant data and return dict
@@ -168,6 +185,15 @@ def extract_data_from_pdf_url(urls: list) -> tuple[dict, list]:
             errors += 1
             failed_reqs.append(url)
             logger.error(f"\nError at {url}:\t{e}.\tErrors so far: {errors}.")
+
+        finally:
+            # Clean up the temporary file
+            if tmp_path:
+                try:
+                    os.remove(tmp_path)
+                except OSError as e:
+                    logger.warning(f"Failed to delete temp file {tmp_path}: {e}")
+            
 
     # create extraction statistics
     # total = len(pdf_urls) - empty_files
@@ -199,9 +225,11 @@ final_extracted_data, final_failed_requests = [], []
 '''
 # Use this to test selected files
 pdf_urls = [
-"https://d3fpn4c9813ycf.cloudfront.net/pdfDocuments/WCp2_2022_1/WCp2_2022_1_ROWWSCULL1-L----------FNL-000200--_C77X1113.PDF",
+#"https://d3fpn4c9813ycf.cloudfront.net/pdfDocuments/WCp2_2022_1/WCp2_2022_1_ROWWSCULL1-L----------FNL-000200--_C77X1113.PDF",
+"https://d3fpn4c9813ycf.cloudfront.net/pdfDocuments/ECH_2025_1/ECH_2025_1_ROWMSCULL1-L----------HEAT000100--_C77X6526.PDF"
+
 ]
 race_data, failed_requests = extract_data_from_pdf_url(urls=pdf_urls)
-write_to_json(data=race_data, filename="race_data")
-write_to_json(data=failed_requests, filename="race_data_failed")
+print(race_data)
+print(failed_requests)
 '''
