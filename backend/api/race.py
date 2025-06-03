@@ -6,6 +6,7 @@ import statistics
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
 from contextlib import suppress
+import re
 
 from scipy import stats
 import numpy as np
@@ -429,6 +430,36 @@ def separatePhaseTypes(phases: list):
         else:
             phase_type.add(phase)
     return list(phase_type), list(phase_number)
+
+def qualifies_for_fa(progression: str, rank: int) -> bool:
+    # Zerlege Progression in einzelne Teile mit "->FA"
+    try:
+        fa_parts = [part.strip() for part in progression.split(",") if "->FA" in part]
+        
+        for part in fa_parts:
+            left = part.replace("->FA", "").strip()
+
+            if ".." in left:
+                # Fall 1..
+                start = int(left.replace("..", "").strip())
+                if start <= rank <= 6:
+                    return True
+
+            elif "-" in left:
+                # Fall → 1-x
+                start, end = map(int, left.split("-"))
+                if start <= rank <= end:
+                    return True
+
+            else:
+                # Fall → 1
+                if int(left[0]) == rank:
+                    return True
+                
+    except Exception:
+        return False
+
+    return False
 
 
 if __name__ == '__main__':
