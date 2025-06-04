@@ -1285,7 +1285,7 @@ def get_medals():
             elif race_boat.rank == 3:
                 medal_data[nation]["bronze"] += 1
                 medal_data[nation]["total"] += 1
-            elif 3 < race_boat.rank <= 6:
+            elif race_boat.rank != None and 3 < race_boat.rank <= 6:
                 medal_data[nation]["four_to_six"] += 1
         elif race_boat.race.phase_type == 'final' and race_boat.race.phase_number == 2 and race_boat.country.country_code in nations:
             nation = race_boat.country.country_code
