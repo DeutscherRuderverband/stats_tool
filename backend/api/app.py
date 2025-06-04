@@ -316,7 +316,9 @@ def get_competition_matrix() -> dict:
         .join(model.Race_Boat.race)
         .where(
             model.Race.phase_type == "final",
-            model.Race.phase_number == 1
+            model.Race.phase_number == 1,
+            model.Race_Boat.result_time_ms.isnot(None),
+            model.Race_Boat.result_time_ms != 0
         )  # Finale A explizit filtern!
         .group_by(model.Race.event_id)
         .subquery()
@@ -331,7 +333,9 @@ def get_competition_matrix() -> dict:
         .join(model.Race_Boat.race)
         .where(
             model.Race.phase_type == "final",
-            model.Race.phase_number == 2
+            model.Race.phase_number == 2,
+            model.Race_Boat.result_time_ms.isnot(None),
+            model.Race_Boat.result_time_ms != 0
         )  # Finale B explizit filtern!
         .group_by(model.Race.event_id)
         .subquery()
