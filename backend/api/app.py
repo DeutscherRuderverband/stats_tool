@@ -3,7 +3,7 @@ import datetime
 import json
 import re
 from secrets import token_hex
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from statistics import stdev, median, mean
 
 import numpy as np
@@ -369,6 +369,46 @@ def get_competition_matrix() -> dict:
 
     result = session.execute(statement)
 
+    # Qualification times
+    qualification_statement = (
+        select(
+            model.Race_Boat.result_time_ms.label("result_time_ms"),
+            model.Race_Boat.rank.label("rank"),
+            model.Race.progression.label("progression"),
+            model.Boat_Class.abbreviation.label("boat_class")
+            )
+        .join(model.Race_Boat.race)
+        .join(model.Race.event)
+        .join(model.Event.boat_class)
+        .join(model.Event.competition)
+        .join(model.Competition.competition_type)
+        .where(
+            model.Competition.year >= start_year,
+            model.Competition.year <= end_year,
+            model.Competition_Type.abbreviation.in_(competition_types),
+            model.Race.progression.ilike('%->FA%'),
+            model.Race_Boat.result_time_ms.isnot(None),
+            model.Race_Boat.result_time_ms != 0
+        )
+    )
+
+    qualification_result = session.execute(qualification_statement).fetchall()
+
+    qualified_race_boats = []
+
+    for row in qualification_result:
+        if r.qualifies_for_fa(row.progression, row.rank):
+            qualified_race_boats.append({
+                "boat_class": row.boat_class,
+                "result_time_ms": row.result_time_ms
+            })
+
+    # Sort times by class
+    qualified_by_class = defaultdict(list)
+    for boat in qualified_race_boats:
+        key = re.sub(r'^[BJ](?=\w)', '', boat["boat_class"]) 
+        qualified_by_class[key].append(boat["result_time_ms"])
+
     keys = result.keys()
     data_as_dict = [dict(zip(keys, row)) for row in result]
 
@@ -395,11 +435,20 @@ def get_competition_matrix() -> dict:
         boatclass = re.sub(r'^[BJ](?=\w)', '', row.get("Bootsklasse"))
         bestzeit, wbt_date = wbt_lookup.get(boatclass, (None, None))
 
-        def rel(zeit):
-            return round(bestzeit / zeit, 3) if zeit and bestzeit else None
+        zeiten = qualified_by_class.get(boatclass)
+
+        if zeiten:
+            qual_avg = round(mean(zeiten), 1)
+            qual_std = round(stdev(zeiten), 1) if len(zeiten) > 1 else 0
+        else:
+            qual_avg = None
+            qual_std = None
+
+        def rel(zeit: float) -> None:
+            return round(float(bestzeit / zeit), 3) if zeit and bestzeit else None
 
         def rel_std(avg_sec: float, std_sec: float) -> float:
-            return bestzeit / (avg_sec ** 2) * std_sec if avg_sec and std_sec and bestzeit else None
+            return round(float(bestzeit / (avg_sec ** 2) * std_sec), 3) if avg_sec and std_sec and bestzeit else None
 
         row["Rel_Gold"] = rel(row.get("Fahrzeit_Gold"))
         row["STD_Rel_Gold"] = rel_std(row.get("Fahrzeit_Gold"), row.get("STD_Fahrzeit_Gold"))
@@ -411,6 +460,10 @@ def get_competition_matrix() -> dict:
         row["STD_Rel_Platz_6"] = rel_std(row.get("Fahrzeit_Gold"), row.get("STD_Fahrzeit_Platz_6"))
         row["Rel_Platz_8"] = rel(row.get("Fahrzeit_Platz_8"))
         row["STD_Rel_Platz_8"] = rel_std(row.get("Fahrzeit_Gold"), row.get("STD_Fahrzeit_Platz_8"))
+        row["Qualifikationszeit"] = qual_avg
+        row["STD_Qualifikationszeit"] = qual_std
+        row["Rel_Qualifikationszeit"] = rel(qual_avg)
+        row["STD_Rel_Qualifikationszeit"] = rel_std(qual_avg, qual_std)
         row["WBT"] = bestzeit
         row["Datum_WBT"] = wbt_date
 
@@ -1232,7 +1285,7 @@ def get_medals():
             elif race_boat.rank == 3:
                 medal_data[nation]["bronze"] += 1
                 medal_data[nation]["total"] += 1
-            elif 3 < race_boat.rank <= 6:
+            elif race_boat.rank != None and 3 < race_boat.rank <= 6:
                 medal_data[nation]["four_to_six"] += 1
         elif race_boat.race.phase_type == 'final' and race_boat.race.phase_number == 2 and race_boat.country.country_code in nations:
             nation = race_boat.country.country_code

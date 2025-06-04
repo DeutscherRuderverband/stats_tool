@@ -305,6 +305,7 @@ export const useBerichteState = defineStore({
                 "Silber [min] ±SD", "Relationszeit Silber",
                 "Bronze [min] ±SD", "Relationszeit Bronze",
                 "Top 6 [min] ±SD", "Relationszeit Platz 6",
+                "Quali Finale A [min] ±SD", "Relationszeit Quali Finale",
                 "Top 8 [min] ±SD", "Relationszeit Platz 8", "n"
             ];
 
@@ -345,6 +346,8 @@ export const useBerichteState = defineStore({
                             [formatPercent(row.Rel_Bronze), formatPercent(row.STD_Rel_Bronze)],
                             [formatMilliseconds(row.Fahrzeit_Platz_6), formatMilliseconds(row.STD_Fahrzeit_Platz_6)],
                             [formatPercent(row.Rel_Platz_6), formatPercent(row.STD_Rel_Platz_6)],
+                            [formatMilliseconds(row.Qualifikationszeit), formatMilliseconds(row.STD_Qualifikationszeit)],
+                            [formatPercent(row.Rel_Qualifikationszeit), formatPercent(row.STD_Rel_Qualifikationszeit)],
                             [formatMilliseconds(row.Fahrzeit_Platz_8), formatMilliseconds(row.STD_Fahrzeit_Platz_8)],
                             [formatPercent(row.Rel_Platz_8), formatPercent(row.STD_Rel_Platz_8)],
                             row.n ?? "-"

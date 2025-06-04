@@ -332,7 +332,7 @@ export default {
 
             //Years
             this.startYear = data.years[0].start_year
-            this.endYear = data.years[1].end_year
+            this.endYear = new Date().getFullYear()
             this.yearShortCutOptions = [`Gesamter Zeitraum`, "Aktuelles Jahr", "Aktueller OZ", "Letzter OZ"]
             this.optionsYear = Array.from({length: this.endYear - this.startYear + 1}, (_, i) => this.endYear - i)
             this.selectedYearShortCutOptions = [0]
