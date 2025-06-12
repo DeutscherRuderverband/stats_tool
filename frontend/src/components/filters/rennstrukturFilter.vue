@@ -179,7 +179,7 @@
           </v-alert>
 
           <v-container class="pt-6 pa-0 pb-100 mb-100 text-right">
-            <v-btn color="blue" class="mx-2" type="submit">Bestätigen</v-btn>
+            <v-btn color="blue" class="mx-2" type="submit">Übernehmen</v-btn>
           </v-container>
 
 
