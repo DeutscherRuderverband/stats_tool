@@ -154,11 +154,9 @@
                       :style="{ color: Array.from(outliers).includes(idx) ? 'orange' : '' }">
                       <template v-if="Array.isArray(item)">
                         <template v-for="element in item">
-                          <a v-if="element && typeof element === 'object'
-                            && element.hasOwnProperty('link') && element.hasOwnProperty('name')" :href="element.link"
-                            class="link-underline">
-                            {{ element.name }}<br />
-                          </a>
+                          <router-link v-if="element?.link && element?.name" :to="element.link" class="link-underline">
+                            {{ element.name }}<br/>
+                          </router-link>
                           <p v-else-if="element">{{ element }}</p>
                         </template>
                       </template>

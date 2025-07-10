@@ -22,6 +22,7 @@ export const useAthletenState = defineStore({
     id: "athleten",
     state: () => ({
         filterOpen: false,
+        loadingState: false,
         tableExport: [],
         filterOptions: [{
             "birth_years": [{"start_year": 1950}, {"end_year": 2025}],
@@ -161,6 +162,9 @@ export const useAthletenState = defineStore({
         getAthletenFilterOptions(state) {
             return state.filterOptions
         },
+        getLoadingState(state) {
+            return state.loadingState
+        },
         getTableData(state) {
             const athleteData = state.data.athlete
 
@@ -197,23 +201,37 @@ export const useAthletenState = defineStore({
                 })
         },
         async postSearchAthlete(data) {
-            await axios.post(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_athlete_by_name/`, {data})
-                .then(response => {
-                    this.previewAthleteResults = response.data
-                }).catch(error => {
-                    console.error(`Request failed: ${error}`)
-                })
+            this.setToLoadingState(true);
+            try {
+                const response = await axios.post(
+                    `${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_athlete_by_name/`,
+                    { data }
+                );
+                this.previewAthleteResults = response.data;
+            } catch (error) {
+                console.error(`Request failed: ${error}`);
+            } finally {
+                this.setToLoadingState(false);
+            }
         },
         async getAthlete(data) {
-            await axios.get(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_athlete/${data.id}`)
-                .then(response => {
-                    this.data.athlete = response.data
-                }).catch(error => {
-                    console.error(`Request failed: ${error}`)
-                })
+            this.setToLoadingState(true);
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_athlete/${data.id}`
+                );
+                this.data.athlete = response.data;
+            } catch (error) {
+                console.error(`Request failed: ${error}`);
+            } finally {
+                this.setToLoadingState(false);
+            }
         },
         setFilterState(filterState) {
             this.filterOpen = !filterState
+        },
+        setToLoadingState(bool) {
+            this.loadingState = bool
         },
         async exportRaceList() {
             await axios.get(`${import.meta.env.VITE_BACKEND_API_BASE_URL}/get_all_races_list`)
