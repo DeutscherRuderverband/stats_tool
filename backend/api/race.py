@@ -181,7 +181,7 @@ def compute_intermediates_figures(race_boats):
         for race_boat_id, intermediate in valid_intermeds_lookup.items():
             figures = result[race_boat_id][distance]
             speed = figures['speed']
-            if avg_speed:
+            if avg_speed and speed:
                 rel_diff_to_avg_speed = (speed - avg_speed) / avg_speed * 100.0
                 figures["rel_diff_to_avg_speed"] = rel_diff_to_avg_speed
 

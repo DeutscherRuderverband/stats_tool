@@ -763,7 +763,7 @@ def get_race(race_id: int) -> dict:
 
             is_valid_mark = isinstance(result_time, int)
             if is_valid_mark:
-                rel_speed = figures.get('speed')/(2000/ total_time * 1000 )
+                rel_speed = (figures.get('speed')/(2000/ total_time * 1000 )) if total_time else 0
                 intermediate_dict.update({
                     "rank": intermediate.rank if intermediate else None,
                     "pace [millis]": figures.get('pace'),

@@ -390,7 +390,7 @@ export const useRennstrukturAnalyseState = defineStore({
                     //Zeit
                     const totalTime = dataObj.intermediates?.[2000]?.["time [millis]"] ?? 0;
                     let averageSpeed = 0
-                    if ( Number.isFinite(totalTime)) {
+                    if ( Number.isFinite(totalTime) && totalTime != 0) {
                         averageSpeed = 2000 * 1000 / totalTime
                     }
 
