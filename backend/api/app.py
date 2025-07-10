@@ -189,6 +189,8 @@ def get_race_analysis_filter_results() -> dict:
 
             races = []
             for _race in _event.races:
+                if not _race.race_nr__ or not str(_race.race_nr__).isdigit():
+                    continue
                 race = {
                     "id": _race.id,
                     "name": _race.name,
